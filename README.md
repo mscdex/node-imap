@@ -186,7 +186,7 @@ ImapConnection Functions
 
 * **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as \Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criteria. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criteria. The Array parameter is a list of Arrays containing the criteria (and also value(s) for some types of criteria) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]
+* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and also value(s) for some types of criteria) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]
     * The following message flags are valid criterion and do not require values:
         * 'ANSWERED' - Messages with the \Answered flag set.
         * 'DELETED' - Messages with the \Deleted flag set.
@@ -201,7 +201,7 @@ ImapConnection Functions
         * 'UNDRAFT' - Messages that do not have the \Draft flag set.
         * 'UNFLAGGED' - Messages that do not have the \Flagged flag set.
         * 'UNSEEN' - Messages that do not have the \Seen flag set.
-    * The following are valid criterion that require String values:
+    * The following are valid criterion that require String value(s):
         * 'BCC' - Messages that contain the specified string in the BCC field.
         * 'CC' - Messages that contain the specified string in the CC field.
         * 'FROM' - Messages that contain the specified string in the FROM field.
@@ -209,7 +209,7 @@ ImapConnection Functions
         * 'TO' - Messages that contain the specified string in the TO field.
         * 'BODY' - Messages that contain the specified string in the message body.
         * 'TEXT' - Messages that contain the specified string in the header OR the message body.
-        * 'HEADER' - **Requires two String values with the first being the header name and the second being the value to search for.** If this second string is empty, all messages with the given header name will be returned.
+        * 'HEADER' - **Requires two String values with the first being the header name and the second being the value to search for.** If this second string is empty, all messages with the given header name will be returned. Example: [ ['UNSEEN'], ['HEADER', 'SUBJECT', 'node-imap'] ]
     * The following are valid criterion that require a String parseable by JavaScript's Date object, or an instance of Date:
         * 'BEFORE' - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
         * 'ON' - Messages whose internal date (disregarding time and timezone) is within the specified date.
@@ -221,12 +221,12 @@ ImapConnection Functions
         * 'LARGER' - Messages with a size larger than the specified number of bytes.
         * 'SMALLER' - Messages with a size smaller than the specified number of bytes.
 
-* **fetch**(Integer, Object, Function) - _(void)_ - Fetches the message with the given message ID specified by the Integer parameter in the currently open mailbox. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and the _FetchResult_ containing the result of the fetch request. The Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
+* **fetch**(Integer, Object, Function) - _(void)_ - Fetches the message with the message ID specified by the Integer parameter in the currently open mailbox. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and the _FetchResult_ containing the result of the fetch request. The Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
     * **markSeen** - A Boolean indicating whether to mark the message as read when fetching it. **Default:** false
     * **request** - An Object indicating what to fetch (at least **headers** OR **body** must be set to false -- in other words, you can only fetch one aspect of the message at a time):
         * **struct** - A Boolean indicating whether to fetch the structure of the message. **Default:** true
         * **headers** - A Boolean/Array value. A value of true fetches all message headers. An Array containing specific message headers to retrieve can also be specified. **Default:** true
-        * **body** - A Boolean/String value. A value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) whose body you wish to fetch. **Default:** false
+        * **body** - A Boolean/String value. A value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the body/content of that particular part. **Default:** false
 
 
 TODO
