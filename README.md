@@ -135,7 +135,7 @@ The above structure describes a message having both an attachment and two forms 
 Each message part is identified by a partID which is used when you want to fetch the content of that part (**see fetch()**).
 
 The structure of a message with only one part will simply look something like this:
-    [ { partID: '1.1'
+    [ { partID: '1'
         , type:
            { name: 'text/plain'
            , params: { charset: 'ISO-8859-1' }
