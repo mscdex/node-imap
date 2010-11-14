@@ -17,7 +17,7 @@ function ImapConnection (options) {
     numCapRecvs: 0,
     isReady: false,
     isIdle: true,
-    delim: "/",
+    delim: '/',
     tmrKeepalive: null,
     tmoKeepalive: 10000,
     curData: '',
@@ -113,11 +113,11 @@ ImapConnection.prototype.connect = function(loginCb) {
       // Should never happen ....
     } else if (data[0] === '*') { // Untagged server response
       if (self._state.status === STATES.NOAUTH) {
-        if (data[1] === "PREAUTH") { // no need to login, the server pre-authenticated us
+        if (data[1] === 'PREAUTH') { // no need to login, the server pre-authenticated us
           self._state.status = STATES.AUTH;
           if (self._state.numCapRecvs === 0)
             self._state.numCapRecvs = 1;
-        } else if (data[1] === "NO" || data[1] === "BAD" || data[1] === "BYE") {
+        } else if (data[1] === 'NO' || data[1] === 'BAD' || data[1] === 'BYE') {
           self._state.conn.end();
           return;
         }
@@ -152,7 +152,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           }
         break;
         case 'SEARCH':
-          self._state.box._lastSearch = data[2].split(" ");
+          self._state.box._lastSearch = data[2].split(' ');
         break;
         case 'LIST':
           var result;
@@ -170,25 +170,29 @@ ImapConnection.prototype.connect = function(loginCb) {
                 if (self._state.status !== STATES.BOXSELECTING)
                   self.emit('mail', self._state.box.messages.new); // new mail notification
               break;
+              case 'EXPUNGE': // confirms permanent deletion of a single message
+                if (self._state.box.messages.total > 0)
+                  self._state.box.messages.total--;
+              break;
               default:
                 // Check for FETCH result
                 if (/^FETCH /i.test(data[2])) {
                   var regex = "\\(UID ([\\d]+) INTERNALDATE \"(.*?)\" FLAGS \\((.*?)\\)", result;
-                  if ((result = new RegExp(regex + " BODYSTRUCTURE \\((.*)\\)").exec(data[2])))
+                  if ((result = new RegExp(regex + " BODYSTRUCTURE \\((.*\\))(?=\\)|[\\s])").exec(data[2])))
                     self._state.fetchData.structure = parseBodyStructure(result[4]);
                   result = new RegExp(regex).exec(data[2]);
                   self._state.fetchData.date = result[2];
-                  self._state.fetchData.flags = result[3].split(" ").filter(isNotEmpty);
+                  self._state.fetchData.flags = result[3].split(' ').filter(isNotEmpty);
                   if (literalData.length > 0) {
                     result = /BODY\[(.*)\] \{[\d]+\}$/.exec(data[2]);
-                    if (result[1].indexOf("HEADER") === 0) { // either full or selective headers
+                    if (result[1].indexOf('HEADER') === 0) { // either full or selective headers
                       var headers = literalData.split(/\r\n(?=[\w])/), header;
                       self._state.fetchData.headers = {};
                       for (var i=0,len=headers.length; i<len; i++) {
-                        header = headers[i].substr(0, headers[i].indexOf(": ")).toLowerCase();
+                        header = headers[i].substr(0, headers[i].indexOf(': ')).toLowerCase();
                         if (!self._state.fetchData.headers[header])
                           self._state.fetchData.headers[header] = [];
-                        self._state.fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(": ")+2).replace(/\r\n/g, "").trim());
+                        self._state.fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(': ')+2).replace(/\r\n/g, '').trim());
                       }
                     } else // full message or part body
                       self._state.fetchData.body = literalData;
@@ -204,7 +208,7 @@ ImapConnection.prototype.connect = function(loginCb) {
       self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
       if (self._state.status === STATES.BOXSELECTING) {
-        if (data[1] === "OK")
+        if (data[1] === 'OK')
           self._state.status = STATES.BOXSELECTED;
         else {
           self._state.status = STATES.AUTH;
@@ -214,17 +218,17 @@ ImapConnection.prototype.connect = function(loginCb) {
 
       if (typeof self._state.requests[0].callback === 'function') {
         var err = null;
-        if (data[1] !== "OK") {
-          err = new Error("Error while executing request: " + data[2]);
+        if (data[1] !== 'OK') {
+          err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
           err.request = self._state.requests[0].command;
           self._state.requests[0].callback(err);
         } else if (self._state.status === STATES.BOXSELECTED) {
-          if (data[2].indexOf("SEARCH") === 0) {
+          if (data[2].indexOf('SEARCH') === 0) {
             var result = self._state.box._lastSearch;
             self._state.box._lastSearch = null;
             self._state.requests[0].callback(err, self._state.box, result);
-          } else if (self._state.requests[0].command.indexOf("UID FETCH") === 0)
+          } else if (self._state.requests[0].command.indexOf('UID FETCH') === 0)
             self._state.requests[0].callback(err, self._state.box, self._state.fetchData);
           else
             self._state.requests[0].callback(err, self._state.box);
@@ -267,14 +271,14 @@ ImapConnection.prototype.logout = function(cb) {
   if (this._state.status >= STATES.NOAUTH)
     this._send('LOGOUT', cb);
   else
-    throw new Error("Not connected");
+    throw new Error('Not connected');
 };
 
 ImapConnection.prototype.openBox = function(name, readOnly, cb) {
   if (this._state.status < STATES.AUTH)
-    throw new Error("Not connected or authenticated");
+    throw new Error('Not connected or authenticated');
   else if (typeof name !== 'string')
-    name = "INBOX";
+    name = 'INBOX';
   if (this._state.status === STATES.BOXSELECTED)
     this._resetBox();
   if (typeof readOnly !== 'boolean')
@@ -289,7 +293,7 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
 ImapConnection.prototype.closeBox = function(cb) { // also deletes any messages in this box marked with \Deleted
   var self = this;
   if (this._state.status !== STATES.BOXSELECTED)
-    throw new Error("No mailbox is currently selected");
+    throw new Error('No mailbox is currently selected');
   this._send('CLOSE', function(err) {
     if (!err) {
       self._state.status = STATES.AUTH;
@@ -301,12 +305,12 @@ ImapConnection.prototype.closeBox = function(cb) { // also deletes any messages 
 
 ImapConnection.prototype.search = function(options, cb) {
   if (this._state.status !== STATES.BOXSELECTED)
-    throw new Error("No mailbox is currently selected");
+    throw new Error('No mailbox is currently selected');
   if (!Array.isArray(options))
-    throw new Error("Expected array for search options");
-  var searchargs = "", months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    throw new Error('Expected array for search options');
+  var searchargs = '', months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   for (var i=0,len=options.length; i<len; i++) {
-    var criteria = options[i], args = null, modifier = " ";
+    var criteria = options[i], args = null, modifier = ' ';
     if (typeof criteria === 'string')
       criteria = criteria.toUpperCase();
     else if (Array.isArray(criteria)) {
@@ -316,8 +320,8 @@ ImapConnection.prototype.search = function(options, cb) {
         criteria = criteria[0].toUpperCase();
     } else
       throw new Error('Unexpected search option data type. Expected string, number, or array. Got: ' + typeof criteria);
-    if (criteria[0] === "!") {
-      modifier += "NOT ";
+    if (criteria[0] === '!') {
+      modifier += 'NOT ';
       criteria = criteria.substr(1);
     }
     switch(criteria) {
@@ -345,7 +349,7 @@ ImapConnection.prototype.search = function(options, cb) {
       case 'TO':
         if (!args || args.length !== 1)
           throw new Error('Incorrect number of arguments for search option: ' + criteria);
-        searchargs += modifier + criteria + " \"" + escape(''+args[0]) + "\"";
+        searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '"';
       break;
       case 'BEFORE':
       case 'ON':
@@ -359,13 +363,13 @@ ImapConnection.prototype.search = function(options, cb) {
           if ((args[0] = new Date(args[0])).toString() === 'Invalid Date')
             throw new Error('Search option argument must be a Date object or a parseable date');
         }
-        searchargs += modifier + criteria + " " + args[0].getDate() + "-" + months[args[0].getMonth()] + "-" + args[0].getFullYear();
+        searchargs += modifier + criteria + ' ' + args[0].getDate() + '-' + months[args[0].getMonth()] + '-' + args[0].getFullYear();
       break;
       /*case 'KEYWORD':
       case 'UNKEYWORD':
         if (!args || args.length !== 1)
           throw new Error('Incorrect number of arguments for search option: ' + criteria);
-        searchargs += modifier + criteria + " " + args[0];
+        searchargs += modifier + criteria + ' ' + args[0];
       break;*/
       case 'LARGER':
       case 'SMALLER':
@@ -374,12 +378,12 @@ ImapConnection.prototype.search = function(options, cb) {
         var num = parseInt(args[0]);
         if (isNaN(num))
           throw new Error('Search option argument must be a number');
-        searchargs += modifier + criteria + " " + args[0];
+        searchargs += modifier + criteria + ' ' + args[0];
       break;
       case 'HEADER':
         if (!args || args.length !== 2)
           throw new Error('Incorrect number of arguments for search option: ' + criteria);
-        searchargs += modifier + criteria + " \"" + escape(''+args[0]) + "\" \"" + escape(''+args[1]) + "\"";
+        searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '" "' + escape(''+args[1]) + '"';
       break;
       default:
         throw new Error('Unexpected search option: ' + criteria);
@@ -389,6 +393,8 @@ ImapConnection.prototype.search = function(options, cb) {
 };
 
 ImapConnection.prototype.fetch = function(uid, options, cb) {
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
   if (arguments.length < 1)
     throw new Error('The message ID must be specified');
   if (isNaN(parseInt(''+uid)))
@@ -408,13 +414,13 @@ ImapConnection.prototype.fetch = function(uid, options, cb) {
 
   if (!Array.isArray(options.request.headers)) {
     if (typeof options.request.headers === 'boolean' && options.request.headers === true)
-      toFetch = "HEADER"; // fetches headers only
+      toFetch = 'HEADER'; // fetches headers only
     else if (typeof options.request.body === 'boolean' && options.request.body === true)
-      toFetch = "TEXT"; // fetches the whole entire message text (minus the headers), including all message parts
+      toFetch = 'TEXT'; // fetches the whole entire message text (minus the headers), including all message parts
     else if (typeof options.request.body === 'string')
-      toFetch = options.request.body; // specific message part identifier, e.g. "1", "2", "1.1", "1.2", etc
+      toFetch = options.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
   } else
-    toFetch = "HEADER.FIELDS (" + options.request.headers.join(" ").toUpperCase() + ")"; // fetch specific headers only
+    toFetch = 'HEADER.FIELDS (' + options.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
 
   this._resetFetch();
   this._send('UID FETCH ' + uid + ' (FLAGS INTERNALDATE'
@@ -422,7 +428,47 @@ ImapConnection.prototype.fetch = function(uid, options, cb) {
             + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' : '') + ')', cb);
 };
 
+ImapConnection.prototype.removeDeleted = function(cb) {
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
+  cb = arguments[arguments.length-1];
+
+  this._send('EXPUNGE', cb);
+};
+
+ImapConnection.prototype.addFlags = function(uid, flags, cb) {
+  try {
+    this._storeFlag(uid, flags, true, cb);
+  } catch (err) {
+    throw err;
+  }
+};
+
+ImapConnection.prototype.delFlags = function(uid, flags, cb) {
+  try {
+    this._storeFlag(uid, flags, false, cb);
+  } catch (err) {
+    throw err;
+  }  
+};
+
 /****** Private Functions ******/
+
+ImapConnection.prototype._storeFlag = function(uid, flags, isAdding, cb) {
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
+  if (typeof uid === 'undefined')
+    throw new Error('The message ID must be specified');
+  if (isNaN(parseInt(''+uid)))
+    throw new Error('Message ID must be a number');
+  if ((!Array.isArray(flags) && typeof flags !== 'string') || (Array.isArray(flags) && flags.length === 0))
+    throw new Error('Flags argument must be a string or a non-empty Array');
+  if (!Array.isArray(flags))
+    flags = [flags];
+  cb = arguments[arguments.length-1];
+
+  this._send('STORE ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags.join(' ') + ')', cb);
+};
 
 ImapConnection.prototype._login = function(cb) {
   var self = this,
@@ -457,7 +503,7 @@ ImapConnection.prototype._reset = function() {
   this._capabilities = [];
   this._state.isIdle = true;
   this._state.isReady = false;
-  this._state.delim = "/";
+  this._state.delim = '/';
   this._resetBox();
   this._resetFetch();
 };
@@ -560,7 +606,7 @@ function parseBodyStructure(str, prefix, partID) {
 
       // [disposition]
       if (str.length > 0) {
-        if (str.substr(0, 3) !== "NIL") {
+        if (str.substr(0, 3) !== 'NIL') {
           extensionData.disposition = { type: null, params: null };
           str = str.substr(1);
           lastIndex = getLastIdxQuoted(str);
@@ -580,13 +626,14 @@ function parseBodyStructure(str, prefix, partID) {
               isKey = !isKey;
             }
             str = str.substr(2).trim();
-          }
+          } else
+            str = str.substr(4).trim();
         } else
           str = str.substr(4);
 
         // [language]
         if (str.length > 0) {
-          if (str.substr(0, 3) !== "NIL") {
+          if (str.substr(0, 3) !== 'NIL') {
             lastIndex = getLastIdxQuoted(str);
             extensionData.language = str.substring(1, lastIndex);
             str = str.substr(lastIndex+1).trim();
@@ -595,7 +642,7 @@ function parseBodyStructure(str, prefix, partID) {
 
           // [location]
           if (str.length > 0) {
-            if (str.substr(0, 3) !== "NIL") {
+            if (str.substr(0, 3) !== 'NIL') {
               lastIndex = getLastIdxQuoted(str);
               extensionData.location = str.substring(1, lastIndex);
               str = str.substr(lastIndex+1).trim();
@@ -623,7 +670,7 @@ function parseBodyStructure(str, prefix, partID) {
     str = str.substr(lastIndex+1).trim();
 
     // content type
-    part.type.name = contentTypeMain.toLowerCase() + "/" + contentTypeSub.toLowerCase();
+    part.type.name = contentTypeMain.toLowerCase() + '/' + contentTypeSub.toLowerCase();
 
     // content type parameters
     if (str[0] === '(') {
@@ -644,7 +691,7 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(4);
 
     // content id
-    if (str.substr(0, 3) !== "NIL") {
+    if (str.substr(0, 3) !== 'NIL') {
       lastIndex = getLastIdxQuoted(str);
       part.id = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
@@ -652,7 +699,7 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(4);
 
     // content description
-    if (str.substr(0, 3) !== "NIL") {
+    if (str.substr(0, 3) !== 'NIL') {
       lastIndex = getLastIdxQuoted(str);
       part.description = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
@@ -660,7 +707,7 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(4);
 
     // content encoding
-    if (str.substr(0, 3) !== "NIL") {
+    if (str.substr(0, 3) !== 'NIL') {
       lastIndex = getLastIdxQuoted(str);
       part.encoding = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
@@ -668,7 +715,7 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(4);
 
     // size of content encoded in bytes
-    if (str.substr(0, 3) !== "NIL") {
+    if (str.substr(0, 3) !== 'NIL') {
       lastIndex = 0;
       while (str.charCodeAt(lastIndex) >= 48 && str.charCodeAt(lastIndex) <= 57)
         lastIndex++;
@@ -678,8 +725,8 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(4);
 
     // [# of lines]
-    if (part.type.name.indexOf("text/") === 0) {
-      if (str.substr(0, 3) !== "NIL") {
+    if (part.type.name.indexOf('text/') === 0) {
+      if (str.substr(0, 3) !== 'NIL') {
         lastIndex = 0;
         while (str.charCodeAt(lastIndex) >= 48 && str.charCodeAt(lastIndex) <= 57)
           lastIndex++;
@@ -691,7 +738,7 @@ function parseBodyStructure(str, prefix, partID) {
 
     // [md5 hash of content]
     if (str.length > 0) {
-      if (str.substr(0, 3) !== "NIL") {
+      if (str.substr(0, 3) !== 'NIL') {
         lastIndex = getLastIdxQuoted(str);
         part.md5 = str.substring(1, lastIndex);
         str = str.substr(lastIndex+1).trim();
@@ -700,7 +747,7 @@ function parseBodyStructure(str, prefix, partID) {
 
       // [disposition]
       if (str.length > 0) {
-        if (str.substr(0, 3) !== "NIL") {
+        if (str.substr(0, 3) !== 'NIL') {
           part.disposition = { type: null, params: null };
           str = str.substr(1);
           lastIndex = getLastIdxQuoted(str);
@@ -720,13 +767,14 @@ function parseBodyStructure(str, prefix, partID) {
               isKey = !isKey;
             }
             str = str.substr(2).trim();
-          }
+          } else
+            str = str.substr(4).trim();
         } else
           str = str.substr(4);
 
         // [language]
         if (str.length > 0) {
-          if (str.substr(0, 3) !== "NIL") {
+          if (str.substr(0, 3) !== 'NIL') {
             if (str[0] === '(') {
               part.language = [];
               str = str.substr(1);
@@ -745,7 +793,7 @@ function parseBodyStructure(str, prefix, partID) {
 
           // [location]
           if (str.length > 0) {
-            if (str.substr(0, 3) !== "NIL") {
+            if (str.substr(0, 3) !== 'NIL') {
               lastIndex = getLastIdxQuoted(str);
               part.location = str.substring(1, lastIndex);
               str = str.substr(lastIndex+1).trim();
@@ -802,7 +850,7 @@ function up(str) {
 function getLastIdxQuoted(str) {
   var index = -1, countQuote = 0;
   for (var i=0,len=str.length; i<len; i++) {
-    if (str[i] === "\"") {
+    if (str[i] === '"') {
       if (i > 0 && str[i-1] === "\\")
         continue;
       countQuote++;

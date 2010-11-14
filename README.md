@@ -228,6 +228,12 @@ ImapConnection Functions
         * **headers** - A Boolean/Array value. A value of true fetches all message headers. An Array containing specific message headers to retrieve can also be specified. **Default:** true
         * **body** - A Boolean/String value. A value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the body/content of that particular part. **Default:** false
 
+* **removeDeleted**(Function) - _(void)_ - Permanently removes all messages flagged as \Deleted. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
+* **addFlags**(Integer, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message identified by the Integer parameter. The second parameter can either be a string containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
+* **delFlags**(Integer, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message identified by the Integer parameter. The second parameter can either be a string containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
 
 TODO
 ----
@@ -240,9 +246,7 @@ A bunch of things not yet implemented in no particular order:
 * HEADER.FIELDS.NOT capability during FETCH using "!" prefix
 * Allow FETCHing of byte ranges of body TEXTs instead of always the entire body (useful for previews of large messages, etc)
 * Support additional IMAP commands/extensions:
-  * APPEND
-  * EXPUNGE
-  * STORE
+  * APPEND (is this really useful?)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
   * LIST (and XLIST via XLIST extension -- http://groups.google.com/group/Gmail-Help-POP-and-IMAP-en/browse_thread/thread/a154105c54f020fb)
