@@ -22,7 +22,7 @@ function ImapConnection (options) {
     tmoKeepalive: 10000,
     curData: '',
     fetchData: { flags: [], date: null, headers: null, body: null, structure: null, _total: 0 },
-    box: { _uidnext: 0, _uidvalidity: 0, _flags: [], _permflags: [], name: null, messages: { total: 0, new: 0 }}
+    box: { _uidnext: 0, _uidvalidity: 0, _flags: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
   };
   this._capabilities = [];
 
@@ -68,7 +68,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     fnInit();
   });
   this._state.conn.on('data', function(data) {
-    var literalData;
+    var literalData = '';
     debug('RECEIVED: ' + data);
 
     if (data.indexOf(CRLF) === -1) {
@@ -148,7 +148,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
               self._state.box._uidnext = result[1];
             else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null)
-              self._state.box._permflags = result[1].split(' ');
+              self._state.box.permFlags = result[1].split(' ');
           }
         break;
         case 'SEARCH':
@@ -184,7 +184,7 @@ ImapConnection.prototype.connect = function(loginCb) {
                   self._state.fetchData.date = result[2];
                   self._state.fetchData.flags = result[3].split(' ').filter(isNotEmpty);
                   if (literalData.length > 0) {
-                    result = /BODY\[(.*)\] \{[\d]+\}$/.exec(data[2]);
+                    result = /BODY\[(.*)\](?:\<[\d]+\>)? \{[\d]+\}$/.exec(data[2]);
                     if (result[1].indexOf('HEADER') === 0) { // either full or selective headers
                       var headers = literalData.split(/\r\n(?=[\w])/), header;
                       self._state.fetchData.headers = {};
@@ -406,26 +406,40 @@ ImapConnection.prototype.fetch = function(uid, options, cb) {
       headers: true, // \_______ at most one of these can be used for any given fetch request
       body: false   //  /
     }
-  }, toFetch;
+  }, toFetch, bodyRange = '';
   cb = arguments[arguments.length-1];
   if (typeof options !== 'object')
     options = {};
   options = extend(true, defaults, options);
 
   if (!Array.isArray(options.request.headers)) {
+    if (Array.isArray(options.request.body)) {
+      var rangeInfo;
+      if (options.request.body.length !== 2)
+        throw new Error("Expected Array of length 2 for body property for byte range");
+      else if (typeof options.request.body[1] !== 'string'
+               || !(rangeInfo = /^([\d]+)\-([\d]+)$/.exec(options.request.body[1]))
+               || parseInt(rangeInfo[1]) >= parseInt(rangeInfo[2]))
+        throw new Error("Invalid body byte range format");
+      bodyRange = '<' + parseInt(rangeInfo[1]) + '.' + parseInt(rangeInfo[2]) + '>';
+      options.request.body = options.request.body[0];
+    }
     if (typeof options.request.headers === 'boolean' && options.request.headers === true)
       toFetch = 'HEADER'; // fetches headers only
     else if (typeof options.request.body === 'boolean' && options.request.body === true)
       toFetch = 'TEXT'; // fetches the whole entire message text (minus the headers), including all message parts
-    else if (typeof options.request.body === 'string')
+    else if (typeof options.request.body === 'string') {
+      if (!/^([\d]+[\.]{0,1})*[\d]+$/.test(options.request.body))
+        throw new Error("Invalid body partID format");
       toFetch = options.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
+    }
   } else
     toFetch = 'HEADER.FIELDS (' + options.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
 
   this._resetFetch();
   this._send('UID FETCH ' + uid + ' (FLAGS INTERNALDATE'
             + (options.request.struct ? ' BODYSTRUCTURE' : '')
-            + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' : '') + ')', cb);
+            + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' + bodyRange : '') + ')', cb);
 };
 
 ImapConnection.prototype.removeDeleted = function(cb) {
@@ -465,9 +479,13 @@ ImapConnection.prototype._storeFlag = function(uid, flags, isAdding, cb) {
     throw new Error('Flags argument must be a string or a non-empty Array');
   if (!Array.isArray(flags))
     flags = [flags];
+  for (var i=0; i<flags.length; i++) {
+    if (this._state.box.permFlags.indexOf(flags[i]) === -1 || flags[i] === '\*')
+      throw new Error('The flag "' + flags[i] + '" is not allowed by the server for this mailbox');
+  }
   cb = arguments[arguments.length-1];
 
-  this._send('STORE ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags.join(' ') + ')', cb);
+  this._send('UID STORE ' + uid + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags.join(' ') + ')', cb);
 };
 
 ImapConnection.prototype._login = function(cb) {
@@ -511,8 +529,8 @@ ImapConnection.prototype._resetBox = function() {
   this._state.box._uidnext = 0;
   this._state.box._uidvalidity = 0;
   this._state.box._flags = [];
-  this._state.box._permflags = [];
   this._state.box._lastSearch = null;
+  this._state.box.permFlags = [];
   this._state.box.name = null;
   this._state.box.messages.total = 0;
   this._state.box.messages.new = 0;

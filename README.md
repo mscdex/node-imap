@@ -55,6 +55,7 @@ node-imap exposes one object: **ImapConnection**.
 
 * _Box_ is an Object representing the currently open mailbox, and has the following properties:
     * **name** - A String containing the name of this mailbox.
+    * **permFlags** - An Array containing the flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - An Object containing properties about message counts for this mailbox.
         * **total** - An Integer representing total number of messages in this mailbox.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
@@ -153,6 +154,15 @@ The structure of a message with only one part will simply look something like th
     ]
 Therefore, an easy way to check for a multipart message is to check if the structure length is >1.
 
+Lastly, here are the system flags defined by the IMAP spec (that may be added/removed to/from messages):
+* \Seen - Message has been read
+* \Answered - Message has been answered
+* \Flagged - Message is "flagged" for urgent/special attention
+* \Deleted - Message is "deleted" for removal
+* \Draft - Message has not completed composition (marked as a draft).
+It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** Array first.
+Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags** Array.
+
 
 ImapConnection Events
 ---------------------
@@ -195,7 +205,7 @@ ImapConnection Functions
         * 'NEW' - Messages that have the \Recent flag set but not the \Seen flag.
         * 'SEEN' - Messages that have the \Seen flag set.
         * 'RECENT' - Messages that have the \Recent flag set.
-        * 'OLD' - Messages that do not have the \Recent flag set. This is functionally equivalent to "!RECENT" (as opposed to "!NEW").
+        * 'OLD' - Messages that do not have the \Recent flag set. This is functionally equivalent to a criteria of "!RECENT" (as opposed to "!NEW").
         * 'UNANSWERED' - Messages that do not have the \Answered flag set.
         * 'UNDELETED' - Messages that do not have the \Deleted flag set.
         * 'UNDRAFT' - Messages that do not have the \Draft flag set.
@@ -226,13 +236,13 @@ ImapConnection Functions
     * **request** - An Object indicating what to fetch (at least **headers** OR **body** must be set to false -- in other words, you can only fetch one aspect of the message at a time):
         * **struct** - A Boolean indicating whether to fetch the structure of the message. **Default:** true
         * **headers** - A Boolean/Array value. A value of true fetches all message headers. An Array containing specific message headers to retrieve can also be specified. **Default:** true
-        * **body** - A Boolean/String value. A value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the body/content of that particular part. **Default:** false
+        * **body** - A Boolean/String/Array value. A Boolean value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the entire body/content of that particular part. An Array value of length 2 can be specified if you wish to request a byte range of the content, where the first item is a Boolean/String as previously described and the second item is a String indicating the byte range, for example, to fetch the first 500 bytes: '0-500'. **Default:** false
 
 * **removeDeleted**(Function) - _(void)_ - Permanently removes all messages flagged as \Deleted. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
-* **addFlags**(Integer, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message identified by the Integer parameter. The second parameter can either be a string containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **addFlags**(Integer, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
-* **delFlags**(Integer, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message identified by the Integer parameter. The second parameter can either be a string containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **delFlags**(Integer, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
 
 TODO
@@ -244,7 +254,7 @@ A bunch of things not yet implemented in no particular order:
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * OR searching ability with () grouping
 * HEADER.FIELDS.NOT capability during FETCH using "!" prefix
-* Allow FETCHing of byte ranges of body TEXTs instead of always the entire body (useful for previews of large messages, etc)
+* Support IMAP keywords (with a workaround for gmail's lack of support for IMAP keywords)
 * Support additional IMAP commands/extensions:
   * APPEND (is this really useful?)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
