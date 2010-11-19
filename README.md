@@ -155,11 +155,13 @@ The structure of a message with only one part will simply look something like th
 Therefore, an easy way to check for a multipart message is to check if the structure length is >1.
 
 Lastly, here are the system flags defined by the IMAP spec (that may be added/removed to/from messages):
+
 * \Seen - Message has been read
 * \Answered - Message has been answered
 * \Flagged - Message is "flagged" for urgent/special attention
 * \Deleted - Message is "deleted" for removal
 * \Draft - Message has not completed composition (marked as a draft).
+
 It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** Array first.
 Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags** Array.
 
