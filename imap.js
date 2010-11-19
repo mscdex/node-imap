@@ -84,17 +84,16 @@ ImapConnection.prototype.connect = function(loginCb) {
 
     // Don't mess with incoming data if it's part of a literal
     if (/\{(\d+)\}$/.test(data.substr(0, data.indexOf(CRLF)))) {
-      var result = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF))),
-          total = parseInt(result[1]);
-      self._state.fetchData._total = total;
+      var result = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF)));
+      self._state.fetchData._total = parseInt(result[1]);
     }
     if (self._state.fetchData._total > 0) {
       if (data.length - (data.indexOf(CRLF)+2) <= self._state.fetchData._total) {
         self._state.curData = data;
         return;
       }
-      literalData = data.substr(data.indexOf(CRLF)+2, total);
-      data = data.substr(0, data.indexOf(CRLF)) + data.substr(data.indexOf(CRLF) + 3 + total);
+      literalData = data.substr(data.indexOf(CRLF) + 2, self._state.fetchData._total);
+      data = data.substr(0, data.indexOf(CRLF)) + data.substr(data.indexOf(CRLF) + 2 + self._state.fetchData._total);
       self._state.fetchData._total = 0;
     }
 
@@ -176,28 +175,8 @@ ImapConnection.prototype.connect = function(loginCb) {
               break;
               default:
                 // Check for FETCH result
-                if (/^FETCH /i.test(data[2])) {
-                  var regex = "\\(UID ([\\d]+) INTERNALDATE \"(.*?)\" FLAGS \\((.*?)\\)", result;
-                  if ((result = new RegExp(regex + " BODYSTRUCTURE \\((.*\\))(?=\\)|[\\s])").exec(data[2])))
-                    self._state.fetchData.structure = parseBodyStructure(result[4]);
-                  result = new RegExp(regex).exec(data[2]);
-                  self._state.fetchData.date = result[2];
-                  self._state.fetchData.flags = result[3].split(' ').filter(isNotEmpty);
-                  if (literalData.length > 0) {
-                    result = /BODY\[(.*)\](?:\<[\d]+\>)? \{[\d]+\}$/.exec(data[2]);
-                    if (result[1].indexOf('HEADER') === 0) { // either full or selective headers
-                      var headers = literalData.split(/\r\n(?=[\w])/), header;
-                      self._state.fetchData.headers = {};
-                      for (var i=0,len=headers.length; i<len; i++) {
-                        header = headers[i].substr(0, headers[i].indexOf(': ')).toLowerCase();
-                        if (!self._state.fetchData.headers[header])
-                          self._state.fetchData.headers[header] = [];
-                        self._state.fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(': ')+2).replace(/\r\n/g, '').trim());
-                      }
-                    } else // full message or part body
-                      self._state.fetchData.body = literalData;
-                  }
-                }
+                if (/^FETCH /i.test(data[2]))
+                  parseFetch(data[2].substring(data[2].indexOf('(')+1, data[2].length-1), literalData, self._state.fetchData);
               break;
             }
           }
@@ -564,6 +543,72 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
 };
 
 /****** Utility Functions ******/
+
+function parseFetch(str, literalData, fetchData) {
+  // passed in str === "... {xxxx}" or "... {xxxx} ..." or just "..."
+  // where ... is any number of key-value pairs
+  // and {xxxx} is the byte count for the literalData describing the preceding item (almost always "BODY")
+  var key, idxNext, isNil;
+  while (str.length > 0) {
+    key = str.substring(0, str.indexOf(' '));
+    str = str.substring(str.indexOf(' ')+1);
+    isNil = (str.substr(0, 3) === 'NIL');
+    if (isNil)
+      idxNext = 3;
+    else {
+      switch (key) {
+        case 'UID':
+          idxNext = str.indexOf(' ')+1;
+        break;
+        case 'INTERNALDATE':
+          idxNext = str.indexOf('"', 1)+1;
+          fetchData.date = str.substring(1, idxNext-1);
+        break;
+        case 'FLAGS':
+          idxNext = str.indexOf(')')+1;
+          fetchData.flags = str.substring(1, idxNext-1).split(' ').filter(isNotEmpty);
+        break;
+        case 'BODYSTRUCTURE':
+          var inQuote = false,
+              countParen = 0,
+              lastIndex = -1;
+          for (var i=1,len=str.length; i<len; i++) {
+            if (str[i-1] !== "\\" && str[i] === "\"")
+              inQuote = !inQuote;
+            else if (!inQuote) {
+              if (str[i] === '(')
+                countParen++;
+              else if (str[i] === ')') {
+                if (countParen === 0) {
+                  lastIndex = i;
+                  break;
+                } else
+                  countParen--;
+              }
+            }
+          }
+          idxNext = lastIndex+1;
+          fetchData.structure = parseBodyStructure(str.substring(1, idxNext-1));
+        break;
+        default:
+          var result = /^BODY\[(.*)\](?:\<[\d]+\>)?$/.exec(key);
+          idxNext = str.indexOf("}")+1;
+          if (result[1].indexOf('HEADER') === 0) { // either full or selective headers
+            var headers = literalData.split(/\r\n(?=[\w])/), header;
+            fetchData.headers = {};
+            for (var i=0,len=headers.length; i<len; i++) {
+              header = headers[i].substr(0, headers[i].indexOf(': ')).toLowerCase();
+              if (!fetchData.headers[header])
+                fetchData.headers[header] = [];
+              fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(': ')+2).replace(/\r\n/g, '').trim());
+            }
+          } else // full message or part body
+            fetchData.body = literalData;
+      }
+    }
+    str = str.substr(idxNext).trim();
+  }
+}
 
 function parseBodyStructure(str, prefix, partID) {
   var retVal = [];
