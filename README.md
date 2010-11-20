@@ -3,6 +3,9 @@ Description
 
 node-imap is an IMAP module for [node.js](http://nodejs.org/) that provides an asynchronous interface for communicating with an IMAP mail server.
 
+This module does not perform any magic such as auto-decoding of messages/attachments or parsing of email addresses (node-imap leaves all mail header values as-is).
+If you are in need of this kind of extra functionality, check out andris9's [mime.js](http://github.com/andris9/mailparser/blob/master/mime.js) (requires [node-iconv](http://github.com/bnoordhuis/node-iconv)) set of functions, part of his [mailparser](http://github.com/andris9/mailparser) module.
+
 
 Requirements
 ============
@@ -23,7 +26,7 @@ This example fetches the 'date', 'from', 'to', 'subject' message headers and the
           host: 'imap.gmail.com',
           port: 993,
           secure: true
-    });
+        });
 
     function die(err) {
       console.log('Uh oh: ' + err);
@@ -189,8 +192,9 @@ ImapConnection Functions
     * **host** - A String representing the hostname or IP address of the IMAP server. **Default:** "localhost"
     * **port** - An Integer representing the port of the IMAP server. **Default:** 143
     * **secure** - A Boolean indicating the connection should use SSL/TLS. **Default:** false
+    * **connTimeout** - An Integer indicating the number of milliseconds to wait for a connection to be established. **Default:** 10000
 
-* **connect**() - _(void)_ - Attempts to connect and log into the IMAP server.
+* **connect**(Function) - _(void)_ - Attempts to connect and log into the IMAP server. The Function parameter is the callback with one parameter: the error (null if none).
 
 * **logout**(Function) - _(void)_ - Closes the connection to the server. The Function parameter is the callback.
 
@@ -252,7 +256,6 @@ TODO
 
 A bunch of things not yet implemented in no particular order:
 
-* Connection timeout
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * OR searching ability with () grouping
 * HEADER.FIELDS.NOT capability during FETCH using "!" prefix

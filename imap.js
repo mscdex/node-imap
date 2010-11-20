@@ -1,13 +1,18 @@
 var sys = require('sys'), net = require('net'), EventEmitter = require('events').EventEmitter;
-var empty = function() {}, CRLF = "\r\n", debug=empty/*sys.debug*/, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 };
+var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn/*sys.debug*/, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 };
 
 function ImapConnection (options) {
+  if (!(this instanceof ImapConnection))
+    return new ImapConnection(options);
+  EventEmitter.call(this);
+
   this._options = {
     username: '',
     password: '',
     host: 'localhost',
     port: 143,
-    secure: false
+    secure: false,
+    connTimeout: 10000 // connection timeout in msecs
   };
   this._state = {
     status: STATES.NOCONNECT,
@@ -25,6 +30,7 @@ function ImapConnection (options) {
     box: { _uidnext: 0, _uidvalidity: 0, _flags: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
   };
   this._capabilities = [];
+  this._tmrConn = null;
 
   this._options = extend(true, this._options, options);
 };
@@ -32,34 +38,49 @@ sys.inherits(ImapConnection, EventEmitter);
 exports.ImapConnection = ImapConnection;
 
 ImapConnection.prototype.connect = function(loginCb) {
-  var self = this;
-  var fnInit = function() {
-    // First get pre-auth capabilities, including server-supported auth mechanisms
-    self._send('CAPABILITY', function() {
-      // Next attempt to login
-      self._login(function(err) {
-        if (err) {
-          loginCb(err);
-          return;
-        }
-        // Lastly, get the mailbox hierarchy delimiter/separator used by the server
-        self._send('LIST "" ""', loginCb);
-      });
-    });
-  };
+  var self = this,
+      skipSetup = (this._state.conn !== null),
+      fnInit = function() {
+        // First get pre-auth capabilities, including server-supported auth mechanisms
+        self._send('CAPABILITY', function() {
+          // Next attempt to login
+          self._login(function(err) {
+            if (err) {
+              loginCb(err);
+              return;
+            }
+            // Lastly, get the mailbox hierarchy delimiter/separator used by the server
+            self._send('LIST "" ""', loginCb);
+          });
+        });
+      };
+  loginCb = loginCb || emptyFn;
   this._reset();
 
-  this._state.conn = net.createConnection(this._options.port, this._options.host);
+  if (!this._state.conn)
+    this._state.conn = net.createConnection(this._options.port, this._options.host);
+  else
+    this._state.conn.connect(this._options.port, this._options.host);
   if (this._options.secure) {
     this._state.conn.setSecure();
-    this._state.conn.on('secure', function() {
-      debug('Secure connection made.');
-    });
-  }
+    if (this._state.conn.listeners('secure').length === 0) {
+      this._state.conn.on('secure', function() {
+        debug('Secure connection made.');
+      });
+    }
+  } else
+    this._state.conn.secure = false;
+
+  this._tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
+
+  if (skipSetup)
+    return;
+
   this._state.conn.setKeepAlive(true);
   this._state.conn.setEncoding('utf8');
 
   this._state.conn.on('connect', function() {
+    clearTimeout(self._tmrConn);
     debug('Connected to host.');
     self._state.conn.write('');
     self._state.status = STATES.NOAUTH;
@@ -182,7 +203,6 @@ ImapConnection.prototype.connect = function(loginCb) {
           }
       }
     } else if (data[0].indexOf('A') === 0) { // Tagged server response
-      //var id = data[0].substr(1);
       clearTimeout(self._state.tmrKeepalive);
       self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
@@ -223,15 +243,15 @@ ImapConnection.prototype.connect = function(loginCb) {
       // unknown response
     }
   });
-  this._state.conn.on('error', function(err) {
-    debug('Encountered error: ' + err);
-  });
   this._state.conn.on('end', function() {
     self._reset();
     debug('FIN packet received. Disconnecting...');
     self.emit('end');
   });
   this._state.conn.on('error', function(err) {
+    clearTimeout(self._tmrConn);
+    if (self._state.status === STATES.NOCONNECT)
+      loginCb(new Error('Unable to connect. Reason: ' + err));
     self.emit('error', err);
     debug('Error occurred: ' + err);
   });
@@ -447,6 +467,11 @@ ImapConnection.prototype.delFlags = function(uid, flags, cb) {
 
 /****** Private Functions ******/
 
+ImapConnection.prototype._fnTmrConn = function(loginCb) {
+  loginCb(new Error('Connection timed out'));
+  this._state.conn.destroy();
+}
+
 ImapConnection.prototype._storeFlag = function(uid, flags, isAdding, cb) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
@@ -494,6 +519,7 @@ ImapConnection.prototype._login = function(cb) {
 };
 ImapConnection.prototype._reset = function() {
   clearTimeout(this._state.tmrKeepalive);
+  clearTimeout(this._tmrConn);
   this._state.status = STATES.NOCONNECT;
   this._state.numCapRecvs = 0;
   this._state.requests = [];
