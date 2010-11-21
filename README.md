@@ -202,7 +202,7 @@ ImapConnection Functions
 
 * **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as \Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and also value(s) for some types of criteria) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]
+* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', ['UNSEEN'], ['SINCE', 'April 20, 2010'] ] ].
     * The following message flags are valid criterion and do not require values:
         * 'ANSWERED' - Messages with the \Answered flag set.
         * 'DELETED' - Messages with the \Deleted flag set.
@@ -236,6 +236,7 @@ ImapConnection Functions
     * The following are valid criterion that require an Integer value:
         * 'LARGER' - Messages with a size larger than the specified number of bytes.
         * 'SMALLER' - Messages with a size smaller than the specified number of bytes.
+    * **Note:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example above).
 
 * **fetch**(Integer, Object, Function) - _(void)_ - Fetches the message with the message ID specified by the Integer parameter in the currently open mailbox. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and the _FetchResult_ containing the result of the fetch request. The Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
     * **markSeen** - A Boolean indicating whether to mark the message as read when fetching it. **Default:** false
@@ -257,11 +258,8 @@ TODO
 A bunch of things not yet implemented in no particular order:
 
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
-* OR searching ability with () grouping
-* HEADER.FIELDS.NOT capability during FETCH using "!" prefix
 * Support IMAP keywords (with a workaround for gmail's lack of support for IMAP keywords)
 * Support additional IMAP commands/extensions:
-  * APPEND (is this really useful?)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
   * LIST (and XLIST via XLIST extension -- http://groups.google.com/group/Gmail-Help-POP-and-IMAP-en/browse_thread/thread/a154105c54f020fb)
