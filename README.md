@@ -159,11 +159,11 @@ Therefore, an easy way to check for a multipart message is to check if the struc
 
 Lastly, here are the system flags defined by the IMAP spec (that may be added/removed to/from messages):
 
-* \Seen - Message has been read
-* \Answered - Message has been answered
-* \Flagged - Message is "flagged" for urgent/special attention
-* \Deleted - Message is "deleted" for removal
-* \Draft - Message has not completed composition (marked as a draft).
+* Seen - Message has been read
+* Answered - Message has been answered
+* Flagged - Message is "flagged" for urgent/special attention
+* Deleted - Message is "deleted" for removal
+* Draft - Message has not completed composition (marked as a draft).
 
 It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** Array first.
 Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags** Array.
@@ -183,6 +183,23 @@ ImapConnection Events
 * **error**(Error) - Fires when an exception/error occurs (similar to net.Stream's error event). The given Error object represents the error raised.
 
 
+ImapConnection Properties
+-------------------------
+
+* **delim** - A String containing the (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be Boolean false.
+
+* **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information for each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
+
+    { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
+      , delimiter: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
+      , extensions: [ // An Array of namespace extensions supported by this namespace, or null if none are specified
+          { name: 'X-FOO-BAR' // A String indicating the extension name
+            , params: [ 'BAZ' ] // An Array of Strings containing the parameters for this extension, or null if none are specified
+          }
+      ]
+    }
+
+
 ImapConnection Functions
 ------------------------
 
@@ -198,25 +215,92 @@ ImapConnection Functions
 
 * **logout**(Function) - _(void)_ - Closes the connection to the server. The Function parameter is the callback.
 
-* **openBox**(String, Boolean, Function) - _(void)_ - Opens a specific mailbox that exists on the server. The String parameter is the name of the mailbox to open. The Boolean parameter specifies whether to open the mailbox in read-only mode or not. The Function parameter is the callback with two parameters: the error (null if none), and the _Box_ object of the newly opened mailbox.
+* **openBox**(String[, Boolean], Function) - _(void)_ - Opens a specific mailbox that exists on the server. The String parameter is the name (including any necessary prefix/path) of the mailbox to open. The optional Boolean parameter specifies if the mailbox should be opened in read-only mode (defaults to false). The Function parameter is the callback with two parameters: the error (null if none), and the _Box_ object of the newly opened mailbox.
 
-* **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as \Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
+* **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
+
+* **addBox**(String, Function) - _(void)_ - Creates a new mailbox on the server. The String parameter is the name (including any necessary prefix/path) of the new mailbox to create. The Function parameter is the callback with one parameter: the error (null if none).
+
+* **delBox**(String, Function) - _(void)_ - Removes a specific mailbox that exists on the server. The String parameter is the name (including any necessary prefix/path) of the mailbox to remove. The Function parameter is the callback with one parameter: the error (null if none).
+
+* **renameBox**(String, String, Function) - _(void)_ - Renames a specific mailbox that exists on the server. The first String parameter is the name (including any necessary prefix/path) of the existing mailbox. The second String parameter is the name (including any necessary prefix/path) of the new mailbox. The Boolean parameter specifies whether to open the mailbox in read-only mode or not. The Function parameter is the callback with two parameters: the error (null if none), and the _Box_ object of the newly renamed mailbox. **Note:** Renaming the 'INBOX' mailbox will instead cause all messages in 'INBOX' to be moved to the new mailbox.
+
+* **getBoxes**([String, ]Function) - _(void)_ - Obtains the full list of mailboxes. The optional String parameter is the namespace prefix to use (defaults to the main personal namespace). The Function parameter is the callback with two parameters: the error (null if none), and an Object with the following format (with example values):
+
+    { INBOX: // mailbox name
+       { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot be opened
+       , delim: '/' // hierarchy delimiter for accessing this mailbox's direct children. This should usually be the same as ImapConnection.delim (?)
+       , children: null // an Object containing another structure similar in format to this top level, null if no children
+       , parent: null // pointer to parent mailbox, null if at the top level
+       }
+    , Work:
+       { attribs: []
+       , delim: '/'
+       , children: null
+       , parent: null
+       }
+    , '[Gmail]':
+       { attribs: [ 'NOSELECT' ]
+       , delim: '/'
+       , children:
+          { 'All Mail':
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          , Drafts:
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          , 'Sent Mail':
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          , Spam:
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          , Starred:
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          , Trash:
+             { attribs: []
+             , delim: '/'
+             , children: null
+             , parent: [Circular]
+             }
+          }
+       , parent: null
+       }
+    }
+
+* **removeDeleted**(Function) - _(void)_ - Permanently removes all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
 * **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', ['UNSEEN'], ['SINCE', 'April 20, 2010'] ] ].
     * The following message flags are valid criterion and do not require values:
-        * 'ANSWERED' - Messages with the \Answered flag set.
-        * 'DELETED' - Messages with the \Deleted flag set.
-        * 'DRAFT' - Messages with the \Draft flag set.
-        * 'FLAGGED' - Messages with the \Flagged flag set.
-        * 'NEW' - Messages that have the \Recent flag set but not the \Seen flag.
-        * 'SEEN' - Messages that have the \Seen flag set.
-        * 'RECENT' - Messages that have the \Recent flag set.
-        * 'OLD' - Messages that do not have the \Recent flag set. This is functionally equivalent to a criteria of "!RECENT" (as opposed to "!NEW").
-        * 'UNANSWERED' - Messages that do not have the \Answered flag set.
-        * 'UNDELETED' - Messages that do not have the \Deleted flag set.
-        * 'UNDRAFT' - Messages that do not have the \Draft flag set.
-        * 'UNFLAGGED' - Messages that do not have the \Flagged flag set.
-        * 'UNSEEN' - Messages that do not have the \Seen flag set.
+        * 'ANSWERED' - Messages with the Answered flag set.
+        * 'DELETED' - Messages with the Deleted flag set.
+        * 'DRAFT' - Messages with the Draft flag set.
+        * 'FLAGGED' - Messages with the Flagged flag set.
+        * 'NEW' - Messages that have the Recent flag set but not the Seen flag.
+        * 'SEEN' - Messages that have the Seen flag set.
+        * 'RECENT' - Messages that have the Recent flag set.
+        * 'OLD' - Messages that do not have the Recent flag set. This is functionally equivalent to a criteria of "!RECENT" (as opposed to "!NEW").
+        * 'UNANSWERED' - Messages that do not have the Answered flag set.
+        * 'UNDELETED' - Messages that do not have the Deleted flag set.
+        * 'UNDRAFT' - Messages that do not have the Draft flag set.
+        * 'UNFLAGGED' - Messages that do not have the Flagged flag set.
+        * 'UNSEEN' - Messages that do not have the Seen flag set.
     * The following are valid criterion that require String value(s):
         * 'BCC' - Messages that contain the specified string in the BCC field.
         * 'CC' - Messages that contain the specified string in the CC field.
@@ -225,6 +309,7 @@ ImapConnection Functions
         * 'TO' - Messages that contain the specified string in the TO field.
         * 'BODY' - Messages that contain the specified string in the message body.
         * 'TEXT' - Messages that contain the specified string in the header OR the message body.
+        * 'KEYWORD' - Messages with the specified keyword set.
         * 'HEADER' - **Requires two String values with the first being the header name and the second being the value to search for.** If this second string is empty, all messages with the given header name will be returned. Example: [ ['UNSEEN'], ['HEADER', 'SUBJECT', 'node-imap'] ]
     * The following are valid criterion that require a String parseable by JavaScript's Date object, or an instance of Date:
         * 'BEFORE' - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
@@ -245,11 +330,17 @@ ImapConnection Functions
         * **headers** - A Boolean/Array value. A value of true fetches all message headers. An Array containing specific message headers to retrieve can also be specified. **Default:** true
         * **body** - A Boolean/String/Array value. A Boolean value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the entire body/content of that particular part. An Array value of length 2 can be specified if you wish to request a byte range of the content, where the first item is a Boolean/String as previously described and the second item is a String indicating the byte range, for example, to fetch the first 500 bytes: '0-500'. **Default:** false
 
-* **removeDeleted**(Function) - _(void)_ - Permanently removes all messages flagged as \Deleted. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **copy**(Integer, String, Function) - _(void)_ - Copies the message with the message ID specified by the Integer parameter in the currently open mailbox to the mailbox specified by the String parameter. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
+* **move**(Integer, String, Function) - _(void)_ - Copies the message with the message ID specified by the Integer parameter in the currently open mailbox to the mailbox specified by the String parameter and marks the message in the current mailbox as Deleted. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
 * **addFlags**(Integer, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
 * **delFlags**(Integer, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
+* **addKeywords**(Integer, String/Array, Function) - _(void)_ - Adds the specified keyword(s) to the message identified by the Integer parameter. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+
+* **delKeywords**(Integer, String/Array, Function) - _(void)_ - Removes the specified keyword(s) from the message identified by the Integer parameter. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
 
 
 TODO
@@ -258,8 +349,8 @@ TODO
 A bunch of things not yet implemented in no particular order:
 
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
-* Support IMAP keywords (with a workaround for gmail's lack of support for IMAP keywords)
 * Support additional IMAP commands/extensions:
+  * STATUS addition to LIST (via LISTA-STATUS extension -- http://tools.ietf.org/html/rfc5819)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
   * LIST (and XLIST via XLIST extension -- http://groups.google.com/group/Gmail-Help-POP-and-IMAP-en/browse_thread/thread/a154105c54f020fb)

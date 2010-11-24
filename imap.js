@@ -1,5 +1,5 @@
 var sys = require('sys'), net = require('net'), EventEmitter = require('events').EventEmitter;
-var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn/*sys.debug*/, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 };
+var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn/*sys.debug*/, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -22,34 +22,42 @@ function ImapConnection (options) {
     numCapRecvs: 0,
     isReady: false,
     isIdle: true,
-    delim: '/',
     tmrKeepalive: null,
     tmoKeepalive: 10000,
+    tmrConn: null,
     curData: '',
+    capabilities: [],
     fetchData: { flags: [], date: null, headers: null, body: null, structure: null, _total: 0 },
-    box: { _uidnext: 0, _uidvalidity: 0, _flags: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
+    box: { _uidnext: 0, _uidvalidity: 0, _flags: [], _lastSearch: null, _newKeywords: false, keywords: [], permFlags: [], name: null, messages: { total: 0, new: 0 }},
+    boxes: {}
   };
-  this._capabilities = [];
-  this._tmrConn = null;
-
   this._options = extend(true, this._options, options);
+
+  this.delim = null;
+  this.namespaces = { personal: [], other: [], shared: [] };
 };
 sys.inherits(ImapConnection, EventEmitter);
 exports.ImapConnection = ImapConnection;
 
 ImapConnection.prototype.connect = function(loginCb) {
   var self = this,
-      skipSetup = (this._state.conn !== null),
       fnInit = function() {
         // First get pre-auth capabilities, including server-supported auth mechanisms
         self._send('CAPABILITY', function() {
-          // Next attempt to login
-          self._login(function(err) {
+          // Next, attempt to login
+          self._login(function(err, reentry) {
             if (err) {
               loginCb(err);
               return;
             }
-            // Lastly, get the mailbox hierarchy delimiter/separator used by the server
+            // Next, get the list of available namespaces if supported
+            if (!reentry && self._state.capabilities.indexOf('NAMESPACE') > -1) {
+              var fnMe = arguments.callee;
+              // Re-enter this function after we've obtained the available namespaces
+              self._send('NAMESPACE', function(e) { fnMe.call(this, e, true); });
+              return;
+            }
+            // Lastly, get the top-level mailbox hierarchy delimiter used by the server
             self._send('LIST "" ""', loginCb);
           });
         });
@@ -57,30 +65,22 @@ ImapConnection.prototype.connect = function(loginCb) {
   loginCb = loginCb || emptyFn;
   this._reset();
 
-  if (!this._state.conn)
-    this._state.conn = net.createConnection(this._options.port, this._options.host);
-  else
-    this._state.conn.connect(this._options.port, this._options.host);
+  this._state.conn = net.createConnection(this._options.port, this._options.host);
+
   if (this._options.secure) {
     this._state.conn.setSecure();
-    if (this._state.conn.listeners('secure').length === 0) {
-      this._state.conn.on('secure', function() {
-        debug('Secure connection made.');
-      });
-    }
-  } else
-    this._state.conn.secure = false;
+    this._state.conn.on('secure', function() {
+      debug('Secure connection made.');
+    });
+  }
 
-  this._tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
-
-  if (skipSetup)
-    return;
+  this._state.tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
 
   this._state.conn.setKeepAlive(true);
   this._state.conn.setEncoding('utf8');
 
   this._state.conn.on('connect', function() {
-    clearTimeout(self._tmrConn);
+    clearTimeout(self._state.tmrConn);
     debug('Connected to host.');
     self._state.conn.write('');
     self._state.status = STATES.NOAUTH;
@@ -126,12 +126,10 @@ ImapConnection.prototype.connect = function(loginCb) {
         process.nextTick(function() { self._state.conn.emit('data', line + CRLF); });
       });
     }
-    data = data[0];
-    data = data.explode(' ', 3);
 
-    if (data[0] === '+') { // Continuation
-      // Should never happen ....
-    } else if (data[0] === '*') { // Untagged server response
+    data = data[0].explode(' ', 3);
+
+    if (data[0] === '*') { // Untagged server response
       if (self._state.status === STATES.NOAUTH) {
         if (data[1] === 'PREAUTH') { // no need to login, the server pre-authenticated us
           self._state.status = STATES.AUTH;
@@ -146,18 +144,18 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._state.conn.emit('ready');
         }
         // Restrict the type of server responses when unauthenticated
-        if (data[1] !== 'CAPABILITY' || data[1] !== 'ALERT')
+        if (data[1] !== 'CAPABILITY' && data[1] !== 'ALERT')
           return;
       }
       switch (data[1]) {
         case 'CAPABILITY':
           if (self._state.numCapRecvs < 2)
             self._state.numCapRecvs++;
-          self._capabilities = data[2].split(' ').map(up);
+          self._state.capabilities = data[2].split(' ').map(up);
         break;
         case 'FLAGS':
           if (self._state.status === STATES.BOXSELECTING)
-            self._state.box._flags = data[2].substr(1, data[2].length-2).split(' ');
+            self._state.box._flags = data[2].substr(1, data[2].length-2).split(' ').map(function(flag) {return flag.substr(1);});;
         case 'OK':
           if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])) !== null)
             self.emit('alert', result[1]);
@@ -167,17 +165,53 @@ ImapConnection.prototype.connect = function(loginCb) {
               self._state.box._uidvalidity = result[1];
             else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
               self._state.box._uidnext = result[1];
-            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null)
+            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null) {
               self._state.box.permFlags = result[1].split(' ');
+              var idx;
+              if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
+                self._state.box._newKeywords = true;
+                self._state.box.permFlags.splice(idx, 1);
+              }
+              self._state.box.keywords = self._state.box.permFlags.filter(function(flag) {return flag[0] !== '\\';});
+              for (var i=0; i<self._state.box.keywords.length; i++)
+                self._state.box.permFlags.splice(self._state.box.permFlags.indexOf(self._state.box.keywords[i]), 1);
+              self._state.box.permFlags = self._state.box.permFlags.map(function(flag) {return flag.substr(1);});
+            }
           }
+        break;
+        case 'NAMESPACE':
+          parseNamespaces(data[2], self.namespaces);
         break;
         case 'SEARCH':
           self._state.box._lastSearch = data[2].split(' ');
         break;
         case 'LIST':
           var result;
-          if ((result = /^\(\\Noselect\) "(.+)" ""$/.exec(data[2])) !== null)
-            self._state.delim = result[1];
+          if (self.delim === null && (result = /^\(\\Noselect\) (.+?) ".*"$/.exec(data[2])) !== null)
+            self.delim = (result[1] === 'NIL' ? false : result[1].substring(1, result[1].length-1));
+          else if (self.delim !== null) {
+            result = /^\((.*)\) (.+?) "(.+)"$/.exec(data[2]);
+            var box = {
+              attribs: result[1].split(' ').map(function(attrib) {return attrib.substr(1).toUpperCase();})
+                                .filter(function(attrib) {return BOX_ATTRIBS.indexOf(attrib) > -1;}),
+              delim: (result[2] === 'NIL' ? false : result[2].substring(1, result[2].length-1)),
+              children: null,
+              parent: null
+            }, name = result[3], curChildren = self._state.boxes;
+
+            if (box.delim) {
+              var path = name.split(box.delim).filter(isNotEmpty), parent = null;
+              name = path.pop();
+              for (var i=0,len=path.length; i<len; i++) {
+                if (!curChildren[path[i]].children)
+                  curChildren[path[i]].children = {};
+                parent = curChildren[path[i]];
+                curChildren = curChildren[path[i]].children;
+              }
+              box.parent = parent;
+            }
+            curChildren[name] = box;
+          }
         break;
         default:
           if (/^\d+$/.test(data[1])) {
@@ -229,6 +263,8 @@ ImapConnection.prototype.connect = function(loginCb) {
             self._state.requests[0].callback(err, self._state.box, result);
           } else if (self._state.requests[0].command.indexOf('UID FETCH') === 0)
             self._state.requests[0].callback(err, self._state.box, self._state.fetchData);
+          else if (self._state.requests[0].command.indexOf('LIST') === 0)
+            self._state.requests[0].callback(err, self._state.boxes);
           else
             self._state.requests[0].callback(err, self._state.box);
         } else
@@ -249,7 +285,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     self.emit('end');
   });
   this._state.conn.on('error', function(err) {
-    clearTimeout(self._tmrConn);
+    clearTimeout(self._state.tmrConn);
     if (self._state.status === STATES.NOCONNECT)
       loginCb(new Error('Unable to connect. Reason: ' + err));
     self.emit('error', err);
@@ -276,8 +312,6 @@ ImapConnection.prototype.logout = function(cb) {
 ImapConnection.prototype.openBox = function(name, readOnly, cb) {
   if (this._state.status < STATES.AUTH)
     throw new Error('Not connected or authenticated');
-  else if (typeof name !== 'string')
-    name = 'INBOX';
   if (this._state.status === STATES.BOXSELECTED)
     this._resetBox();
   if (typeof readOnly !== 'boolean')
@@ -300,6 +334,47 @@ ImapConnection.prototype.closeBox = function(cb) { // also deletes any messages 
     }
     cb(err);
   });
+};
+
+ImapConnection.prototype.removeDeleted = function(cb) {
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
+  cb = arguments[arguments.length-1];
+
+  this._send('EXPUNGE', cb);
+};
+
+ImapConnection.prototype.getBoxes = function(namespace, cb) {
+  cb = arguments[arguments.length-1];
+  if (arguments.length !== 2)
+    namespace = '';
+  this._send('LIST "' + escape(namespace) + '" "*"', cb);
+};
+
+ImapConnection.prototype.addBox = function(name, cb) {
+  cb = arguments[arguments.length-1];
+  if (typeof name !== 'string' || name.length === 0)
+    throw new Error('Mailbox name must be a string describing the full path of a new mailbox to be created');
+  this._send('CREATE "' + escape(name) + '"', cb);
+};
+
+ImapConnection.prototype.delBox = function(name, cb) {
+  cb = arguments[arguments.length-1];
+  if (typeof name !== 'string' || name.length === 0)
+    throw new Error('Mailbox name must be a string describing the full path of an existing mailbox to be deleted');
+  this._send('DELETE "' + escape(name) + '"', cb);
+};
+
+ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
+  cb = arguments[arguments.length-1];
+  if (typeof oldname !== 'string' || oldname.length === 0)
+    throw new Error('Old mailbox name must be a string describing the full path of an existing mailbox to be renamed');
+  else if (typeof newname !== 'string' || newname.length === 0)
+    throw new Error('New mailbox name must be a string describing the full path of a new mailbox to be renamed to');
+  if (this._state.status === STATES.BOXSELECTED && oldname === this._state.box.name && oldname !== 'INBOX')
+    this._state.box.name = oldname;
+    
+  this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
 };
 
 ImapConnection.prototype.search = function(options, cb) {
@@ -360,17 +435,9 @@ ImapConnection.prototype.fetch = function(uid, options, cb) {
             + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' + bodyRange : '') + ')', cb);
 };
 
-ImapConnection.prototype.removeDeleted = function(cb) {
-  if (this._state.status !== STATES.BOXSELECTED)
-    throw new Error('No mailbox is currently selected');
-  cb = arguments[arguments.length-1];
-
-  this._send('EXPUNGE', cb);
-};
-
 ImapConnection.prototype.addFlags = function(uid, flags, cb) {
   try {
-    this._storeFlag(uid, flags, true, cb);
+    this._store(uid, flags, true, cb);
   } catch (err) {
     throw err;
   }
@@ -378,11 +445,47 @@ ImapConnection.prototype.addFlags = function(uid, flags, cb) {
 
 ImapConnection.prototype.delFlags = function(uid, flags, cb) {
   try {
-    this._storeFlag(uid, flags, false, cb);
+    this._store(uid, flags, false, cb);
   } catch (err) {
     throw err;
-  }  
+  }
 };
+
+ImapConnection.prototype.addKeywords = function(uid, flags, cb) {
+  try {
+    this._store(uid, flags, true, cb);
+  } catch (err) {
+    throw err;
+  }
+};
+
+ImapConnection.prototype.delKeywords = function(uid, flags, cb) {
+  try {
+    this._store(uid, flags, false, cb);
+  } catch (err) {
+    throw err;
+  }
+};
+
+ImapConnection.prototype.copy = function(uid, boxTo, cb) {
+  this._send('UID COPY ' + uid + ' ' + boxTo, cb);
+};
+
+ImapConnection.prototype.move = function(uid, boxTo, cb) {
+  if (this._state.box.permFlags.indexOf('Deleted') === -1)
+    cb(new Error('Cannot move message: server does not allow deletion of messages'));
+  else {
+    this.copy(uid, boxTo, function(err) {
+      if (err) {
+        cb(err);
+        return;
+      }
+
+      this.addFlags(uid, 'Deleted', cb);
+    });
+  }
+};
+
 
 /****** Private Functions ******/
 
@@ -391,7 +494,8 @@ ImapConnection.prototype._fnTmrConn = function(loginCb) {
   this._state.conn.destroy();
 }
 
-ImapConnection.prototype._storeFlag = function(uid, flags, isAdding, cb) {
+ImapConnection.prototype._store = function(uid, flags, isAdding, cb) {
+  var isKeywords = (arguments.callee.caller === this.addKeywords || arguments.callee.caller === this.delKeywords);
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
   if (typeof uid === 'undefined')
@@ -399,16 +503,25 @@ ImapConnection.prototype._storeFlag = function(uid, flags, isAdding, cb) {
   if (isNaN(parseInt(''+uid)))
     throw new Error('Message ID must be a number');
   if ((!Array.isArray(flags) && typeof flags !== 'string') || (Array.isArray(flags) && flags.length === 0))
-    throw new Error('Flags argument must be a string or a non-empty Array');
+    throw new Error((isKeywords ? 'Keywords' : 'Flags') + ' argument must be a string or a non-empty Array');
   if (!Array.isArray(flags))
     flags = [flags];
   for (var i=0; i<flags.length; i++) {
-    if (this._state.box.permFlags.indexOf(flags[i]) === -1 || flags[i] === '\*')
-      throw new Error('The flag "' + flags[i] + '" is not allowed by the server for this mailbox');
+    if (!isKeywords) {
+      if (this._state.box.permFlags.indexOf(flags[i]) === -1 || flags[i] === '\\*' || flags[i] === '*')
+        throw new Error('The flag "' + flags[i] + '" is not allowed by the server for this mailbox');
+    } else {
+      // keyword contains any char except control characters (%x00-1F and %x7F) and: '(', ')', '{', ' ', '%', '*', '\', '"', ']'
+      if (/[\(\)\{\\\"\]\%\*\x00-\x20\x7F]/.test(flags[i]))
+        throw new Error('The keyword "' + flags[i] + '" contains invalid characters');
+    }
   }
+  if (!isKeywords)
+    flags = flags.map(function(flag) {return '\\' + flag;})
+  flags = flags.join(' ');
   cb = arguments[arguments.length-1];
 
-  this._send('UID STORE ' + uid + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags.join(' ') + ')', cb);
+  this._send('UID STORE ' + uid + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags + ')', cb);
 };
 
 ImapConnection.prototype._login = function(cb) {
@@ -424,11 +537,11 @@ ImapConnection.prototype._login = function(cb) {
         cb(err);
       };
   if (this._state.status === STATES.NOAUTH) {
-    if (typeof this._capabilities.LOGINDISABLED !== 'undefined') {
+    if (typeof this._state.capabilities.LOGINDISABLED !== 'undefined') {
       cb(new Error('Logging in is disabled on this server'));
       return;
     }
-    //if (typeof this._capabilities['AUTH=PLAIN'] !== 'undefined') {
+    //if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') {
       this._send('LOGIN "' + escape(this._options.username) + '" "' + escape(this._options.password) + '"', fnReturn);
     /*} else {
       cb(new Error('Unsupported authentication mechanism(s) detected. Unable to login.'));
@@ -438,14 +551,16 @@ ImapConnection.prototype._login = function(cb) {
 };
 ImapConnection.prototype._reset = function() {
   clearTimeout(this._state.tmrKeepalive);
-  clearTimeout(this._tmrConn);
+  clearTimeout(this._state.tmrConn);
   this._state.status = STATES.NOCONNECT;
   this._state.numCapRecvs = 0;
   this._state.requests = [];
-  this._capabilities = [];
+  this._state.capabilities = [];
+  this.namespaces = { personal: [], other: [], shared: [] };
   this._state.isIdle = true;
   this._state.isReady = false;
-  this._state.delim = '/';
+  this.delim = null;
+  this._state.boxes = {};
   this._resetBox();
   this._resetFetch();
 };
@@ -454,7 +569,9 @@ ImapConnection.prototype._resetBox = function() {
   this._state.box._uidvalidity = 0;
   this._state.box._flags = [];
   this._state.box._lastSearch = null;
+  this._state.box._newKeywords = false;
   this._state.box.permFlags = [];
+  this._state.box.keywords = [];
   this._state.box.name = null;
   this._state.box.messages.total = 0;
   this._state.box.messages.new = 0;
@@ -552,12 +669,12 @@ function buildSearchQuery(options, isOrChild) {
           }
           searchargs += modifier + criteria + ' ' + args[0].getDate() + '-' + months[args[0].getMonth()] + '-' + args[0].getFullYear();
         break;
-        /*case 'KEYWORD':
+        case 'KEYWORD':
         case 'UNKEYWORD':
           if (!args || args.length !== 1)
             throw new Error('Incorrect number of arguments for search option: ' + criteria);
           searchargs += modifier + criteria + ' ' + args[0];
-        break;*/
+        break;
         case 'LARGER':
         case 'SMALLER':
           if (!args || args.length !== 1)
@@ -582,16 +699,92 @@ function buildSearchQuery(options, isOrChild) {
   return searchargs;
 }
 
+function parseNamespaces(str, namespaces) {
+  // str contains 3 parenthesized lists (or NIL) describing the personal, other users', and shared namespaces available
+  var idxNext, idxNextName, idxNextVal, strNamespace, strList, details, types = Object.keys(namespaces), curType = 0;
+  while (str.length > 0) {
+    if (str.substr(0, 3) === 'NIL')
+      idxNext = 3;
+    else {
+      idxNext = getNextIdxParen(str)+1;
+
+      // examples: (...)
+      //           (...)(...)
+      strList = str.substring(1, idxNext-1);
+
+      // parse each namespace for the current type
+      while (strList.length > 0) {
+        details = {};
+        idxNextName = getNextIdxParen(strList)+1;
+
+        // examples: "prefix" "delimiter"
+        //           "prefix" NIL
+        //           "prefix" NIL "X-SOME-EXT" ("FOO" "BAR" "BAZ")
+        strNamespace = strList.substring(1, idxNextName-1);
+
+        // prefix
+        idxNextVal = getNextIdxQuoted(strNamespace)+1;
+        details.prefix = strNamespace.substring(1, idxNextVal-1);
+        strNamespace = strNamespace.substr(idxNextVal).trim();
+
+        // delimiter
+        if (strNamespace.substr(0, 3) === 'NIL') {
+          details.delim = false;
+          strNamespace = strNamespace.substr(3).trim();
+        } else {
+          idxNextVal = getNextIdxQuoted(strNamespace)+1;
+          details.delim = strNamespace.substring(1, idxNextVal-1);
+          strNamespace = strNamespace.substr(idxNextVal).trim();
+        }
+
+        // [extensions]
+        if (strNamespace.length > 0) {
+          details.extensions = [];
+          var extension;
+          while (strNamespace.length > 0) {
+            extension = { name: '', params: null };
+            
+            // name
+            idxNextVal = getNextIdxQuoted(strNamespace)+1;
+            extension.name = strNamespace.substring(1, idxNextVal-1);
+            strNamespace = strNamespace.substr(idxNextVal).trim();
+            
+            // params
+            idxNextVal = getNextIdxParen(strNamespace)+1;
+            var strParams = strNamespace.substring(1, idxNextVal-1), idxNextParam;
+            if (strParams.length > 0) {
+              extension.params = [];
+              while (strParams.length > 0) {
+                idxNextParam = getNextIdxQuoted(strParams)+1;
+                extension.params.push(strParams.substring(1, idxNextParam-1));
+                strParams = strParams.substr(idxNextParam).trim();
+              }
+            }
+            strNamespace = strNamespace.substr(idxNextVal).trim();
+
+            details.extensions.push(extension);
+          }
+        } else
+          details.extensions = null;
+
+        namespaces[types[curType]].push(details);
+        strList = strList.substr(idxNextName).trim();
+      }
+      curType++;
+    }
+    str = str.substr(idxNext).trim();
+  }
+}
+
 function parseFetch(str, literalData, fetchData) {
-  // passed in str === "... {xxxx}" or "... {xxxx} ..." or just "..."
+  // str === "... {xxxx}" or "... {xxxx} ..." or just "..."
   // where ... is any number of key-value pairs
   // and {xxxx} is the byte count for the literalData describing the preceding item (almost always "BODY")
-  var key, idxNext, isNil;
+  var key, idxNext;
   while (str.length > 0) {
     key = str.substring(0, str.indexOf(' '));
     str = str.substring(str.indexOf(' ')+1);
-    isNil = (str.substr(0, 3) === 'NIL');
-    if (isNil)
+    if (str.substr(0, 3) === 'NIL')
       idxNext = 3;
     else {
       switch (key) {
@@ -607,25 +800,7 @@ function parseFetch(str, literalData, fetchData) {
           fetchData.flags = str.substring(1, idxNext-1).split(' ').filter(isNotEmpty);
         break;
         case 'BODYSTRUCTURE':
-          var inQuote = false,
-              countParen = 0,
-              lastIndex = -1;
-          for (var i=1,len=str.length; i<len; i++) {
-            if (str[i-1] !== "\\" && str[i] === "\"")
-              inQuote = !inQuote;
-            else if (!inQuote) {
-              if (str[i] === '(')
-                countParen++;
-              else if (str[i] === ')') {
-                if (countParen === 0) {
-                  lastIndex = i;
-                  break;
-                } else
-                  countParen--;
-              }
-            }
-          }
-          idxNext = lastIndex+1;
+          idxNext = getNextIdxParen(str)+1;
           fetchData.structure = parseBodyStructure(str.substring(1, idxNext-1));
         break;
         default:
@@ -649,7 +824,7 @@ function parseFetch(str, literalData, fetchData) {
 }
 
 function parseBodyStructure(str, prefix, partID) {
-  var retVal = [];
+  var retVal = [], lastIndex;
   prefix = (prefix !== undefined ? prefix : '');
   partID = (partID !== undefined ? partID : 1);
   if (str[0] === '(') { // multipart
@@ -659,30 +834,13 @@ function parseBodyStructure(str, prefix, partID) {
     };
     // Recursively parse each part
     while (str[0] === '(') {
-      var inQuote = false,
-          countParen = 0,
-          lastIndex = -1;
-      for (var i=1,len=str.length; i<len; i++) {
-        if (str[i-1] !== "\\" && str[i] === "\"")
-          inQuote = !inQuote;
-        else if (!inQuote) {
-          if (str[i] === '(')
-            countParen++;
-          else if (str[i] === ')') {
-            if (countParen === 0) {
-              lastIndex = i;
-              break;
-            } else
-              countParen--;
-          }
-        }
-      }
+      lastIndex = getNextIdxParen(str);
       retVal.push(parseBodyStructure(str.substr(1, lastIndex-1), prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1));
       str = str.substr(lastIndex+1).trim();
     }
 
     // multipart type
-    lastIndex = getLastIdxQuoted(str);
+    lastIndex = getNextIdxQuoted(str);
     extensionData.type = str.substring(1, lastIndex).toLowerCase();
     str = str.substr(lastIndex+1).trim();
 
@@ -693,7 +851,7 @@ function parseBodyStructure(str, prefix, partID) {
         str = str.substr(1);
         extensionData.params = {};
         while (str[0] !== ')') {
-          lastIndex = getLastIdxQuoted(str);
+          lastIndex = getNextIdxQuoted(str);
           if (isKey)
             key = str.substring(1, lastIndex).toLowerCase();
           else
@@ -710,7 +868,7 @@ function parseBodyStructure(str, prefix, partID) {
         if (str.substr(0, 3) !== 'NIL') {
           extensionData.disposition = { type: null, params: null };
           str = str.substr(1);
-          lastIndex = getLastIdxQuoted(str);
+          lastIndex = getNextIdxQuoted(str);
           extensionData.disposition.type = str.substring(1, lastIndex).toLowerCase();
           str = str.substr(lastIndex+1).trim();
           if (str[0] === '(') {
@@ -718,7 +876,7 @@ function parseBodyStructure(str, prefix, partID) {
             str = str.substr(1);
             extensionData.disposition.params = {};
             while (str[0] !== ')') {
-              lastIndex = getLastIdxQuoted(str);
+              lastIndex = getNextIdxQuoted(str);
               if (isKey)
                 key = str.substring(1, lastIndex).toLowerCase();
               else
@@ -735,7 +893,7 @@ function parseBodyStructure(str, prefix, partID) {
         // [language]
         if (str.length > 0) {
           if (str.substr(0, 3) !== 'NIL') {
-            lastIndex = getLastIdxQuoted(str);
+            lastIndex = getNextIdxQuoted(str);
             extensionData.language = str.substring(1, lastIndex);
             str = str.substr(lastIndex+1).trim();
           } else
@@ -744,7 +902,7 @@ function parseBodyStructure(str, prefix, partID) {
           // [location]
           if (str.length > 0) {
             if (str.substr(0, 3) !== 'NIL') {
-              lastIndex = getLastIdxQuoted(str);
+              lastIndex = getNextIdxQuoted(str);
               extensionData.location = str.substring(1, lastIndex);
               str = str.substr(lastIndex+1).trim();
             } else
@@ -762,11 +920,11 @@ function parseBodyStructure(str, prefix, partID) {
           id: null, description: null, encoding: null, size: null, lines: null, // required -- NIL or otherwise
           md5: null, disposition: null, language: null, location: null // optional extension data that may be omitted entirely
         },
-        lastIndex = getLastIdxQuoted(str),
+        lastIndex = getNextIdxQuoted(str),
         contentTypeMain = str.substring(1, lastIndex),
         contentTypeSub;
     str = str.substr(lastIndex+1).trim();
-    lastIndex = getLastIdxQuoted(str);
+    lastIndex = getNextIdxQuoted(str);
     contentTypeSub = str.substring(1, lastIndex);
     str = str.substr(lastIndex+1).trim();
 
@@ -779,7 +937,7 @@ function parseBodyStructure(str, prefix, partID) {
       str = str.substr(1);
       part.type.params = {};
       while (str[0] !== ')') {
-        lastIndex = getLastIdxQuoted(str);
+        lastIndex = getNextIdxQuoted(str);
         if (isKey)
           key = str.substring(1, lastIndex).toLowerCase();
         else
@@ -793,7 +951,7 @@ function parseBodyStructure(str, prefix, partID) {
 
     // content id
     if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getLastIdxQuoted(str);
+      lastIndex = getNextIdxQuoted(str);
       part.id = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
     } else
@@ -801,7 +959,7 @@ function parseBodyStructure(str, prefix, partID) {
 
     // content description
     if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getLastIdxQuoted(str);
+      lastIndex = getNextIdxQuoted(str);
       part.description = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
     } else
@@ -809,7 +967,7 @@ function parseBodyStructure(str, prefix, partID) {
 
     // content encoding
     if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getLastIdxQuoted(str);
+      lastIndex = getNextIdxQuoted(str);
       part.encoding = str.substring(1, lastIndex);
       str = str.substr(lastIndex+1).trim();
     } else
@@ -840,7 +998,7 @@ function parseBodyStructure(str, prefix, partID) {
     // [md5 hash of content]
     if (str.length > 0) {
       if (str.substr(0, 3) !== 'NIL') {
-        lastIndex = getLastIdxQuoted(str);
+        lastIndex = getNextIdxQuoted(str);
         part.md5 = str.substring(1, lastIndex);
         str = str.substr(lastIndex+1).trim();
       } else
@@ -851,7 +1009,7 @@ function parseBodyStructure(str, prefix, partID) {
         if (str.substr(0, 3) !== 'NIL') {
           part.disposition = { type: null, params: null };
           str = str.substr(1);
-          lastIndex = getLastIdxQuoted(str);
+          lastIndex = getNextIdxQuoted(str);
           part.disposition.type = str.substring(1, lastIndex).toLowerCase();
           str = str.substr(lastIndex+1).trim();
           if (str[0] === '(') {
@@ -859,7 +1017,7 @@ function parseBodyStructure(str, prefix, partID) {
             str = str.substr(1);
             part.disposition.params = {};
             while (str[0] !== ')') {
-              lastIndex = getLastIdxQuoted(str);
+              lastIndex = getNextIdxQuoted(str);
               if (isKey)
                 key = str.substring(1, lastIndex).toLowerCase();
               else
@@ -880,12 +1038,12 @@ function parseBodyStructure(str, prefix, partID) {
               part.language = [];
               str = str.substr(1);
               while (str[0] !== ')') {
-                lastIndex = getLastIdxQuoted(str);
+                lastIndex = getNextIdxQuoted(str);
                 part.language.push(str.substring(1, lastIndex));
                 str = str.substr(lastIndex+1).trim();
               }
             } else {
-              lastIndex = getLastIdxQuoted(str);
+              lastIndex = getNextIdxQuoted(str);
               part.language = [str.substring(1, lastIndex)];
               str = str.substr(lastIndex+1).trim();
             }
@@ -895,7 +1053,7 @@ function parseBodyStructure(str, prefix, partID) {
           // [location]
           if (str.length > 0) {
             if (str.substr(0, 3) !== 'NIL') {
-              lastIndex = getLastIdxQuoted(str);
+              lastIndex = getNextIdxQuoted(str);
               part.location = str.substring(1, lastIndex);
               str = str.substr(lastIndex+1).trim();
             } else
@@ -948,7 +1106,7 @@ function up(str) {
   return str.toUpperCase();
 }
 
-function getLastIdxQuoted(str) {
+function getNextIdxQuoted(str) {
   var index = -1, countQuote = 0;
   for (var i=0,len=str.length; i<len; i++) {
     if (str[i] === '"') {
@@ -962,6 +1120,28 @@ function getLastIdxQuoted(str) {
     }
   }
   return index;
+}
+
+function getNextIdxParen(str) {
+  var inQuote = false,
+      countParen = 0,
+      lastIndex = -1;
+  for (var i=1,len=str.length; i<len; i++) {
+    if (str[i-1] !== "\\" && str[i] === "\"")
+      inQuote = !inQuote;
+    else if (!inQuote) {
+      if (str[i] === '(')
+        countParen++;
+      else if (str[i] === ')') {
+        if (countParen === 0) {
+          lastIndex = i;
+          break;
+        } else
+          countParen--;
+      }
+    }
+  }
+  return lastIndex;
 }
 
 /**
