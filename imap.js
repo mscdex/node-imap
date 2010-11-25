@@ -26,10 +26,9 @@ function ImapConnection (options) {
     tmoKeepalive: 10000,
     tmrConn: null,
     curData: '',
+    curExpected: 0,
     capabilities: [],
-    fetchData: { flags: [], date: null, headers: null, body: null, structure: null, _total: 0 },
-    box: { _uidnext: 0, _uidvalidity: 0, _flags: [], _lastSearch: null, _newKeywords: false, keywords: [], permFlags: [], name: null, messages: { total: 0, new: 0 }},
-    boxes: {}
+    box: { _uidnext: 0, _flags: [], _newKeywords: false, validity: 0, keywords: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
   };
   this._options = extend(true, this._options, options);
 
@@ -104,18 +103,23 @@ ImapConnection.prototype.connect = function(loginCb) {
     self._state.curData = undefined;
 
     // Don't mess with incoming data if it's part of a literal
-    if (/\{(\d+)\}$/.test(data.substr(0, data.indexOf(CRLF)))) {
-      var result = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF)));
-      self._state.fetchData._total = parseInt(result[1]);
-    }
-    if (self._state.fetchData._total > 0) {
-      if (data.length - (data.indexOf(CRLF)+2) <= self._state.fetchData._total) {
+    var literalInfo;
+    if (self._state.curExpected === 0 && (literalInfo = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF)))))
+      self._state.curExpected = parseInt(literalInfo[1]);
+    if (self._state.curExpected > 0) {
+      if (data.length - (data.indexOf(CRLF)+2) <= self._state.curExpected) {
         self._state.curData = data;
         return;
       }
-      literalData = data.substr(data.indexOf(CRLF) + 2, self._state.fetchData._total);
-      data = data.substr(0, data.indexOf(CRLF)) + data.substr(data.indexOf(CRLF) + 2 + self._state.fetchData._total);
-      self._state.fetchData._total = 0;
+      literalData = data.substr(data.indexOf(CRLF) + 2, self._state.curExpected);
+      data = data.substr(0, data.indexOf(CRLF)) + data.substr(data.indexOf(CRLF) + 2 + self._state.curExpected);
+      self._state.curExpected = 0;
+      if (data.substr(data.indexOf(CRLF)+2, 1) === '*') {
+        // found additional responses, so don't try splitting the proceeding response(s) for better performance in case they have literals too
+        var extra = data.substr(data.indexOf(CRLF)+2);
+        process.nextTick(function() { self._state.conn.emit('data', extra); });
+        data = data.substring(0, data.indexOf(CRLF));
+      }
     }
 
     data = data.split(CRLF).filter(isNotEmpty);
@@ -162,7 +166,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
             if ((result = /^\[UIDVALIDITY (\d+)\]$/i.exec(data[2])) !== null)
-              self._state.box._uidvalidity = result[1];
+              self._state.box.validity = result[1];
             else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
               self._state.box._uidnext = result[1];
             else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null) {
@@ -183,13 +187,19 @@ ImapConnection.prototype.connect = function(loginCb) {
           parseNamespaces(data[2], self.namespaces);
         break;
         case 'SEARCH':
-          self._state.box._lastSearch = data[2].split(' ');
+          self._state.requests[0].args.push((typeof data[2] === 'undefined' || data[2].length === 0 ? [] : data[2].split(' ')));
         break;
+        /*case 'STATUS':
+          var result = /UIDNEXT ([\d]+)\)$/.exec(data[2]);
+          self._state.requests[0].args.push(parseInt(result[1]));
+        break;*/
         case 'LIST':
           var result;
           if (self.delim === null && (result = /^\(\\Noselect\) (.+?) ".*"$/.exec(data[2])) !== null)
             self.delim = (result[1] === 'NIL' ? false : result[1].substring(1, result[1].length-1));
           else if (self.delim !== null) {
+            if (self._state.requests[0].args.length === 0)
+              self._state.requests[0].args.push({});
             result = /^\((.*)\) (.+?) "(.+)"$/.exec(data[2]);
             var box = {
               attribs: result[1].split(' ').map(function(attrib) {return attrib.substr(1).toUpperCase();})
@@ -197,7 +207,7 @@ ImapConnection.prototype.connect = function(loginCb) {
               delim: (result[2] === 'NIL' ? false : result[2].substring(1, result[2].length-1)),
               children: null,
               parent: null
-            }, name = result[3], curChildren = self._state.boxes;
+            }, name = result[3], curChildren = self._state.requests[0].args[0];
 
             if (box.delim) {
               var path = name.split(box.delim).filter(isNotEmpty), parent = null;
@@ -230,51 +240,61 @@ ImapConnection.prototype.connect = function(loginCb) {
               break;
               default:
                 // Check for FETCH result
-                if (/^FETCH /i.test(data[2]))
-                  parseFetch(data[2].substring(data[2].indexOf('(')+1, data[2].length-1), literalData, self._state.fetchData);
+                if (/^FETCH /i.test(data[2]) && self._state.requests[0].command.indexOf('UID FETCH') === 0) {
+                  var idxResult;
+                  if (self._state.requests[0].args.length === 0)
+                    self._state.requests[0].args.push([]);
+                  self._state.requests[0].args[0].push({ id: null, flags: [], date: null, headers: null, body: null, structure: null });
+                  idxResult = self._state.requests[0].args[0].length-1;
+                  parseFetch(data[2].substring(7, data[2].length-1), literalData, self._state.requests[0].args[0][idxResult]);
+                }
               break;
             }
           }
       }
     } else if (data[0].indexOf('A') === 0) { // Tagged server response
+      var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
       self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
       if (self._state.status === STATES.BOXSELECTING) {
-        if (data[1] === 'OK')
+        if (data[1] === 'OK') {
+          sendBox = true;
           self._state.status = STATES.BOXSELECTED;
-        else {
+        } else {
           self._state.status = STATES.AUTH;
           self._resetBox();
         }
       }
 
+      if (self._state.requests[0].command.indexOf('RENAME') > -1) {
+        self._state.box.name = self._state.box._newName;
+        delete self._state.box._newName;
+        sendBox = true;
+      }
+
       if (typeof self._state.requests[0].callback === 'function') {
         var err = null;
+        var args = self._state.requests[0].args, cmd = self._state.requests[0].command;
         if (data[1] !== 'OK') {
           err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
-          err.request = self._state.requests[0].command;
-          self._state.requests[0].callback(err);
+          err.request = cmd;
         } else if (self._state.status === STATES.BOXSELECTED) {
-          if (data[2].indexOf('SEARCH') === 0) {
-            var result = self._state.box._lastSearch;
-            self._state.box._lastSearch = null;
-            self._state.requests[0].callback(err, self._state.box, result);
-          } else if (self._state.requests[0].command.indexOf('UID FETCH') === 0)
-            self._state.requests[0].callback(err, self._state.box, self._state.fetchData);
-          else if (self._state.requests[0].command.indexOf('LIST') === 0)
-            self._state.requests[0].callback(err, self._state.boxes);
-          else
-            self._state.requests[0].callback(err, self._state.box);
-        } else
-          self._state.requests[0].callback(err);
+          if (sendBox) // SELECT, EXAMINE, RENAME
+            args.unshift(self._state.box);
+          // According to RFC3501, UID commands do not give errors for non-existant user-supplied UIDs,
+          // so give the callback empty results if we unexpectedly received no untagged responses.
+          else if ((cmd.indexOf('UID FETCH') === 0 || cmd.indexOf('UID SEARCH') === 0) && args.length === 0)
+            args.unshift([]);
+        }
+        args.unshift(err);
+        self._state.requests[0].callback.apply({}, args);
       }
 
       self._state.requests.shift();
       process.nextTick(function() { self._send(); });
       self._state.isIdle = true;
-      self._resetFetch();
     } else {
       // unknown response
     }
@@ -372,7 +392,7 @@ ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
   else if (typeof newname !== 'string' || newname.length === 0)
     throw new Error('New mailbox name must be a string describing the full path of a new mailbox to be renamed to');
   if (this._state.status === STATES.BOXSELECTED && oldname === this._state.box.name && oldname !== 'INBOX')
-    this._state.box.name = oldname;
+    this._state.box._newName = oldname;
     
   this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
 };
@@ -385,13 +405,16 @@ ImapConnection.prototype.search = function(options, cb) {
   this._send('UID SEARCH' + buildSearchQuery(options), cb);
 };
 
-ImapConnection.prototype.fetch = function(uid, options, cb) {
+ImapConnection.prototype.fetch = function(uids, options, cb) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
-  if (arguments.length < 1)
-    throw new Error('The message ID must be specified');
-  if (isNaN(parseInt(''+uid)))
-    throw new Error('Message ID must be a number');
+  if (!Array.isArray(uids))
+    uids = [uids];
+  try {
+    validateUIDList(uids);
+  } catch(e) {
+    throw e;
+  }
   var defaults = {
     markSeen: false,
     request: {
@@ -429,59 +452,91 @@ ImapConnection.prototype.fetch = function(uid, options, cb) {
   } else
     toFetch = 'HEADER.FIELDS (' + options.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
 
-  this._resetFetch();
-  this._send('UID FETCH ' + uid + ' (FLAGS INTERNALDATE'
+  this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
             + (options.request.struct ? ' BODYSTRUCTURE' : '')
             + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' + bodyRange : '') + ')', cb);
 };
 
-ImapConnection.prototype.addFlags = function(uid, flags, cb) {
+ImapConnection.prototype.addFlags = function(uids, flags, cb) {
   try {
-    this._store(uid, flags, true, cb);
+    this._store(uids, flags, true, cb);
   } catch (err) {
     throw err;
   }
 };
 
-ImapConnection.prototype.delFlags = function(uid, flags, cb) {
+ImapConnection.prototype.delFlags = function(uids, flags, cb) {
   try {
-    this._store(uid, flags, false, cb);
+    this._store(uids, flags, false, cb);
   } catch (err) {
     throw err;
   }
 };
 
-ImapConnection.prototype.addKeywords = function(uid, flags, cb) {
+ImapConnection.prototype.addKeywords = function(uids, flags, cb) {
+  if (!self._state.box._newKeywords)
+    throw new Error('This mailbox does not allow new keywords to be added');
   try {
-    this._store(uid, flags, true, cb);
+    this._store(uids, flags, true, cb);
   } catch (err) {
     throw err;
   }
 };
 
-ImapConnection.prototype.delKeywords = function(uid, flags, cb) {
+ImapConnection.prototype.delKeywords = function(uids, flags, cb) {
   try {
-    this._store(uid, flags, false, cb);
+    this._store(uids, flags, false, cb);
   } catch (err) {
     throw err;
   }
 };
 
-ImapConnection.prototype.copy = function(uid, boxTo, cb) {
-  this._send('UID COPY ' + uid + ' ' + boxTo, cb);
+ImapConnection.prototype.copy = function(uids, boxTo, cb) {
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
+  if (!Array.isArray(uids))
+    uids = [uids];
+  try {
+    validateUIDList(uids);
+  } catch(e) {
+    throw e;
+  }
+  this._send('UID COPY ' + uids.join(',') + ' "' + escape(boxTo) + '"', cb);
 };
 
-ImapConnection.prototype.move = function(uid, boxTo, cb) {
-  if (this._state.box.permFlags.indexOf('Deleted') === -1)
+ImapConnection.prototype.move = function(uids, boxTo, cb) {
+  var self = this;
+  if (this._state.status !== STATES.BOXSELECTED)
+    throw new Error('No mailbox is currently selected');
+  if (self._state.box.permFlags.indexOf('Deleted') === -1)
     cb(new Error('Cannot move message: server does not allow deletion of messages'));
   else {
-    this.copy(uid, boxTo, function(err) {
+    self.copy(uids, boxTo, function(err, reentryCount, deletedUIDs, counter) {
       if (err) {
         cb(err);
         return;
       }
 
-      this.addFlags(uid, 'Deleted', cb);
+      var fnMe = arguments.callee;
+      counter = counter || 0;
+      // Make sure we don't expunge any messages marked as Deleted except the one we are moving
+      if (typeof reentryCount === 'undefined')
+        self.search(['DELETED'], function(e, result) { fnMe.call(this, e, 1, result); });
+      else if (reentryCount === 1) {
+        if (counter < deletedUIDs.length)
+          self.delFlags(deletedUIDs[counter], 'DELETED', function(e) { process.nextTick(function(){fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);}); });
+        else
+          fnMe.call(this, err, reentryCount+1, deletedUIDs);
+      } else if (reentryCount === 2)
+        self.addFlags(uids, 'Deleted', function(e) { fnMe.call(this, e, reentryCount+1, deletedUIDs); });
+      else if (reentryCount === 3)
+        self.removeDeleted(function(e) { fnMe.call(this, e, reentryCount+1, deletedUIDs); });
+      else if (reentryCount === 4) {
+        if (counter < deletedUIDs.length)
+          self.addFlags(deletedUIDs[counter], 'DELETED', function(e) { process.nextTick(function(){fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);}); });
+        else
+          cb();
+      }
     });
   }
 };
@@ -494,14 +549,19 @@ ImapConnection.prototype._fnTmrConn = function(loginCb) {
   this._state.conn.destroy();
 }
 
-ImapConnection.prototype._store = function(uid, flags, isAdding, cb) {
+ImapConnection.prototype._store = function(uids, flags, isAdding, cb) {
   var isKeywords = (arguments.callee.caller === this.addKeywords || arguments.callee.caller === this.delKeywords);
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
-  if (typeof uid === 'undefined')
-    throw new Error('The message ID must be specified');
-  if (isNaN(parseInt(''+uid)))
-    throw new Error('Message ID must be a number');
+  if (typeof uids === 'undefined')
+    throw new Error('The message ID(s) must be specified');
+  if (!Array.isArray(uids))
+    uids = [uids];
+  try {
+    validateUIDList(uids);
+  } catch(e) {
+    throw e;
+  }
   if ((!Array.isArray(flags) && typeof flags !== 'string') || (Array.isArray(flags) && flags.length === 0))
     throw new Error((isKeywords ? 'Keywords' : 'Flags') + ' argument must be a string or a non-empty Array');
   if (!Array.isArray(flags))
@@ -521,7 +581,7 @@ ImapConnection.prototype._store = function(uid, flags, isAdding, cb) {
   flags = flags.join(' ');
   cb = arguments[arguments.length-1];
 
-  this._send('UID STORE ' + uid + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags + ')', cb);
+  this._send('UID STORE ' + uids.join(',') + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags + ')', cb);
 };
 
 ImapConnection.prototype._login = function(cb) {
@@ -556,33 +616,22 @@ ImapConnection.prototype._reset = function() {
   this._state.numCapRecvs = 0;
   this._state.requests = [];
   this._state.capabilities = [];
-  this.namespaces = { personal: [], other: [], shared: [] };
   this._state.isIdle = true;
   this._state.isReady = false;
+  this.namespaces = { personal: [], other: [], shared: [] };
   this.delim = null;
-  this._state.boxes = {};
   this._resetBox();
-  this._resetFetch();
 };
 ImapConnection.prototype._resetBox = function() {
   this._state.box._uidnext = 0;
-  this._state.box._uidvalidity = 0;
+  this._state.box.validity = 0;
   this._state.box._flags = [];
-  this._state.box._lastSearch = null;
   this._state.box._newKeywords = false;
   this._state.box.permFlags = [];
   this._state.box.keywords = [];
   this._state.box.name = null;
   this._state.box.messages.total = 0;
   this._state.box.messages.new = 0;
-};
-ImapConnection.prototype._resetFetch = function() {
-  this._state.fetchData.flags = [];
-  this._state.fetchData.date = null;
-  this._state.fetchData.headers = null;
-  this._state.fetchData.body = null;
-  this._state.fetchData.structure = null;
-  this._state.fetchData._total = 0;
 };
 ImapConnection.prototype._idleCheck = function() {
   if (this._state.isIdle)
@@ -594,7 +643,7 @@ ImapConnection.prototype._noop = function() {
 };
 ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
   if (arguments.length > 0 && !bypass)
-    this._state.requests.push({ command: cmdstr, callback: cb });
+    this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
   if ((arguments.length === 0 && this._state.requests.length > 0) || this._state.requests.length === 1 || bypass) {
     clearTimeout(this._state.tmrKeepalive);
     this._state.isIdle = false;
@@ -618,7 +667,7 @@ function buildSearchQuery(options, isOrChild) {
       if (criteria.length > 0)
         criteria = criteria[0].toUpperCase();
     } else
-      throw new Error('Unexpected search option data type. Expected string, number, or array. Got: ' + typeof criteria);
+      throw new Error('Unexpected search option data type. Expected string or array. Got: ' + typeof criteria);
     if (criteria === 'OR') {
       if (args.length !== 2)
         throw new Error('OR must have exactly two arguments');
@@ -689,6 +738,17 @@ function buildSearchQuery(options, isOrChild) {
             throw new Error('Incorrect number of arguments for search option: ' + criteria);
           searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '" "' + escape(''+args[1]) + '"';
         break;
+        case 'UID':
+          if (!args)
+            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+          args = args.slice(1);
+          try {
+            validateUIDList(args);
+          } catch(e) {
+            throw e;
+          }
+          searchargs += modifier + criteria + ' ' + args.join(',');
+        break;
         default:
           throw new Error('Unexpected search option: ' + criteria);
       }
@@ -697,6 +757,24 @@ function buildSearchQuery(options, isOrChild) {
       break;
   }
   return searchargs;
+}
+
+function validateUIDList(uids) {
+  for (var i=0,len=uids.length,intval; i<len; i++) {
+    if (typeof uids[i] === 'string') {
+      if (uids[i] === '*' || uids[i] === '*:*') {
+        if (len > 1)
+          uids = ['*'];
+        break;
+      } else if (/^(?:[\d]+|\*):(?:[\d]+|\*)$/.test(uids[i]))
+        continue;
+    }
+    intval = parseInt(''+uids[i]);
+    if (isNaN(intval))
+      throw new Error('Message ID must be an integer, "*", or a range: ' + uids[i]);
+    else if (typeof uids[i] !== 'number')
+      uids[i] = intval;
+  }
 }
 
 function parseNamespaces(str, namespaces) {
@@ -782,7 +860,7 @@ function parseFetch(str, literalData, fetchData) {
   // and {xxxx} is the byte count for the literalData describing the preceding item (almost always "BODY")
   var key, idxNext;
   while (str.length > 0) {
-    key = str.substring(0, str.indexOf(' '));
+    key = (str.substr(0, 5) === 'BODY[' ? str.substring(0, (str.indexOf('>') > -1 ? str.indexOf('>') : str.indexOf(']'))+1) : str.substring(0, str.indexOf(' ')));
     str = str.substring(str.indexOf(' ')+1);
     if (str.substr(0, 3) === 'NIL')
       idxNext = 3;
@@ -790,6 +868,7 @@ function parseFetch(str, literalData, fetchData) {
       switch (key) {
         case 'UID':
           idxNext = str.indexOf(' ')+1;
+          fetchData.id = parseInt(str.substring(0, idxNext-1));
         break;
         case 'INTERNALDATE':
           idxNext = str.indexOf('"', 1)+1;

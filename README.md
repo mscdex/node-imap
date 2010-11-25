@@ -17,7 +17,7 @@ Requirements
 Example
 =======
 
-This example fetches the 'date', 'from', 'to', 'subject' message headers and the message structure of the first message in the Inbox since May 20, 2010:
+This example fetches the 'date', 'from', 'to', 'subject' message headers and the message structure of all unread messages in the Inbox since May 20, 2010:
 
     var ImapConnection = require('./imap').ImapConnection, sys = require('sys'),
         imap = new ImapConnection({
@@ -30,20 +30,21 @@ This example fetches the 'date', 'from', 'to', 'subject' message headers and the
 
     function die(err) {
       console.log('Uh oh: ' + err);
+      process.exit(1);
     }
 
-    var messages, cmds, next = 0, cb = function(err, box, result) {
+    var box, cmds, next = 0, cb = function(err) {
       if (err)
         die(err);
       else if (next < cmds.length)
-        cmds[next++](box, result);
+        cmds[next++].apply(this, Array.prototype.slice.call(arguments).slice(1));
     };
     cmds = [
       function() { imap.connect(cb); },
       function() { imap.openBox('INBOX', false, cb); },
-      function() { imap.search([ ['SINCE', 'May 20, 2010'] ], cb); },
-      function(box, result) { imap.fetch(result[0], { request: { headers: ['from', 'to', 'subject', 'date'] } }, cb); },
-      function(box, result) { console.log(sys.inspect(result, false, 6)); imap.logout(cb); }
+      function(result) { box = result; imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], cb); },
+      function(results) { imap.fetch(results, { request: { headers: ['from', 'to', 'subject', 'date'] } }, cb); },
+      function(results) { console.log(sys.inspect(results, false, 6)); imap.logout(cb); }
     ];
     cb();
 
@@ -58,11 +59,13 @@ node-imap exposes one object: **ImapConnection**.
 
 * _Box_ is an Object representing the currently open mailbox, and has the following properties:
     * **name** - A String containing the name of this mailbox.
+    * **validity** - A String containing a number that indicates whether the message IDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message IDs for this mailbox are still valid.
     * **permFlags** - An Array containing the flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - An Object containing properties about message counts for this mailbox.
         * **total** - An Integer representing total number of messages in this mailbox.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
 * _FetchResult_ is an Object representing the result of a message fetch, and has the following properties:
+    * **id** - An Integer that uniquely identifies this message (within its mailbox).
     * **flags** - An Array containing the flags currently set on this message.
     * **date** - A String containing the internal server date for the message (always represented in GMT?)
     * **headers** - An Object containing the headers of the message, **if headers were requested when calling fetch().** Note: The value of each property in the object is an Array containing the value(s) for that particular header name (in case of duplicate headers).
@@ -203,6 +206,8 @@ ImapConnection Properties
 ImapConnection Functions
 ------------------------
 
+**Note:** Message ID sets for message ID range arguments are not guaranteed to be contiguous.
+
 * **(constructor)**([Object]) - _ImapConnection_ - Creates and returns a new instance of ImapConnection using the specified configuration object. Valid properties of the passed in object are:
     * **username** - A String representing the username for authentication.
     * **password** - A String representing the password for authentication.
@@ -284,9 +289,9 @@ ImapConnection Functions
        }
     }
 
-* **removeDeleted**(Function) - _(void)_ - Permanently removes all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **removeDeleted**(Function) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with one parameter: the error (null if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
-* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ ['UNSEEN'], ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', ['UNSEEN'], ['SINCE', 'April 20, 2010'] ] ].
+* **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with two parameters: the error (null if none) and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ].
     * The following message flags are valid criterion and do not require values:
         * 'ANSWERED' - Messages with the Answered flag set.
         * 'DELETED' - Messages with the Deleted flag set.
@@ -318,29 +323,31 @@ ImapConnection Functions
         * 'SENTBEFORE' - Messages whose Date header (disregarding time and timezone) is earlier than the specified date.
         * 'SENTON' - Messages whose Date header (disregarding time and timezone) is within the specified date.
         * 'SENTSINCE' - Messages whose Date header (disregarding time and timezone) is within or later than the specified date.
-    * The following are valid criterion that require an Integer value:
+    * The following are valid criterion that require one Integer value:
         * 'LARGER' - Messages with a size larger than the specified number of bytes.
         * 'SMALLER' - Messages with a size smaller than the specified number of bytes.
+    * The following are valid criterion that require one or more Integer values:
+        * 'UID' - Messages with message IDs corresponding to the specified message ID set. Ranges are permitted (e.g. '2504:2507' or '*' or '2504:*').
     * **Note:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example above).
 
-* **fetch**(Integer, Object, Function) - _(void)_ - Fetches the message with the message ID specified by the Integer parameter in the currently open mailbox. The Function parameter is the callback with three parameters: the error (null if none), the _Box_ object of the currently open mailbox, and the _FetchResult_ containing the result of the fetch request. The Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
-    * **markSeen** - A Boolean indicating whether to mark the message as read when fetching it. **Default:** false
+* **fetch**(Integer/String/Array, Object, Function) - _(void)_ - Fetches the message(s) identified by the first parameter, in the currently open mailbox. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with two parameters: the error (null if none) and an Array of _FetchResult_ Objects containing the results of the fetch request. An Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
+    * **markSeen** - A Boolean indicating whether to mark the message(s) as read when fetching it. **Default:** false
     * **request** - An Object indicating what to fetch (at least **headers** OR **body** must be set to false -- in other words, you can only fetch one aspect of the message at a time):
         * **struct** - A Boolean indicating whether to fetch the structure of the message. **Default:** true
         * **headers** - A Boolean/Array value. A value of true fetches all message headers. An Array containing specific message headers to retrieve can also be specified. **Default:** true
         * **body** - A Boolean/String/Array value. A Boolean value of true fetches the entire raw message body. A String value containing a valid partID (see _FetchResult_'s structure property) fetches the entire body/content of that particular part. An Array value of length 2 can be specified if you wish to request a byte range of the content, where the first item is a Boolean/String as previously described and the second item is a String indicating the byte range, for example, to fetch the first 500 bytes: '0-500'. **Default:** false
 
-* **copy**(Integer, String, Function) - _(void)_ - Copies the message with the message ID specified by the Integer parameter in the currently open mailbox to the mailbox specified by the String parameter. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **copy**(Integer/String/Array, String, Function) - _(void)_ - Copies the message(s) with the message ID(s) identified by the first parameter, in the currently open mailbox, to the mailbox specified by the second parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **move**(Integer, String, Function) - _(void)_ - Copies the message with the message ID specified by the Integer parameter in the currently open mailbox to the mailbox specified by the String parameter and marks the message in the current mailbox as Deleted. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **move**(Integer/String/Array, String, Function) - _(void)_ - Moves the message(s) with the message ID(s) identified by the first parameter, in the currently open mailbox, to the mailbox specified by the second parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with one parameter: the error (null if none). **Note:** The message in the destination mailbox will have a new message ID.
 
-* **addFlags**(Integer, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **addFlags**(Integer/String/Array, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **delFlags**(Integer, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message identified by the Integer parameter. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **delFlags**(Integer/String/Array, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **addKeywords**(Integer, String/Array, Function) - _(void)_ - Adds the specified keyword(s) to the message identified by the Integer parameter. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **addKeywords**(Integer/String/Array, String/Array, Function) - _(void)_ - Adds the specified keyword(s) to the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with one parameter: the error (null if none).
 
-* **delKeywords**(Integer, String/Array, Function) - _(void)_ - Removes the specified keyword(s) from the message identified by the Integer parameter. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with two parameters: the error (null if none), the _Box_ object of the currently open mailbox.
+* **delKeywords**(Integer/String/Array, String/Array, Function) - _(void)_ - Removes the specified keyword(s) from the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with one parameter: the error (null if none).
 
 
 TODO
@@ -353,7 +360,6 @@ A bunch of things not yet implemented in no particular order:
   * STATUS addition to LIST (via LISTA-STATUS extension -- http://tools.ietf.org/html/rfc5819)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
-  * LIST (and XLIST via XLIST extension -- http://groups.google.com/group/Gmail-Help-POP-and-IMAP-en/browse_thread/thread/a154105c54f020fb)
   * SORT (via SORT extension -- http://tools.ietf.org/html/rfc5256)
   * THREAD (via THREAD=ORDEREDSUBJECT and/or THREAD=REFERENCES extension(s) -- http://tools.ietf.org/html/rfc5256)
   * ID (via ID extension -- http://tools.ietf.org/html/rfc2971) ?
