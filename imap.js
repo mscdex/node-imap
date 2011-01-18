@@ -1,5 +1,5 @@
 var sys = require('sys'), net = require('net'), EventEmitter = require('events').EventEmitter;
-var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn/*sys.debug*/, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
+var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -12,7 +12,8 @@ function ImapConnection (options) {
     host: 'localhost',
     port: 143,
     secure: false,
-    connTimeout: 10000 // connection timeout in msecs
+    connTimeout: 10000, // connection timeout in msecs
+    debug: false
   };
   this._state = {
     status: STATES.NOCONNECT,
@@ -32,6 +33,8 @@ function ImapConnection (options) {
   };
   this._options = extend(true, this._options, options);
 
+  if (typeof this._options.debug === 'function')
+    debug = this._options.debug;
   this.delim = null;
   this.namespaces = { personal: [], other: [], shared: [] };
 };
@@ -88,7 +91,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     fnInit();
   });
   this._state.conn.on('data', function(data) {
-    var literalData = '';
+    var literalData = '', trailingCRLF = false;
     debug('RECEIVED: ' + data);
 
     if (data.indexOf(CRLF) === -1) {
@@ -96,8 +99,11 @@ ImapConnection.prototype.connect = function(loginCb) {
         self._state.curData += data;
       else
         self._state.curData = data;
-      return;
+
+      if (self._state.curData.indexOf(CRLF) === -1)
+        return;
     }
+
     if (self._state.curData)
       data = self._state.curData + data;
     self._state.curData = undefined;
@@ -122,12 +128,21 @@ ImapConnection.prototype.connect = function(loginCb) {
       }
     }
 
+    if (data.test(/\r\n$/))
+      trailingCRLF = true;
+
     data = data.split(CRLF).filter(isNotEmpty);
 
     // Defer any extra server responses found in the incoming data
     if (data.length > 1) {
+
       data.slice(1).forEach(function(line) {
-        process.nextTick(function() { self._state.conn.emit('data', line + CRLF); });
+        process.nextTick(function() {
+          if (trailingCRLF)
+            self._state.conn.emit('data', line + CRLF);
+          else
+            self._state.conn.emit('data', line);
+        });
       });
     }
 
@@ -160,6 +175,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         case 'FLAGS':
           if (self._state.status === STATES.BOXSELECTING)
             self._state.box._flags = data[2].substr(1, data[2].length-2).split(' ').map(function(flag) {return flag.substr(1);});;
+        break;
         case 'OK':
           if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])) !== null)
             self.emit('alert', result[1]);
@@ -257,7 +273,9 @@ ImapConnection.prototype.connect = function(loginCb) {
       clearTimeout(self._state.tmrKeepalive);
       self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
-      if (self._state.status === STATES.BOXSELECTING) {
+      if (data[2] === 'NOOP completed.')
+        return;
+      else if (self._state.status === STATES.BOXSELECTING) {
         if (data[1] === 'OK') {
           sendBox = true;
           self._state.status = STATES.BOXSELECTED;
@@ -885,7 +903,7 @@ function parseFetch(str, literalData, fetchData) {
         default:
           var result = /^BODY\[(.*)\](?:\<[\d]+\>)?$/.exec(key);
           idxNext = str.indexOf("}")+1;
-          if (result[1].indexOf('HEADER') === 0) { // either full or selective headers
+          if (result && result[1].indexOf('HEADER') === 0) { // either full or selective headers
             var headers = literalData.split(/\r\n(?=[\w])/), header;
             fetchData.headers = {};
             for (var i=0,len=headers.length; i<len; i++) {

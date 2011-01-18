@@ -191,7 +191,7 @@ ImapConnection Properties
 
 * **delim** - A String containing the (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be Boolean false.
 
-* **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information for each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
+* **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information about each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
 
     { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
       , delimiter: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
@@ -357,7 +357,7 @@ A bunch of things not yet implemented in no particular order:
 
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * Support additional IMAP commands/extensions:
-  * STATUS addition to LIST (via LISTA-STATUS extension -- http://tools.ietf.org/html/rfc5819)
+  * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
   * SORT (via SORT extension -- http://tools.ietf.org/html/rfc5256)
