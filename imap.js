@@ -28,6 +28,7 @@ function ImapConnection (options) {
     tmrConn: null,
     curData: '',
     curExpected: 0,
+    curXferred: 0,
     capabilities: [],
     box: { _uidnext: 0, _flags: [], _newKeywords: false, validity: 0, keywords: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
   };
@@ -91,57 +92,96 @@ ImapConnection.prototype.connect = function(loginCb) {
     fnInit();
   });
   this._state.conn.on('data', function(data) {
-    var literalData = '', trailingCRLF = false;
-    debug('RECEIVED: ' + data);
+    var trailingCRLF = false, literalInfo, bypass = false;
+    debug('<<RECEIVED>>: ' + sys.inspect(data));
 
-    if (data.indexOf(CRLF) === -1) {
-      if (self._state.curData)
+    if (self._state.curExpected === 0) {
+      if (data.indexOf(CRLF) === -1) {
         self._state.curData += data;
-      else
-        self._state.curData = data;
-
-      if (self._state.curData.indexOf(CRLF) === -1)
         return;
+      }
+      if (self._state.curData.length) {
+        data = self._state.curData + data;
+        self._state.curData = '';
+      }
     }
-
-    if (self._state.curData)
-      data = self._state.curData + data;
-    self._state.curData = undefined;
 
     // Don't mess with incoming data if it's part of a literal
-    var literalInfo;
-    if (self._state.curExpected === 0 && (literalInfo = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF)))))
-      self._state.curExpected = parseInt(literalInfo[1]);
     if (self._state.curExpected > 0) {
-      if (data.length - (data.indexOf(CRLF)+2) <= self._state.curExpected) {
-        self._state.curData = data;
+      var extra = '', curReq = self._state.requests[0];
+      if (!curReq._done) {
+        self._state.curXferred += data.length;
+        if (self._state.curXferred <= self._state.curExpected) {
+          if (curReq._msgtype === 'headers')
+            // buffer headers since they're generally not large and need to be
+            // processed anyway
+            self._state.curData += data;
+          else
+            curReq._msg.emit('data', data);
+          return;
+        }
+        var pos = data.length-(self._state.curXferred-self._state.curExpected);
+        extra = data.substr(pos);
+        if (pos > 0) {
+          if (curReq._msgtype === 'headers') {
+            self._state.curData += data.substr(0, pos);
+            curReq._msgheaders = self._state.curData;
+          } else
+            curReq._msg.emit('data', data.substr(0, pos));
+        }
+        self._state.curData = '';
+        data = extra;
+        curReq._done = true;
+      }
+      // make sure we have at least ")\r\n" in the post-literal data
+      if (data.indexOf(CRLF) === -1) {
+        self._state.curData += data;
         return;
       }
-      literalData = data.substr(data.indexOf(CRLF) + 2, self._state.curExpected);
-      data = data.substr(0, data.indexOf(CRLF)) + data.substr(data.indexOf(CRLF) + 2 + self._state.curExpected);
+      if (self._state.curData.length)
+        data = self._state.curData + data;
+      // add any additional k/v pairs that appear after the literal data
+      var fetchdesc = curReq._fetchdesc + data.substring(0, data.indexOf(CRLF)-1).trim();
+      parseFetch(fetchdesc, curReq._msgheaders, curReq._msg);
+      data = data.substr(data.indexOf(CRLF)+2);
       self._state.curExpected = 0;
-      if (data.substr(data.indexOf(CRLF)+2, 1) === '*') {
-        // found additional responses, so don't try splitting the proceeding response(s) for better performance in case they have literals too
-        var extra = data.substr(data.indexOf(CRLF)+2);
-        process.nextTick(function() { self._state.conn.emit('data', extra); });
-        data = data.substring(0, data.indexOf(CRLF));
+      self._state.curXferred = 0;
+      self._state.curData = '';
+      curReq._done = false;
+      curReq._msg.emit('end');
+      if (data[0] === '*') {
+        // found additional responses, so don't try splitting the proceeding
+        // response(s) for better performance in case they have literals too
+        process.nextTick(function() { self._state.conn.emit('data', data); });
+        return;
       }
+    } else if (self._state.curExpected === 0
+               && (literalInfo = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF))))) {
+      self._state.curExpected = parseInt(literalInfo[1]);
+      var curReq = self._state.requests[0];
+      //if (/^UID FETCH/.test(curReq.command)) {
+        var type = /BODY\[(.*)\](?:\<[\d]+\>)?/.exec(data.substr(0, data.indexOf(CRLF))),
+            msg = new ImapMessage();
+        type = type[1];
+        parseFetch(data.substring(data.indexOf("(")+1, data.indexOf(CRLF)), "", msg);
+        curReq._fetchdesc = data.substring(data.indexOf("(")+1, data.indexOf(CRLF));
+        curReq._msg = msg;
+        curReq._fetcher.emit('message', msg);
+        curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
+        self._state.conn.emit('data', data.substr(data.indexOf(CRLF)+2));
+      //}
+      return;
     }
 
-    if (data.test(/\r\n$/))
-      trailingCRLF = true;
-
+    if (data.length === 0)
+      return;
     data = data.split(CRLF).filter(isNotEmpty);
 
     // Defer any extra server responses found in the incoming data
     if (data.length > 1) {
-
       data.slice(1).forEach(function(line) {
         process.nextTick(function() {
-          if (trailingCRLF)
-            self._state.conn.emit('data', line + CRLF);
-          else
-            self._state.conn.emit('data', line);
+          self._state.conn.emit('data', line + CRLF);
         });
       });
     }
@@ -254,17 +294,6 @@ ImapConnection.prototype.connect = function(loginCb) {
                 if (self._state.box.messages.total > 0)
                   self._state.box.messages.total--;
               break;
-              default:
-                // Check for FETCH result
-                if (/^FETCH /i.test(data[2]) && self._state.requests[0].command.indexOf('UID FETCH') === 0) {
-                  var idxResult;
-                  if (self._state.requests[0].args.length === 0)
-                    self._state.requests[0].args.push([]);
-                  self._state.requests[0].args[0].push({ id: null, flags: [], date: null, headers: null, body: null, structure: null });
-                  idxResult = self._state.requests[0].args[0].length-1;
-                  parseFetch(data[2].substring(7, data[2].length-1), literalData, self._state.requests[0].args[0][idxResult]);
-                }
-              break;
             }
           }
       }
@@ -273,9 +302,7 @@ ImapConnection.prototype.connect = function(loginCb) {
       clearTimeout(self._state.tmrKeepalive);
       self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
-      if (data[2] === 'NOOP completed.')
-        return;
-      else if (self._state.status === STATES.BOXSELECTING) {
+      if (self._state.status === STATES.BOXSELECTING) {
         if (data[1] === 'OK') {
           sendBox = true;
           self._state.status = STATES.BOXSELECTED;
@@ -308,7 +335,8 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
         args.unshift(err);
         self._state.requests[0].callback.apply({}, args);
-      }
+      } else if (self._state.requests[0].command.indexOf("UID FETCH") === 0)
+        self._state.requests[0]._fetcher.emit('end');
 
       self._state.requests.shift();
       process.nextTick(function() { self._send(); });
@@ -423,7 +451,7 @@ ImapConnection.prototype.search = function(options, cb) {
   this._send('UID SEARCH' + buildSearchQuery(options), cb);
 };
 
-ImapConnection.prototype.fetch = function(uids, options, cb) {
+ImapConnection.prototype.fetch = function(uids, options) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
   if (!Array.isArray(uids))
@@ -441,7 +469,6 @@ ImapConnection.prototype.fetch = function(uids, options, cb) {
       body: false   //  /
     }
   }, toFetch, bodyRange = '';
-  cb = arguments[arguments.length-1];
   if (typeof options !== 'object')
     options = {};
   options = extend(true, defaults, options);
@@ -471,8 +498,12 @@ ImapConnection.prototype.fetch = function(uids, options, cb) {
     toFetch = 'HEADER.FIELDS (' + options.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
 
   this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
-            + (options.request.struct ? ' BODYSTRUCTURE' : '')
-            + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '') + '[' + toFetch + ']' + bodyRange : '') + ')', cb);
+             + (options.request.struct ? ' BODYSTRUCTURE' : '')
+             + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '')
+             + '[' + toFetch + ']' + bodyRange : '') + ')');
+  var imapFetcher = new ImapFetch();
+  this._state.requests[this._state.requests.length-1]._fetcher = imapFetcher;
+  return imapFetcher;
 };
 
 ImapConnection.prototype.addFlags = function(uids, flags, cb) {
@@ -657,7 +688,7 @@ ImapConnection.prototype._idleCheck = function() {
 };
 ImapConnection.prototype._noop = function() {
   if (this._state.status >= STATES.AUTH)
-    this._send('NOOP', undefined, true);
+    this._send('NOOP', undefined);
 };
 ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
   if (arguments.length > 0 && !bypass)
@@ -667,9 +698,14 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     this._state.isIdle = false;
     var cmd = (bypass ? cmdstr : this._state.requests[0].command);
     this._state.conn.write('A' + ++this._state.curId + ' ' + cmd + CRLF);
-    debug('SENT: A' + this._state.curId + ' ' + cmd);
+    debug('<<SENT>>: A' + this._state.curId + ' ' + cmd);
   }
 };
+
+function ImapMessage() {}
+sys.inherits(ImapMessage, EventEmitter);
+function ImapFetch() {}
+sys.inherits(ImapFetch, EventEmitter);
 
 /****** Utility Functions ******/
 
@@ -878,7 +914,10 @@ function parseFetch(str, literalData, fetchData) {
   // and {xxxx} is the byte count for the literalData describing the preceding item (almost always "BODY")
   var key, idxNext;
   while (str.length > 0) {
-    key = (str.substr(0, 5) === 'BODY[' ? str.substring(0, (str.indexOf('>') > -1 ? str.indexOf('>') : str.indexOf(']'))+1) : str.substring(0, str.indexOf(' ')));
+    key = (str.substr(0, 5) === 'BODY[' ?
+             str.substring(0,
+              (str.indexOf('>') > -1 ? str.indexOf('>') : str.indexOf(']'))+1)
+           : str.substring(0, str.indexOf(' ')));
     str = str.substring(str.indexOf(' ')+1);
     if (str.substr(0, 3) === 'NIL')
       idxNext = 3;
@@ -912,8 +951,7 @@ function parseFetch(str, literalData, fetchData) {
                 fetchData.headers[header] = [];
               fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(': ')+2).replace(/\r\n/g, '').trim());
             }
-          } else // full message or part body
-            fetchData.body = literalData;
+          }
       }
     }
     str = str.substr(idxNext).trim();

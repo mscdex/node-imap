@@ -43,8 +43,22 @@ This example fetches the 'date', 'from', 'to', 'subject' message headers and the
       function() { imap.connect(cb); },
       function() { imap.openBox('INBOX', false, cb); },
       function(result) { box = result; imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], cb); },
-      function(results) { imap.fetch(results, { request: { headers: ['from', 'to', 'subject', 'date'] } }, cb); },
-      function(results) { console.log(sys.inspect(results, false, 6)); imap.logout(cb); }
+      function(results) {
+        var fetch = imap.fetch(results, { request: { headers: ['from', 'to', 'subject', 'date'] } });
+        fetch.on('message', function(msg) {
+          console.log('Got message: ' + sys.inspect(msg, false, 5));
+          msg.on('data', function(chunk) {
+            console.log('Got message chunk of size ' + chunk.length);
+          });
+          msg.on('end', function() {
+            console.log('Finished message: ' + sys.inspect(msg, false, 5));
+          });
+        });
+        fetch.on('end', function() {
+          console.log('Done fetching all messages!');
+          imap.logout(cb);
+        });
+      }
     ];
     cb();
 
@@ -64,15 +78,22 @@ node-imap exposes one object: **ImapConnection**.
     * **messages** - An Object containing properties about message counts for this mailbox.
         * **total** - An Integer representing total number of messages in this mailbox.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
-* _FetchResult_ is an Object representing the result of a message fetch, and has the following properties:
-    * **id** - An Integer that uniquely identifies this message (within its mailbox).
-    * **flags** - An Array containing the flags currently set on this message.
-    * **date** - A String containing the internal server date for the message (always represented in GMT?)
-    * **headers** - An Object containing the headers of the message, **if headers were requested when calling fetch().** Note: The value of each property in the object is an Array containing the value(s) for that particular header name (in case of duplicate headers).
-    * **body** - A String containing the text of the entire or a portion of the message, **if a body was requested when calling fetch().**
-    * **structure** - An Array containing the structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
+* _ImapMessage_ is an Object representing an email message. It consists of:
+    * Properties:
+        * **id** - An Integer that uniquely identifies this message (within its mailbox).
+        * **flags** - An Array containing the flags currently set on this message.
+        * **date** - A String containing the internal server date for the message (always represented in GMT?)
+        * **headers** - An Object containing the headers of the message, **if headers were requested when calling fetch().** Note: The value of each property in the object is an Array containing the value(s) for that particular header name (just in case there are duplicate headers).
+        * **structure** - An Array containing the structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
+    * Events:
+        * **data**(String) - Emitted for each message body chunk if a message body is being fetched
+        * **end** - Emitted when the fetch is complete for this message and its properties
+* _ImapFetch_ is an Object that emits these events:
+    * **message**(ImapMessage) - Emitted for each message resulting from a fetch request
+    * **end** - Emitted when the fetch request is complete
 
 A message structure with multiple parts might look something like the following:
+
     [ { type: 'mixed'
       , params: { boundary: '000e0cd294e80dc84c0475bf339d' }
       , disposition: null
@@ -142,6 +163,7 @@ The above structure describes a message having both an attachment and two forms 
 Each message part is identified by a partID which is used when you want to fetch the content of that part (**see fetch()**).
 
 The structure of a message with only one part will simply look something like this:
+
     [ { partID: '1'
         , type:
            { name: 'text/plain'
@@ -330,7 +352,7 @@ ImapConnection Functions
         * 'UID' - Messages with message IDs corresponding to the specified message ID set. Ranges are permitted (e.g. '2504:2507' or '*' or '2504:*').
     * **Note:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example above).
 
-* **fetch**(Integer/String/Array, Object, Function) - _(void)_ - Fetches the message(s) identified by the first parameter, in the currently open mailbox. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with two parameters: the error (null if none) and an Array of _FetchResult_ Objects containing the results of the fetch request. An Object parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
+* **fetch**(Integer/String/Array, Object) - _ImapFetch_ - Fetches the message(s) identified by the first parameter, in the currently open mailbox. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second (Object) parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
     * **markSeen** - A Boolean indicating whether to mark the message(s) as read when fetching it. **Default:** false
     * **request** - An Object indicating what to fetch (at least **headers** OR **body** must be set to false -- in other words, you can only fetch one aspect of the message at a time):
         * **struct** - A Boolean indicating whether to fetch the structure of the message. **Default:** true
