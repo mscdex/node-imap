@@ -10,7 +10,7 @@ If you are in need of this kind of extra functionality, check out andris9's [mim
 Requirements
 ============
 
-* [node.js](http://nodejs.org/) -- tested with v0.2.4
+* [node.js](http://nodejs.org/) -- v0.4.0 or newer
 * An IMAP server -- tested with gmail
 
 
@@ -19,7 +19,7 @@ Example
 
 This example fetches the 'date', 'from', 'to', 'subject' message headers and the message structure of all unread messages in the Inbox since May 20, 2010:
 
-    var ImapConnection = require('./imap').ImapConnection, sys = require('sys'),
+    var ImapConnection = require('./imap').ImapConnection, util = require('util'),
         imap = new ImapConnection({
           username: 'mygmailname@gmail.com',
           password: 'mygmailpassword',
@@ -46,12 +46,12 @@ This example fetches the 'date', 'from', 'to', 'subject' message headers and the
       function(results) {
         var fetch = imap.fetch(results, { request: { headers: ['from', 'to', 'subject', 'date'] } });
         fetch.on('message', function(msg) {
-          console.log('Got message: ' + sys.inspect(msg, false, 5));
+          console.log('Got message: ' + util.inspect(msg, false, 5));
           msg.on('data', function(chunk) {
             console.log('Got message chunk of size ' + chunk.length);
           });
           msg.on('end', function() {
-            console.log('Finished message: ' + sys.inspect(msg, false, 5));
+            console.log('Finished message: ' + util.inspect(msg, false, 5));
           });
         });
         fetch.on('end', function() {

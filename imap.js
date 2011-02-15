@@ -1,5 +1,13 @@
-var sys = require('sys'), net = require('net'), EventEmitter = require('events').EventEmitter;
-var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn, STATES = { NOCONNECT: 0, NOAUTH: 1, AUTH: 2, BOXSELECTING: 3, BOXSELECTED: 4 }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
+var util = require('util'), net = require('net'),
+    tls = require('tls'), EventEmitter = require('events').EventEmitter;
+var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn,
+    STATES = {
+      NOCONNECT: 0,
+      NOAUTH: 1,
+      AUTH: 2,
+      BOXSELECTING: 3,
+      BOXSELECTED: 4
+    }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -30,7 +38,16 @@ function ImapConnection (options) {
     curExpected: 0,
     curXferred: 0,
     capabilities: [],
-    box: { _uidnext: 0, _flags: [], _newKeywords: false, validity: 0, keywords: [], permFlags: [], name: null, messages: { total: 0, new: 0 }}
+    box: {
+      _uidnext: 0,
+      _flags: [],
+      _newKeywords: false,
+      validity: 0,
+      keywords: [],
+      permFlags: [],
+      name: null,
+      messages: { total: 0, new: 0 }
+    }
   };
   this._options = extend(true, this._options, options);
 
@@ -39,7 +56,7 @@ function ImapConnection (options) {
   this.delim = null;
   this.namespaces = { personal: [], other: [], shared: [] };
 };
-sys.inherits(ImapConnection, EventEmitter);
+util.inherits(ImapConnection, EventEmitter);
 exports.ImapConnection = ImapConnection;
 
 ImapConnection.prototype.connect = function(loginCb) {
@@ -70,30 +87,33 @@ ImapConnection.prototype.connect = function(loginCb) {
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
 
+  this._state.tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
+  this._state.conn.setKeepAlive(true);
+
   if (this._options.secure) {
-    this._state.conn.setSecure();
+    // TODO: support STARTTLS
+    this._state.conn.cleartext = this._state.conn.setSecure();
     this._state.conn.on('secure', function() {
       debug('Secure connection made.');
     });
+    this._state.conn.cleartext.setEncoding('utf8');
+  } else {
+    this._state.conn.setEncoding('utf8');
+    this._state.conn.cleartext = this._state.conn;
   }
-
-  this._state.tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
-
-  this._state.conn.setKeepAlive(true);
-  this._state.conn.setEncoding('utf8');
 
   this._state.conn.on('connect', function() {
     clearTimeout(self._state.tmrConn);
     debug('Connected to host.');
-    self._state.conn.write('');
+    self._state.conn.cleartext.write('');
     self._state.status = STATES.NOAUTH;
   });
   this._state.conn.on('ready', function() {
     fnInit();
   });
-  this._state.conn.on('data', function(data) {
+  this._state.conn.cleartext.on('data', function(data) {
     var trailingCRLF = false, literalInfo, bypass = false;
-    debug('<<RECEIVED>>: ' + sys.inspect(data));
+    debug('<<RECEIVED>>: ' + util.inspect(data));
 
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
@@ -152,7 +172,7 @@ ImapConnection.prototype.connect = function(loginCb) {
       if (data[0] === '*') {
         // found additional responses, so don't try splitting the proceeding
         // response(s) for better performance in case they have literals too
-        process.nextTick(function() { self._state.conn.emit('data', data); });
+        process.nextTick(function() { self._state.conn.cleartext.emit('data', data); });
         return;
       }
     } else if (self._state.curExpected === 0
@@ -168,7 +188,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         curReq._msg = msg;
         curReq._fetcher.emit('message', msg);
         curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
-        self._state.conn.emit('data', data.substr(data.indexOf(CRLF)+2));
+        self._state.conn.cleartext.emit('data', data.substr(data.indexOf(CRLF)+2));
       //}
       return;
     }
@@ -181,7 +201,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     if (data.length > 1) {
       data.slice(1).forEach(function(line) {
         process.nextTick(function() {
-          self._state.conn.emit('data', line + CRLF);
+          self._state.conn.cleartext.emit('data', line + CRLF);
         });
       });
     }
@@ -697,15 +717,15 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     clearTimeout(this._state.tmrKeepalive);
     this._state.isIdle = false;
     var cmd = (bypass ? cmdstr : this._state.requests[0].command);
-    this._state.conn.write('A' + ++this._state.curId + ' ' + cmd + CRLF);
+    this._state.conn.cleartext.write('A' + ++this._state.curId + ' ' + cmd + CRLF);
     debug('<<SENT>>: A' + this._state.curId + ' ' + cmd);
   }
 };
 
 function ImapMessage() {}
-sys.inherits(ImapMessage, EventEmitter);
+util.inherits(ImapMessage, EventEmitter);
 function ImapFetch() {}
-sys.inherits(ImapFetch, EventEmitter);
+util.inherits(ImapFetch, EventEmitter);
 
 /****** Utility Functions ******/
 
@@ -1355,3 +1375,40 @@ function extend() {
   // Return the modified object
   return target;
 };
+
+net.Stream.prototype.setSecure = function() {
+  var pair = tls.createSecurePair();
+  var cleartext = pipe(pair, this);
+
+  pair.on('secure', function() {
+    process.nextTick(function() { cleartext.socket.emit('secure'); });
+  });
+
+  cleartext._controlReleased = true;
+  return cleartext;
+};
+
+function pipe(pair, socket) {
+  pair.encrypted.pipe(socket);
+  socket.pipe(pair.encrypted);
+
+  pair.fd = socket.fd;
+  var cleartext = pair.cleartext;
+  cleartext.socket = socket;
+  cleartext.encrypted = pair.encrypted;
+
+  function onerror(e) {
+    if (cleartext._controlReleased)
+      cleartext.socket.emit('error', e);
+  }
+
+  function onclose() {
+    socket.removeListener('error', onerror);
+    socket.removeListener('close', onclose);
+  }
+
+  socket.on('error', onerror);
+  socket.on('close', onclose);
+
+  return cleartext;
+}
