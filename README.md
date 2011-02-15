@@ -377,6 +377,7 @@ TODO
 
 A bunch of things not yet implemented in no particular order:
 
+* Support STARTTLS
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * Support additional IMAP commands/extensions:
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
