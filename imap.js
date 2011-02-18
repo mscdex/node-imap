@@ -402,9 +402,14 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
     throw new Error('Not connected or authenticated');
   if (this._state.status === STATES.BOXSELECTED)
     this._resetBox();
-  if (typeof readOnly !== 'boolean')
+  if (typeof cb === 'undefined') {
+    if(typeof readOnly === 'undefined') {
+      cb = function(){};
+    } else {
+      cb = readOnly;
+    }
     readOnly = false;
-  cb = arguments[arguments.length-1];
+  }
   this._state.status = STATES.BOXSELECTING;
   this._state.box.name = name;
 
