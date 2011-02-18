@@ -289,6 +289,8 @@ ImapConnection.prototype.connect = function(loginCb) {
               var path = name.split(box.delim).filter(isNotEmpty), parent = null;
               name = path.pop();
               for (var i=0,len=path.length; i<len; i++) {
+                if (!curChildren[path[i]])
+                  curChildren[path[i]] = {};
                 if (!curChildren[path[i]].children)
                   curChildren[path[i]].children = {};
                 parent = curChildren[path[i]];
