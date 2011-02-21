@@ -404,7 +404,7 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
     this._resetBox();
   if (typeof cb === 'undefined') {
     if(typeof readOnly === 'undefined') {
-      cb = function(){};
+      cb = emptyFn;
     } else {
       cb = readOnly;
     }
