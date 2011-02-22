@@ -305,12 +305,16 @@ ImapConnection.prototype.connect = function(loginCb) {
           if (/^\d+$/.test(data[1])) {
             switch (data[2]) {
               case 'EXISTS': // mailbox total message count
-                self._state.box.messages.total = parseInt(data[1]);
+                var prev = self._state.box.messages.total,
+                    now = parseInt(data[1]);
+                self._state.box.messages.total = now;
+                if (self._state.status !== STATES.BOXSELECTING && now > prev) {
+                  self._state.box.messages.new = now-prev;
+                  self.emit('mail', self._state.box.messages.new); // new mail notification
+                }
               break;
               case 'RECENT': // messages marked with the \Recent flag (i.e. new messages)
                 self._state.box.messages.new = parseInt(data[1]);
-                if (self._state.status !== STATES.BOXSELECTING)
-                  self.emit('mail', self._state.box.messages.new); // new mail notification
               break;
               case 'EXPUNGE': // confirms permanent deletion of a single message
                 if (self._state.box.messages.total > 0)
