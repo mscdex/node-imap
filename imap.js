@@ -130,24 +130,24 @@ ImapConnection.prototype.connect = function(loginCb) {
     if (self._state.curExpected > 0) {
       var extra = '', curReq = self._state.requests[0];
       if (!curReq._done) {
-        self._state.curXferred += data.length;
+        self._state.curXferred += Buffer.byteLength(data, 'utf8');
         if (self._state.curXferred <= self._state.curExpected) {
           if (curReq._msgtype === 'headers')
-            // buffer headers since they're generally not large and need to be
+            // buffer headers since they're generally not large and are
             // processed anyway
             self._state.curData += data;
           else
             curReq._msg.emit('data', data);
           return;
         }
-        var pos = data.length-(self._state.curXferred-self._state.curExpected);
-        extra = data.substr(pos);
+        var pos = Buffer.byteLength(data, 'utf8')-(self._state.curXferred-self._state.curExpected);
+        extra = (new Buffer(data)).slice(pos).toString('utf8');
         if (pos > 0) {
           if (curReq._msgtype === 'headers') {
-            self._state.curData += data.substr(0, pos);
+            self._state.curData += (new Buffer(data)).slice(0, pos).toString('utf8');
             curReq._msgheaders = self._state.curData;
           } else
-            curReq._msg.emit('data', data.substr(0, pos));
+            curReq._msg.emit('data', (new Buffer(data)).slice(0, pos).toString('utf8'));
         }
         self._state.curData = '';
         data = extra;
@@ -319,6 +319,15 @@ ImapConnection.prototype.connect = function(loginCb) {
               case 'EXPUNGE': // confirms permanent deletion of a single message
                 if (self._state.box.messages.total > 0)
                   self._state.box.messages.total--;
+              break;
+              default:
+                if (/^FETCH/.test(data[2])) { // fetches without header or body (part) retrievals
+                  var curReq = self._state.requests[0],
+                      msg = new ImapMessage();
+                  parseFetch(data[2].substring(data[2].indexOf("(")+1, data[2].lastIndexOf(")")), "", msg);
+                  curReq._fetcher.emit('message', msg);
+                  msg.emit('end');
+                }
               break;
             }
           }
