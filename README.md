@@ -215,14 +215,14 @@ ImapConnection Properties
 
 * **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information about each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
 
-    { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
-      , delimiter: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
-      , extensions: [ // An Array of namespace extensions supported by this namespace, or null if none are specified
-          { name: 'X-FOO-BAR' // A String indicating the extension name
-            , params: [ 'BAZ' ] // An Array of Strings containing the parameters for this extension, or null if none are specified
-          }
-      ]
-    }
+        { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
+        , delimiter: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
+        , extensions: [ // An Array of namespace extensions supported by this namespace, or null if none are specified
+              { name: 'X-FOO-BAR' // A String indicating the extension name
+              , params: [ 'BAZ' ] // An Array of Strings containing the parameters for this extension, or null if none are specified
+              }
+          ]
+        }
 
 
 ImapConnection Functions
@@ -254,62 +254,62 @@ ImapConnection Functions
 
 * **getBoxes**([String, ]Function) - _(void)_ - Obtains the full list of mailboxes. The optional String parameter is the namespace prefix to use (defaults to the main personal namespace). The Function parameter is the callback with two parameters: the error (null if none), and an Object with the following format (with example values):
 
-    { INBOX: // mailbox name
-       { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot be opened
-       , delim: '/' // hierarchy delimiter for accessing this mailbox's direct children. This should usually be the same as ImapConnection.delim (?)
-       , children: null // an Object containing another structure similar in format to this top level, null if no children
-       , parent: null // pointer to parent mailbox, null if at the top level
-       }
-    , Work:
-       { attribs: []
-       , delim: '/'
-       , children: null
-       , parent: null
-       }
-    , '[Gmail]':
-       { attribs: [ 'NOSELECT' ]
-       , delim: '/'
-       , children:
-          { 'All Mail':
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          , Drafts:
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          , 'Sent Mail':
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          , Spam:
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          , Starred:
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          , Trash:
-             { attribs: []
-             , delim: '/'
-             , children: null
-             , parent: [Circular]
-             }
-          }
-       , parent: null
-       }
-    }
+        { INBOX: // mailbox name
+           { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot be opened
+           , delim: '/' // hierarchy delimiter for accessing this mailbox's direct children. This should usually be the same as ImapConnection.delim (?)
+           , children: null // an Object containing another structure similar in format to this top level, null if no children
+           , parent: null // pointer to parent mailbox, null if at the top level
+           }
+        , Work:
+           { attribs: []
+           , delim: '/'
+           , children: null
+           , parent: null
+           }
+        , '[Gmail]':
+           { attribs: [ 'NOSELECT' ]
+           , delim: '/'
+           , children:
+              { 'All Mail':
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              , Drafts:
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              , 'Sent Mail':
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              , Spam:
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              , Starred:
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              , Trash:
+                 { attribs: []
+                 , delim: '/'
+                 , children: null
+                 , parent: [Circular]
+                 }
+              }
+           , parent: null
+           }
+        }
 
 * **removeDeleted**(Function) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with one parameter: the error (null if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
