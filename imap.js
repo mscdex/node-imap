@@ -132,12 +132,16 @@ ImapConnection.prototype.connect = function(loginCb) {
       if (!curReq._done) {
         self._state.curXferred += Buffer.byteLength(data, 'utf8');
         if (self._state.curXferred <= self._state.curExpected) {
-          if (curReq._msgtype === 'headers')
+          if (curReq._msgtype === 'headers'){
             // buffer headers since they're generally not large and are
             // processed anyway
             self._state.curData += data;
-          else
+            // emit the event anyway because we maybe want to delegate the
+            // mail parsing to another lib.
             curReq._msg.emit('data', data);
+          } else {
+            curReq._msg.emit('data', data);
+          }
           return;
         }
         var pos = Buffer.byteLength(data, 'utf8')-(self._state.curXferred-self._state.curExpected);
