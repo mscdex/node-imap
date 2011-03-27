@@ -346,32 +346,34 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._resetBox();
         }
       }
-
-      if (self._state.requests[0].command.indexOf('RENAME') > -1) {
-        self._state.box.name = self._state.box._newName;
-        delete self._state.box._newName;
-        sendBox = true;
-      }
-
-      if (typeof self._state.requests[0].callback === 'function') {
-        var err = null;
-        var args = self._state.requests[0].args, cmd = self._state.requests[0].command;
-        if (data[1] !== 'OK') {
-          err = new Error('Error while executing request: ' + data[2]);
-          err.type = data[1];
-          err.request = cmd;
-        } else if (self._state.status === STATES.BOXSELECTED) {
-          if (sendBox) // SELECT, EXAMINE, RENAME
-            args.unshift(self._state.box);
-          // According to RFC3501, UID commands do not give errors for non-existant user-supplied UIDs,
-          // so give the callback empty results if we unexpectedly received no untagged responses.
-          else if ((cmd.indexOf('UID FETCH') === 0 || cmd.indexOf('UID SEARCH') === 0) && args.length === 0)
-            args.unshift([]);
+      
+      if (self._state.requests.length > 0) {
+        if (self._state.requests[0].command.indexOf('RENAME') > -1) {
+          self._state.box.name = self._state.box._newName;
+          delete self._state.box._newName;
+          sendBox = true;
         }
-        args.unshift(err);
-        self._state.requests[0].callback.apply({}, args);
-      } else if (self._state.requests[0].command.indexOf("UID FETCH") === 0)
-        self._state.requests[0]._fetcher.emit('end');
+        
+        if (typeof self._state.requests[0].callback === 'function') {
+          var err = null;
+          var args = self._state.requests[0].args, cmd = self._state.requests[0].command;
+          if (data[1] !== 'OK') {
+            err = new Error('Error while executing request: ' + data[2]);
+            err.type = data[1];
+            err.request = cmd;
+          } else if (self._state.status === STATES.BOXSELECTED) {
+            if (sendBox) // SELECT, EXAMINE, RENAME
+              args.unshift(self._state.box);
+            // According to RFC3501, UID commands do not give errors for non-existant user-supplied UIDs,
+            // so give the callback empty results if we unexpectedly received no untagged responses.
+            else if ((cmd.indexOf('UID FETCH') === 0 || cmd.indexOf('UID SEARCH') === 0) && args.length === 0)
+              args.unshift([]);
+          }
+          args.unshift(err);
+          self._state.requests[0].callback.apply({}, args);
+        } else if (self._state.requests[0].command.indexOf("UID FETCH") === 0)
+          self._state.requests[0]._fetcher.emit('end');
+      }
 
       self._state.requests.shift();
       process.nextTick(function() { self._send(); });
