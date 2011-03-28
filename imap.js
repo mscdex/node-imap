@@ -47,6 +47,14 @@ function ImapConnection (options) {
       permFlags: [],
       name: null,
       messages: { total: 0, new: 0 }
+    },
+    ext: {
+      // Capability-specific state stuff
+      idle: {
+        MAX_WAIT: 1740000, // 29 mins in ms
+        sentIdle: false,
+        timeWaited: 0 // ms
+      }
     }
   };
   this._options = extend(true, this._options, options);
@@ -328,14 +336,12 @@ ImapConnection.prototype.connect = function(loginCb) {
                   curReq._fetcher.emit('message', msg);
                   msg.emit('end');
                 }
-              break;
             }
           }
       }
     } else if (data[0].indexOf('A') === 0) { // Tagged server response
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
-      self._state.tmrKeepalive = setTimeout(self._idleCheck.bind(self), self._state.tmoKeepalive);
 
       if (self._state.status === STATES.BOXSELECTING) {
         if (data[1] === 'OK') {
@@ -345,6 +351,25 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._state.status = STATES.AUTH;
           self._resetBox();
         }
+      }
+
+      if (self._state.requests.length === 1) {
+        if (self._state.status === STATES.BOXSELECTED &&
+            self._state.capabilities.indexOf('IDLE') > -1) {
+          // According to RFC 2177, we should re-IDLE at least every 29
+          // minutes to avoid disconnection by the server
+          self._send('IDLE', undefined, true);
+        }
+        self._state.tmrKeepalive = setTimeout(function() {
+          if (self._state.isIdle) {
+            if (self._state.ext.idle.sentIdle) {
+              self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
+              if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
+                self._send('IDLE', undefined, true); // restart IDLE
+            } else
+              self._noop();
+          }
+        }, self._state.tmoKeepalive);
       }
 
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
@@ -363,7 +388,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         } else if (self._state.status === STATES.BOXSELECTED) {
           if (sendBox) // SELECT, EXAMINE, RENAME
             args.unshift(self._state.box);
-          // According to RFC3501, UID commands do not give errors for non-existant user-supplied UIDs,
+          // According to RFC 3501, UID commands do not give errors for non-existant user-supplied UIDs,
           // so give the callback empty results if we unexpectedly received no untagged responses.
           else if ((cmd.indexOf('UID FETCH') === 0 || cmd.indexOf('UID SEARCH') === 0) && args.length === 0)
             args.unshift([]);
@@ -722,23 +747,32 @@ ImapConnection.prototype._resetBox = function() {
   this._state.box.messages.total = 0;
   this._state.box.messages.new = 0;
 };
-ImapConnection.prototype._idleCheck = function() {
-  if (this._state.isIdle)
-    this._noop();
-};
 ImapConnection.prototype._noop = function() {
   if (this._state.status >= STATES.AUTH)
-    this._send('NOOP', undefined);
+    this._send('NOOP');
 };
 ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
-  if (arguments.length > 0 && !bypass)
+  if (typeof cmdstr !== 'undefined' && !bypass)
     this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
-  if ((arguments.length === 0 && this._state.requests.length > 0) || this._state.requests.length === 1 || bypass) {
+  if ((typeof cmdstr === 'undefined' && this._state.requests.length) ||
+      this._state.requests.length === 1 || bypass) {
+    var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
     this._state.isIdle = false;
-    var cmd = (bypass ? cmdstr : this._state.requests[0].command);
-    this._state.conn.cleartext.write('A' + ++this._state.curId + ' ' + cmd + CRLF);
-    debug('<<SENT>>: A' + this._state.curId + ' ' + cmd);
+    if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
+      this._send('DONE', undefined, true);
+      this._state.ext.idle.sentIdle = false;
+      this._state.ext.idle.timeWaited = 0;
+    } else if (cmd === 'IDLE') {
+       // we use a different prefix to differentiate and disregard the tagged
+       // response the server will send us when we issue DONE
+      prefix = 'IDLE ';
+      this._state.ext.idle.sentIdle = true;
+    }
+    if (cmd !== 'IDLE' && cmd !== 'DONE')
+      prefix = 'A' + ++this._state.curId + ' ';
+    this._state.conn.cleartext.write(prefix + cmd + CRLF);
+    debug('<<SENT>>: ' + prefix + cmd);
   }
 };
 
