@@ -169,7 +169,7 @@ ImapConnection.prototype.connect = function(loginCb) {
       if (self._state.curData.length)
         data = self._state.curData + data;
       // add any additional k/v pairs that appear after the literal data
-      var fetchdesc = curReq._fetchdesc + data.substring(0, data.indexOf(CRLF)-1).trim();
+      var fetchdesc = curReq._fetchdesc + ' ' + data.substring(0, data.indexOf(CRLF)-1).trim();
       parseFetch(fetchdesc, curReq._msgheaders, curReq._msg);
       data = data.substr(data.indexOf(CRLF)+2);
       self._state.curExpected = 0;
@@ -353,19 +353,20 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
       }
 
-      if (self._state.requests.length === 1) {
+      if (self._state.requests.length === 1
+          && self._state.requests[0].command !== 'LOGOUT') {
         if (self._state.status === STATES.BOXSELECTED &&
             self._state.capabilities.indexOf('IDLE') > -1) {
           // According to RFC 2177, we should re-IDLE at least every 29
           // minutes to avoid disconnection by the server
-          self._send('IDLE', undefined, true);
+          self._send('IDLE', self._send, true);
         }
         self._state.tmrKeepalive = setTimeout(function() {
           if (self._state.isIdle) {
             if (self._state.ext.idle.sentIdle) {
               self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
               if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
-                self._send('IDLE', undefined, true); // restart IDLE
+                self._send('IDLE', self._send, true); // restart IDLE
             } else
               self._noop();
           }
@@ -401,6 +402,9 @@ ImapConnection.prototype.connect = function(loginCb) {
       self._state.requests.shift();
       process.nextTick(function() { self._send(); });
       self._state.isIdle = true;
+    } else if (data[0] === 'IDLE') {
+      process.nextTick(function() { self._send(); });
+      self._state.isIdle = false;
     } else {
       // unknown response
     }
@@ -623,7 +627,7 @@ ImapConnection.prototype.move = function(uids, boxTo, cb) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
   if (self._state.box.permFlags.indexOf('Deleted') === -1)
-    cb(new Error('Cannot move message: server does not allow deletion of messages'));
+    throw new Error('Cannot move message: server does not allow deletion of messages');
   else {
     self.copy(uids, boxTo, function(err, reentryCount, deletedUIDs, counter) {
       if (err) {
@@ -758,11 +762,11 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
       this._state.requests.length === 1 || bypass) {
     var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
-    this._state.isIdle = false;
     if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
       this._send('DONE', undefined, true);
       this._state.ext.idle.sentIdle = false;
       this._state.ext.idle.timeWaited = 0;
+      return;
     } else if (cmd === 'IDLE') {
        // we use a different prefix to differentiate and disregard the tagged
        // response the server will send us when we issue DONE
@@ -935,59 +939,34 @@ function parseNamespaces(str, namespaces) {
 }
 
 function parseFetch(str, literalData, fetchData) {
-  // str === "... {xxxx}" or "... {xxxx} ..." or just "..."
-  // where ... is any number of key-value pairs
-  // and {xxxx} is the byte count for the literalData describing the preceding item (almost always "BODY")
-  var key, idxNext;
-  while (str.length > 0) {
-    key = (str.substr(0, 5) === 'BODY[' ?
-             str.substring(0,
-              (str.indexOf('>') > -1 ? str.indexOf('>') : str.indexOf(']'))+1)
-           : str.substring(0, str.indexOf(' ')));
-    str = str.substring(str.indexOf(' ')+1);
-    if (str.substr(0, 3) === 'NIL')
-      idxNext = 3;
-    else {
-      switch (key) {
-        case 'UID':
-          idxNext = str.indexOf(' ')+1;
-          fetchData.id = parseInt(str.substring(0, idxNext-1));
-        break;
-        case 'INTERNALDATE':
-          idxNext = str.indexOf('"', 1)+1;
-          fetchData.date = str.substring(1, idxNext-1);
-        break;
-        case 'FLAGS':
-          idxNext = str.indexOf(')')+1;
-          fetchData.flags = str.substring(1, idxNext-1).split(' ').filter(isNotEmpty);
-        break;
-        case 'BODYSTRUCTURE':
-          idxNext = getNextIdxParen(str)+1;
-          fetchData.structure = parseBodyStructure(str.substring(1, idxNext-1));
-        break;
-        default:
-          var result = /^BODY\[(.*)\](?:\<[\d]+\>)?$/.exec(key);
-          idxNext = str.indexOf("}")+1;
-          if (result && result[1].indexOf('HEADER') === 0) { // either full or selective headers
-            var headers = literalData.split(/\r\n(?=[\w])/), header;
-            fetchData.headers = {};
-            for (var i=0,len=headers.length; i<len; i++) {
-              header = headers[i].substr(0, headers[i].indexOf(': ')).toLowerCase();
-              if (!fetchData.headers[header])
-                fetchData.headers[header] = [];
-              fetchData.headers[header].push(headers[i].substr(headers[i].indexOf(': ')+2).replace(/\r\n/g, '').trim());
-            }
-          }
+  var key, idxNext, result = parseExpr(str);
+  for (var i=0,len=result.length; i<len; i+=2) {
+    if (result[i] === 'UID')
+      fetchData.id = parseInt(result[i+1], 10);
+    else if (result[i] === 'INTERNALDATE')
+      fetchData.date = result[i+1];
+    else if (result[i] === 'FLAGS')
+      fetchData.flags = result[i+1].filter(isNotEmpty);
+    else if (result[i] === 'BODYSTRUCTURE')
+      fetchData.structure = parseBodyStructure(result[i+1]);
+    else if (Array.isArray(result[i]) && typeof result[i][0] === 'string' &&
+             result[i][0].indexOf('HEADER') === 0 && literalData) {
+      var headers = literalData.split(/\r\n(?=[\w])/), header;
+      fetchData.headers = {};
+      for (var j=0,len2=headers.length; j<len2; ++j) {
+        header = headers[j].substring(0, headers[j].indexOf(': ')).toLowerCase();
+        if (!fetchData.headers[header])
+          fetchData.headers[header] = [];
+        fetchData.headers[header].push(headers[j].substr(headers[j].indexOf(': ')+2).replace(/\r\n/g, '').trim());
       }
     }
-    str = str.substr(idxNext).trim();
   }
 }
 
 function parseBodyStructure(cur, prefix, partID) {
   var ret = [];
-  if (typeof cur === 'string') {
-    var result = parseExpr(cur);
+  if (typeof prefix === 'undefined') {
+    var result = (Array.isArray(cur) ? cur : parseExpr(cur));
     if (result.length)
       ret = parseBodyStructure(result, '', 1);
   } else {
@@ -1004,6 +983,7 @@ function parseBodyStructure(cur, prefix, partID) {
             part.params[cur[next][i].toLowerCase()] = cur[next][i+1];
         } else
           part.params = cur[next];
+        ++next;
       }
     } else { // single part
       next = 7;
@@ -1064,7 +1044,7 @@ function parseBodyStructure(cur, prefix, partID) {
               else if (i === 3)
                 part.envelope.sender = val;
               else if (i === 4)
-                part.envelope.replyTo = val;
+                part.envelope['reply-to'] = val;
               else if (i === 5)
                 part.envelope.to = val;
               else if (i === 6)
@@ -1072,9 +1052,9 @@ function parseBodyStructure(cur, prefix, partID) {
               else if (i === 7)
                 part.envelope.bcc = val;
             } else if (i === 8)
-              part.envelope.inReplyTo = cur[next][i]; // message ID being replied to
+              part.envelope['in-reply-to'] = cur[next][i]; // message ID being replied to
             else if (i === 9)
-              part.envelope.messageID = cur[next][i];
+              part.envelope['message-id'] = cur[next][i];
             else
               break;
           }
@@ -1193,13 +1173,13 @@ function parseExpr(o, result, start) {
     if (!inQuote) {
       if (o.str[i] === '"')
         inQuote = true;
-      else if (o.str[i] === ' ' || o.str[i] === ')') {
+      else if (o.str[i] === ' ' || o.str[i] === ')' || o.str[i] === ']') {
         if (i - (lastPos+1) > 0)
           result.push(convStr(o.str.substring(lastPos+1, i)));
-        if (o.str[i] === ')')
+        if (o.str[i] === ')' || o.str[i] === ']')
           return i;
         lastPos = i;
-      } else if (o.str[i] === '(') {
+      } else if (o.str[i] === '(' || o.str[i] === '[') {
         var innerResult = [];
         i = parseExpr(o, innerResult, i+1);
         lastPos = i;
