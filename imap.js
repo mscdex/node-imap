@@ -906,79 +906,31 @@ function validateUIDList(uids) {
 }
 
 function parseNamespaces(str, namespaces) {
-  // str contains 3 parenthesized lists (or NIL) describing the personal, other users', and shared namespaces available
-  var idxNext, idxNextName, idxNextVal, strNamespace, strList, details, types = Object.keys(namespaces), curType = 0;
-  while (str.length > 0) {
-    if (str.substr(0, 3) === 'NIL')
-      idxNext = 3;
-    else {
-      idxNext = getNextIdxParen(str)+1;
-
-      // examples: (...)
-      //           (...)(...)
-      strList = str.substring(1, idxNext-1);
-
-      // parse each namespace for the current type
-      while (strList.length > 0) {
-        details = {};
-        idxNextName = getNextIdxParen(strList)+1;
-
-        // examples: "prefix" "delimiter"
-        //           "prefix" NIL
-        //           "prefix" NIL "X-SOME-EXT" ("FOO" "BAR" "BAZ")
-        strNamespace = strList.substring(1, idxNextName-1);
-
-        // prefix
-        idxNextVal = getNextIdxQuoted(strNamespace)+1;
-        details.prefix = strNamespace.substring(1, idxNextVal-1);
-        strNamespace = strNamespace.substr(idxNextVal).trim();
-
-        // delimiter
-        if (strNamespace.substr(0, 3) === 'NIL') {
-          details.delim = false;
-          strNamespace = strNamespace.substr(3).trim();
-        } else {
-          idxNextVal = getNextIdxQuoted(strNamespace)+1;
-          details.delim = strNamespace.substring(1, idxNextVal-1);
-          strNamespace = strNamespace.substr(idxNextVal).trim();
-        }
-
-        // [extensions]
-        if (strNamespace.length > 0) {
-          details.extensions = [];
-          var extension;
-          while (strNamespace.length > 0) {
-            extension = { name: '', params: null };
-            
-            // name
-            idxNextVal = getNextIdxQuoted(strNamespace)+1;
-            extension.name = strNamespace.substring(1, idxNextVal-1);
-            strNamespace = strNamespace.substr(idxNextVal).trim();
-            
-            // params
-            idxNextVal = getNextIdxParen(strNamespace)+1;
-            var strParams = strNamespace.substring(1, idxNextVal-1), idxNextParam;
-            if (strParams.length > 0) {
-              extension.params = [];
-              while (strParams.length > 0) {
-                idxNextParam = getNextIdxQuoted(strParams)+1;
-                extension.params.push(strParams.substring(1, idxNextParam-1));
-                strParams = strParams.substr(idxNextParam).trim();
-              }
-            }
-            strNamespace = strNamespace.substr(idxNextVal).trim();
-
-            details.extensions.push(extension);
+  var result = parseExpr(str);
+  for (var grp=0; grp<3; ++grp) {
+    if (Array.isArray(result[grp])) {
+      var vals = [];
+      for (var i=0,len=result[grp].length; i<len; ++i) {
+        var val = { prefix: result[grp][i][0], delim: result[grp][i][1] };
+        if (result[grp][i].length > 2) {
+          // extension data
+          val.extensions = [];
+          for (var j=2,len2=result[grp][i].length; j<len2; j+=2) {
+            val.extensions.push({
+              name: result[grp][i][j],
+              flags: result[grp][i][j+1]
+            });
           }
-        } else
-          details.extensions = null;
-
-        namespaces[types[curType]].push(details);
-        strList = strList.substr(idxNextName).trim();
+        }
+        vals.push(val);
       }
-      curType++;
+      if (grp === 0)
+        namespaces.personal = vals;
+      else if (grp === 1)
+        namespaces.other = vals;
+      else if (grp === 2)
+        namespaces.shared = vals;
     }
-    str = str.substr(idxNext).trim();
   }
 }
 
@@ -1032,249 +984,160 @@ function parseFetch(str, literalData, fetchData) {
   }
 }
 
-function parseBodyStructure(str, prefix, partID) {
-  var retVal = [], lastIndex;
-  prefix = (prefix !== undefined ? prefix : '');
-  partID = (partID !== undefined ? partID : 1);
-  if (str[0] === '(') { // multipart
-    var extensionData = {
-      type: null, // required
-      params: null, disposition: null, language: null, location: null // optional and may be omitted completely
-    };
-    // Recursively parse each part
-    while (str[0] === '(') {
-      lastIndex = getNextIdxParen(str);
-      retVal.push(parseBodyStructure(str.substr(1, lastIndex-1), prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1));
-      str = str.substr(lastIndex+1).trim();
-    }
-
-    // multipart type
-    lastIndex = getNextIdxQuoted(str);
-    extensionData.type = str.substring(1, lastIndex).toLowerCase();
-    str = str.substr(lastIndex+1).trim();
-
-    // [parameters]
-    if (str.length > 0) {
-      if (str[0] === '(') {
-        var isKey = true, key;
-        str = str.substr(1);
-        extensionData.params = {};
-        while (str[0] !== ')') {
-          lastIndex = getNextIdxQuoted(str);
-          if (isKey)
-            key = str.substring(1, lastIndex).toLowerCase();
-          else
-            extensionData.params[key] = str.substring(1, lastIndex);
-          str = str.substr(lastIndex+1).trim();
-          isKey = !isKey;
-        }
-        str = str.substr(1).trim();
-      } else
-        str = str.substr(4);
-
-      // [disposition]
-      if (str.length > 0) {
-        if (str.substr(0, 3) !== 'NIL') {
-          extensionData.disposition = { type: null, params: null };
-          str = str.substr(1);
-          lastIndex = getNextIdxQuoted(str);
-          extensionData.disposition.type = str.substring(1, lastIndex).toLowerCase();
-          str = str.substr(lastIndex+1).trim();
-          if (str[0] === '(') {
-            var isKey = true, key;
-            str = str.substr(1);
-            extensionData.disposition.params = {};
-            while (str[0] !== ')') {
-              lastIndex = getNextIdxQuoted(str);
-              if (isKey)
-                key = str.substring(1, lastIndex).toLowerCase();
-              else
-                extensionData.disposition.params[key] = str.substring(1, lastIndex);
-              str = str.substr(lastIndex+1).trim();
-              isKey = !isKey;
-            }
-            str = str.substr(2).trim();
-          } else
-            str = str.substr(4).trim();
+function parseBodyStructure(cur, prefix, partID) {
+  var ret = [];
+  if (typeof cur === 'string') {
+    var result = parseExpr(cur);
+    if (result.length)
+      ret = parseBodyStructure(result, '', 1);
+  } else {
+    var part, partLen = cur.length, next;
+    if (Array.isArray(cur[0])) { // multipart
+      next = -1;
+      while (Array.isArray(cur[++next]))
+        ret.push(parseBodyStructure(cur[next], prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1));
+      part = { type: cur[next++].toLowerCase() };
+      if (partLen > next) {
+        if (Array.isArray(cur[next])) {
+          part.params = {};
+          for (var i=0,len=cur[next].length; i<len; i+=2)
+            part.params[cur[next][i].toLowerCase()] = cur[next][i+1];
         } else
-          str = str.substr(4);
-
-        // [language]
-        if (str.length > 0) {
-          if (str.substr(0, 3) !== 'NIL') {
-            lastIndex = getNextIdxQuoted(str);
-            extensionData.language = str.substring(1, lastIndex);
-            str = str.substr(lastIndex+1).trim();
-          } else
-            str = str.substr(4);
-
-          // [location]
-          if (str.length > 0) {
-            if (str.substr(0, 3) !== 'NIL') {
-              lastIndex = getNextIdxQuoted(str);
-              extensionData.location = str.substring(1, lastIndex);
-              str = str.substr(lastIndex+1).trim();
-            } else
-              str = str.substr(4);
-          }
-        }
+          part.params = cur[next];
       }
-    }
+    } else { // single part
+      next = 7;
+      part = {
+        // the path identifier for this part, useful for fetching specific
+        // parts of a message
+        partID: (prefix !== '' ? prefix : '1'),
 
-    retVal.unshift(extensionData);
-  } else { // single part
-    var part = {
-          partID: (prefix !== '' ? prefix : '1'), // the path identifier for this part, useful for fetching specific parts of a message
-          type: { name: null, params: null }, // content type and parameters (NIL or otherwise)
-          id: null, description: null, encoding: null, size: null, lines: null, // required -- NIL or otherwise
-          md5: null, disposition: null, language: null, location: null // optional extension data that may be omitted entirely
-        },
-        lastIndex = getNextIdxQuoted(str),
-        contentTypeMain = str.substring(1, lastIndex),
-        contentTypeSub;
-    str = str.substr(lastIndex+1).trim();
-    lastIndex = getNextIdxQuoted(str);
-    contentTypeSub = str.substring(1, lastIndex);
-    str = str.substr(lastIndex+1).trim();
-
-    // content type
-    part.type.name = contentTypeMain.toLowerCase() + '/' + contentTypeSub.toLowerCase();
-
-    // content type parameters
-    if (str[0] === '(') {
-      var isKey = true, key;
-      str = str.substr(1);
-      part.type.params = {};
-      while (str[0] !== ')') {
-        lastIndex = getNextIdxQuoted(str);
-        if (isKey)
-          key = str.substring(1, lastIndex).toLowerCase();
-        else
-          part.type.params[key] = str.substring(1, lastIndex);
-        str = str.substr(lastIndex+1).trim();
-        isKey = !isKey;
+        // required fields as per RFC 3501 -- null or otherwise
+        type: cur[0].toLowerCase(), subtype: cur[1].toLowerCase(),
+        params: null, id: cur[3], description: cur[4], encoding: cur[5],
+        size: cur[6]
       }
-      str = str.substr(2);
-    } else
-      str = str.substr(4);
-
-    // content id
-    if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getNextIdxQuoted(str);
-      part.id = str.substring(1, lastIndex);
-      str = str.substr(lastIndex+1).trim();
-    } else
-      str = str.substr(4);
-
-    // content description
-    if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getNextIdxQuoted(str);
-      part.description = str.substring(1, lastIndex);
-      str = str.substr(lastIndex+1).trim();
-    } else
-      str = str.substr(4);
-
-    // content encoding
-    if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = getNextIdxQuoted(str);
-      part.encoding = str.substring(1, lastIndex);
-      str = str.substr(lastIndex+1).trim();
-    } else
-      str = str.substr(4);
-
-    // size of content encoded in bytes
-    if (str.substr(0, 3) !== 'NIL') {
-      lastIndex = 0;
-      while (str.charCodeAt(lastIndex) >= 48 && str.charCodeAt(lastIndex) <= 57)
-        lastIndex++;
-      part.size = parseInt(str.substring(0, lastIndex));
-      str = str.substr(lastIndex).trim();
-    } else
-      str = str.substr(4);
-
-    // [# of lines]
-    if (part.type.name.indexOf('text/') === 0) {
-      if (str.substr(0, 3) !== 'NIL') {
-        lastIndex = 0;
-        while (str.charCodeAt(lastIndex) >= 48 && str.charCodeAt(lastIndex) <= 57)
-          lastIndex++;
-        part.lines = parseInt(str.substring(0, lastIndex));
-        str = str.substr(lastIndex).trim();
-      } else
-        str = str.substr(4);
-    }
-
-    // [md5 hash of content]
-    if (str.length > 0) {
-      if (str.substr(0, 3) !== 'NIL') {
-        lastIndex = getNextIdxQuoted(str);
-        part.md5 = str.substring(1, lastIndex);
-        str = str.substr(lastIndex+1).trim();
-      } else
-        str = str.substr(4);
-
-      // [disposition]
-      if (str.length > 0) {
-        if (str.substr(0, 3) !== 'NIL') {
-          part.disposition = { type: null, params: null };
-          str = str.substr(1);
-          lastIndex = getNextIdxQuoted(str);
-          part.disposition.type = str.substring(1, lastIndex).toLowerCase();
-          str = str.substr(lastIndex+1).trim();
-          if (str[0] === '(') {
-            var isKey = true, key;
-            str = str.substr(1);
-            part.disposition.params = {};
-            while (str[0] !== ')') {
-              lastIndex = getNextIdxQuoted(str);
-              if (isKey)
-                key = str.substring(1, lastIndex).toLowerCase();
-              else
-                part.disposition.params[key] = str.substring(1, lastIndex);
-              str = str.substr(lastIndex+1).trim();
-              isKey = !isKey;
-            }
-            str = str.substr(2).trim();
-          } else
-            str = str.substr(4).trim();
-        } else
-          str = str.substr(4);
-
-        // [language]
-        if (str.length > 0) {
-          if (str.substr(0, 3) !== 'NIL') {
-            if (str[0] === '(') {
-              part.language = [];
-              str = str.substr(1);
-              while (str[0] !== ')') {
-                lastIndex = getNextIdxQuoted(str);
-                part.language.push(str.substring(1, lastIndex));
-                str = str.substr(lastIndex+1).trim();
+      if (Array.isArray(cur[2])) {
+        part.params = {};
+        for (var i=0,len=cur[2].length; i<len; i+=2)
+          part.params[cur[2][i].toLowerCase()] = cur[2][i+1];
+      }
+      if (part.type === 'message' && part.subtype === 'rfc822') {
+        // envelope
+        if (partLen > next && Array.isArray(cur[next])) {
+          part.envelope = {};
+          for (var i=0,field,len=cur[next].length; i<len; ++i) {
+            if (i === 0)
+              part.envelope.date = cur[next][i];
+            else if (i === 1)
+              part.envelope.subject = cur[next][i];
+            else if (i >= 2 && i <= 7) {
+              var val = cur[next][i];
+              if (Array.isArray(val)) {
+                var addresses = [], inGroup = false, curGroup;
+                for (var j=0,len2=val.length; j<len2; ++j) {
+                  if (val[j][3] === null) { // start group addresses
+                    inGroup = true;
+                    curGroup = {
+                      group: val[j][2],
+                      addresses: []
+                    };
+                  } else if (val[j][2] === null) { // end of group addresses
+                    inGroup = false;
+                    addresses.push(curGroup);
+                  } else { // regular user address
+                    var info = {
+                      name: val[j][0],
+                      mailbox: val[j][2],
+                      host: val[j][3]
+                    };
+                    if (inGroup)
+                      curGroup.addresses.push(info);
+                    else
+                      addresses.push(info);
+                  }
+                }
+                val = addresses;
               }
-            } else {
-              lastIndex = getNextIdxQuoted(str);
-              part.language = [str.substring(1, lastIndex)];
-              str = str.substr(lastIndex+1).trim();
-            }
-          } else
-            str = str.substr(4);
-
-          // [location]
-          if (str.length > 0) {
-            if (str.substr(0, 3) !== 'NIL') {
-              lastIndex = getNextIdxQuoted(str);
-              part.location = str.substring(1, lastIndex);
-              str = str.substr(lastIndex+1).trim();
-            } else
-              str = str.substr(4);
+              if (i === 2)
+                part.envelope.from = val;
+              else if (i === 3)
+                part.envelope.sender = val;
+              else if (i === 4)
+                part.envelope.replyTo = val;
+              else if (i === 5)
+                part.envelope.to = val;
+              else if (i === 6)
+                part.envelope.cc = val;
+              else if (i === 7)
+                part.envelope.bcc = val;
+            } else if (i === 8)
+              part.envelope.inReplyTo = cur[next][i]; // message ID being replied to
+            else if (i === 9)
+              part.envelope.messageID = cur[next][i];
+            else
+              break;
           }
-        }
-      }
-    }
+        } else
+          part.envelope = null;
+        ++next;
 
-    retVal.push(part);
+        // body
+        if (partLen > next && Array.isArray(cur[next])) {
+          part.body = parseBodyStructure(cur[next], prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1);
+        } else
+          part.body = null;
+        ++next;
+      }
+      if ((part.type === 'text'
+           || (part.type === 'message' && part.subtype === 'rfc822'))
+          && partLen > next)
+        part.lines = cur[next++];
+      if (partLen > next)
+        part.md5 = cur[next++];
+    }
+    // add any extra fields that may or may not be omitted entirely
+    parseStructExtra(part, partLen, cur, next);
+    ret.unshift(part);
   }
-  return retVal;
+  return ret;
+}
+
+function parseStructExtra(part, partLen, cur, next) {
+  if (partLen > next) {
+    // disposition
+    // null or a special k/v list with these kinds of values:
+    // e.g.: ['Foo', null]
+    //       ['Foo', ['Bar', 'Baz']]
+    //       ['Foo', ['Bar', 'Baz', 'Bam', 'Pow']]
+    if (Array.isArray(cur[next])) {
+      part.disposition = {};
+      if (Array.isArray(cur[next][1])) {
+        for (var i=0,len=cur[next][1].length; i<len; i+=2)
+          part.disposition[cur[next][1][i].toLowerCase()] = cur[next][1][i+1];
+      } else
+        part.disposition[cur[next][0]] = cur[next][1];
+    } else
+      part.disposition = cur[next];
+    ++next;
+  }
+  if (partLen > next) {
+    // language can be a string or a list of one or more strings, so let's
+    // make this more consistent ...
+    if (cur[next] !== null)
+      part.language = (Array.isArray(cur[next]) ? cur[next] : [cur[next]]);
+    else
+      part.language = null;
+    ++next;
+  }
+  if (partLen > next)
+    part.location = cur[next++];
+  if (partLen > next) {
+    // extension stuff introduced by later RFCs
+    // this can really be any value: a string, number, or (un)nested list
+    // let's not parse it for now ...
+    part.extensions = cur[next];
+  }
 }
 
 String.prototype.explode = function(delimiter, limit) {
@@ -1315,20 +1178,52 @@ function up(str) {
   return str.toUpperCase();
 }
 
-function getNextIdxQuoted(str) {
-  var index = -1, countQuote = 0;
-  for (var i=0,len=str.length; i<len; i++) {
-    if (str[i] === '"') {
-      if (i > 0 && str[i-1] === "\\")
-        continue;
-      countQuote++;
-    }
-    if (countQuote === 2) {
-      index = i;
-      break;
-    }
+function parseExpr(o, result, start) {
+  start = start || 0;
+  var inQuote = false, lastPos = start - 1, isTop = false;
+  if (!result)
+    result = new Array();
+  if (typeof o === 'string') {
+    var state = new Object();
+    state.str = o;
+    o = state;
+    isTop = true;
   }
-  return index;
+  for (var i=start,len=o.str.length; i<len; ++i) {
+    if (!inQuote) {
+      if (o.str[i] === '"')
+        inQuote = true;
+      else if (o.str[i] === ' ' || o.str[i] === ')') {
+        if (i - (lastPos+1) > 0)
+          result.push(convStr(o.str.substring(lastPos+1, i)));
+        if (o.str[i] === ')')
+          return i;
+        lastPos = i;
+      } else if (o.str[i] === '(') {
+        var innerResult = [];
+        i = parseExpr(o, innerResult, i+1);
+        lastPos = i;
+        result.push(innerResult);
+      }
+    } else if (o.str[i] === '"' &&
+               (o.str[i-1] &&
+                (o.str[i-1] !== '\\' || (o.str[i-2] && o.str[i-2] === '\\'))))
+      inQuote = false;
+    if (i+1 === len && len - (lastPos+1) > 0)
+      result.push(convStr(o.str.substring(lastPos+1)));
+  }
+  return (isTop ? result : start);
+}
+
+function convStr(str) {
+  if (str[0] === '"')
+    return str.substring(1, str.length-1);
+  else if (str === 'NIL')
+    return null;
+  else if (/^\d+$/.test(str))
+    return parseInt(str, 10);
+  else
+    return str;
 }
 
 function getNextIdxParen(str) {

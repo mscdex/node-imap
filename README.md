@@ -104,13 +104,11 @@ A message structure with multiple parts might look something like the following:
         , params: { boundary: '000e0cd294e80dc83c0475bf339b' }
         , disposition: null
         , language: null
-        , location: null
         }
       , [ { partID: '1.1'
-          , type:
-             { name: 'text/plain'
-             , params: { charset: 'ISO-8859-1' }
-             }
+          , type: 'text'
+          , subtype: 'plain'
+          , params: { charset: 'ISO-8859-1' }
           , id: null
           , description: null
           , encoding: '7BIT'
@@ -119,14 +117,12 @@ A message structure with multiple parts might look something like the following:
           , md5: null
           , disposition: null
           , language: null
-          , location: null
           }
         ]
       , [ { partID: '1.2'
-          , type:
-             { name: 'text/html'
-             , params: { charset: 'ISO-8859-1' }
-             }
+          , type: 'text'
+          , subtype: 'html'
+          , params: { charset: 'ISO-8859-1' }
           , id: null
           , description: null
           , encoding: 'QUOTED-PRINTABLE'
@@ -135,15 +131,13 @@ A message structure with multiple parts might look something like the following:
           , md5: null
           , disposition: null
           , language: null
-          , location: null
           }
         ]
       ]
     , [ { partID: '2'
-        , type:
-           { name: 'application/octet-stream'
-           , params: { name: 'somefile' }
-           }
+        , type: 'application'
+        , subtype: 'octet-stream'
+        , params: { name: 'somefile' }
         , id: null
         , description: null
         , encoding: 'BASE64'
@@ -165,10 +159,9 @@ Each message part is identified by a partID which is used when you want to fetch
 The structure of a message with only one part will simply look something like this:
 
     [ { partID: '1'
-        , type:
-           { name: 'text/plain'
-           , params: { charset: 'ISO-8859-1' }
-           }
+        , type: 'text'
+        , subtype: 'plain'
+        , params: { charset: 'ISO-8859-1' }
         , id: null
         , description: null
         , encoding: '7BIT'
@@ -177,7 +170,6 @@ The structure of a message with only one part will simply look something like th
         , md5: null
         , disposition: null
         , language: null
-        , location: null
       }
     ]
 Therefore, an easy way to check for a multipart message is to check if the structure length is >1.
@@ -216,7 +208,7 @@ ImapConnection Properties
 * **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information about each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
 
         { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
-        , delimiter: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
+        , delim: '/' // A String containing the hierarchy delimiter for this namespace, or Boolean false for a flat namespace with no hierarchy
         , extensions: [ // An Array of namespace extensions supported by this namespace, or null if none are specified
               { name: 'X-FOO-BAR' // A String indicating the extension name
               , params: [ 'BAZ' ] // An Array of Strings containing the parameters for this extension, or null if none are specified
