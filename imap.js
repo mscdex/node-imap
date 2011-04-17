@@ -559,7 +559,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
     else if (typeof options.request.body === 'boolean' && options.request.body === true)
       toFetch = 'TEXT'; // fetches the whole entire message text (minus the headers), including all message parts
     else if (typeof options.request.body === 'string') {
-      if (!/^([\d]+[\.]{0,1})*[\d]+$/.test(options.request.body))
+      if (options.request.body !== '' && !/^([\d]+[\.]{0,1})*[\d]+$/.test(options.request.body))
         throw new Error("Invalid body partID format");
       toFetch = options.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
     }
@@ -568,7 +568,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
 
   this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
              + (options.request.struct ? ' BODYSTRUCTURE' : '')
-             + (toFetch ? ' BODY' + (!options.markSeen ? '.PEEK' : '')
+             + (typeof toFetch === 'string' ? ' BODY' + (!options.markSeen ? '.PEEK' : '')
              + '[' + toFetch + ']' + bodyRange : '') + ')');
   var imapFetcher = new ImapFetch();
   this._state.requests[this._state.requests.length-1]._fetcher = imapFetcher;
@@ -1204,28 +1204,6 @@ function convStr(str) {
     return parseInt(str, 10);
   else
     return str;
-}
-
-function getNextIdxParen(str) {
-  var inQuote = false,
-      countParen = 0,
-      lastIndex = -1;
-  for (var i=1,len=str.length; i<len; i++) {
-    if (str[i-1] !== "\\" && str[i] === "\"")
-      inQuote = !inQuote;
-    else if (!inQuote) {
-      if (str[i] === '(')
-        countParen++;
-      else if (str[i] === ')') {
-        if (countParen === 0) {
-          lastIndex = i;
-          break;
-        } else
-          countParen--;
-      }
-    }
-  }
-  return lastIndex;
 }
 
 /**
