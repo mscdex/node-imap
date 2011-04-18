@@ -523,6 +523,10 @@ ImapConnection.prototype.search = function(options, cb) {
 ImapConnection.prototype.fetch = function(uids, options) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
+  if (typeof uids === undefined || typeof uids === null
+      || (Array.isArray(uids) && uids.length === 0))
+    throw new Error('Nothing to fetch');
+
   if (!Array.isArray(uids))
     uids = [uids];
   try {
@@ -530,6 +534,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
   } catch(e) {
     throw e;
   }
+
   var defaults = {
     markSeen: false,
     request: {
