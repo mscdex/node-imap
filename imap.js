@@ -535,7 +535,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
     throw e;
   }
 
-  var defaults = {
+  var opts = {
     markSeen: false,
     request: {
       struct: true,
@@ -545,35 +545,35 @@ ImapConnection.prototype.fetch = function(uids, options) {
   }, toFetch, bodyRange = '';
   if (typeof options !== 'object')
     options = {};
-  options = extend(true, defaults, options);
+  extend(true, opts, options);
 
-  if (!Array.isArray(options.request.headers)) {
-    if (Array.isArray(options.request.body)) {
+  if (!Array.isArray(opts.request.headers)) {
+    if (Array.isArray(opts.request.body)) {
       var rangeInfo;
-      if (options.request.body.length !== 2)
+      if (opts.request.body.length !== 2)
         throw new Error("Expected Array of length 2 for body property for byte range");
-      else if (typeof options.request.body[1] !== 'string'
-               || !(rangeInfo = /^([\d]+)\-([\d]+)$/.exec(options.request.body[1]))
+      else if (typeof opts.request.body[1] !== 'string'
+               || !(rangeInfo = /^([\d]+)\-([\d]+)$/.exec(opts.request.body[1]))
                || parseInt(rangeInfo[1]) >= parseInt(rangeInfo[2]))
         throw new Error("Invalid body byte range format");
       bodyRange = '<' + parseInt(rangeInfo[1]) + '.' + parseInt(rangeInfo[2]) + '>';
-      options.request.body = options.request.body[0];
+      opts.request.body = opts.request.body[0];
     }
-    if (typeof options.request.headers === 'boolean' && options.request.headers === true)
+    if (typeof opts.request.headers === 'boolean' && opts.request.headers === true)
       toFetch = 'HEADER'; // fetches headers only
-    else if (typeof options.request.body === 'boolean' && options.request.body === true)
+    else if (typeof opts.request.body === 'boolean' && opts.request.body === true)
       toFetch = 'TEXT'; // fetches the whole entire message text (minus the headers), including all message parts
-    else if (typeof options.request.body === 'string') {
-      if (options.request.body !== '' && !/^([\d]+[\.]{0,1})*[\d]+$/.test(options.request.body))
+    else if (typeof opts.request.body === 'string') {
+      if (opts.request.body !== '' && !/^([\d]+[\.]{0,1})*[\d]+$/.test(opts.request.body))
         throw new Error("Invalid body partID format");
-      toFetch = options.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
+      toFetch = opts.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
     }
   } else
-    toFetch = 'HEADER.FIELDS (' + options.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
+    toFetch = 'HEADER.FIELDS (' + opts.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
 
   this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
-             + (options.request.struct ? ' BODYSTRUCTURE' : '')
-             + (typeof toFetch === 'string' ? ' BODY' + (!options.markSeen ? '.PEEK' : '')
+             + (opts.request.struct ? ' BODYSTRUCTURE' : '')
+             + (typeof toFetch === 'string' ? ' BODY' + (!opts.markSeen ? '.PEEK' : '')
              + '[' + toFetch + ']' + bodyRange : '') + ')');
   var imapFetcher = new ImapFetch();
   this._state.requests[this._state.requests.length-1]._fetcher = imapFetcher;
