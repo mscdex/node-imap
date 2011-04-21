@@ -120,8 +120,9 @@ ImapConnection.prototype.connect = function(loginCb) {
     fnInit();
   });
   this._state.conn.cleartext.on('data', function(data) {
-    var trailingCRLF = false, literalInfo, bypass = false;
-    debug('<<RECEIVED>>: ' + util.inspect(data));
+    if (data.length === 0) return;
+    var trailingCRLF = false, literalInfo;
+    debug('\n<<RECEIVED>>: ' + util.inspect(data) + '\n');
 
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
@@ -136,68 +137,75 @@ ImapConnection.prototype.connect = function(loginCb) {
 
     // Don't mess with incoming data if it's part of a literal
     if (self._state.curExpected > 0) {
-      var extra = '', curReq = self._state.requests[0];
-      if (!curReq._done) {
-        self._state.curXferred += Buffer.byteLength(data, 'utf8');
-        if (self._state.curXferred <= self._state.curExpected) {
-          if (curReq._msgtype === 'headers')
-            // buffer headers since they're generally not large and are
-            // processed anyway
-            self._state.curData += data;
-          else
-            curReq._msg.emit('data', data);
-          return;
-        }
-        var pos = Buffer.byteLength(data, 'utf8')-(self._state.curXferred-self._state.curExpected);
-        extra = (new Buffer(data)).slice(pos).toString('utf8');
-        if (pos > 0) {
-          if (curReq._msgtype === 'headers') {
-            self._state.curData += (new Buffer(data)).slice(0, pos).toString('utf8');
-            curReq._msgheaders = self._state.curData;
-          } else
-            curReq._msg.emit('data', (new Buffer(data)).slice(0, pos).toString('utf8'));
-        }
-        self._state.curData = '';
-        data = extra;
-        curReq._done = true;
-      }
-      // make sure we have at least ")\r\n" in the post-literal data
-      if (data.indexOf(CRLF) === -1) {
-        self._state.curData += data;
-        return;
-      }
-      if (self._state.curData.length)
-        data = self._state.curData + data;
-      // add any additional k/v pairs that appear after the literal data
-      var fetchdesc = curReq._fetchdesc + ' ' + data.substring(0, data.indexOf(CRLF)-1).trim();
-      parseFetch(fetchdesc, curReq._msgheaders, curReq._msg);
-      data = data.substr(data.indexOf(CRLF)+2);
-      self._state.curExpected = 0;
-      self._state.curXferred = 0;
-      self._state.curData = '';
-      curReq._done = false;
-      curReq._msg.emit('end');
-      if (data[0] === '*') {
-        // found additional responses, so don't try splitting the proceeding
-        // response(s) for better performance in case they have literals too
-        process.nextTick(function() { self._state.conn.cleartext.emit('data', data); });
-        return;
-      }
-    } else if (self._state.curExpected === 0
-               && (literalInfo = /\{(\d+)\}$/.exec(data.substr(0, data.indexOf(CRLF))))) {
-      self._state.curExpected = parseInt(literalInfo[1]);
       var curReq = self._state.requests[0];
-      //if (/^UID FETCH/.test(curReq.command)) {
-        var type = /BODY\[(.*)\](?:\<[\d]+\>)?/.exec(data.substr(0, data.indexOf(CRLF))),
-            msg = new ImapMessage();
-        type = type[1];
-        parseFetch(data.substring(data.indexOf("(")+1, data.indexOf(CRLF)), "", msg);
-        curReq._fetchdesc = data.substring(data.indexOf("(")+1, data.indexOf(CRLF));
-        curReq._msg = msg;
-        curReq._fetcher.emit('message', msg);
-        curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
-        self._state.conn.cleartext.emit('data', data.substr(data.indexOf(CRLF)+2));
-      //}
+
+      if (!curReq._done) {
+        var chunk = data;
+        self._state.curXferred += Buffer.byteLength(data, 'utf8');
+        if (self._state.curXferred > self._state.curExpected) {
+          var pos = Buffer.byteLength(data, 'utf8')-(self._state.curXferred-self._state.curExpected),
+              extra = (new Buffer(data)).slice(pos).toString('utf8');
+          if (pos > 0)
+            chunk = (new Buffer(data)).slice(0, pos).toString('utf8');
+          else
+            chunk = undefined;
+          data = extra;
+          curReq._done = 1;
+        }
+
+        if (chunk) {
+          if (curReq._msgtype === 'headers')
+            self._state.curData += chunk;
+          else
+            curReq._msg.emit('data', chunk);
+        }
+      }
+      if (curReq._done) {
+        var restDesc;
+        if (curReq._done === 1) {
+          if (curReq._msgtype === 'headers')
+            curReq._headers = self._state.curData;
+          self._state.curData = '';
+          curReq._done = true;
+        }
+        self._state.curData += data;
+
+        if (restDesc = self._state.curData.match(/^(.*?)\)\r\n/)) {
+          if (restDesc[1]) {
+            restDesc[1] = restDesc[1].trim();
+            if (restDesc[1].length)
+              restDesc[1] = ' ' + restDesc[1];
+          } else
+            restDesc[1] = '';
+          parseFetch(curReq._desc + restDesc[1], curReq._headers, curReq._msg);
+          data = self._state.curData.substring(self._state.curData.indexOf(CRLF) + 2);
+          curReq._done = false;
+          self._state.curXferred = 0;
+          self._state.curExpected = 0;
+          self._state.curData = '';
+          curReq._msg.emit('end');
+          if (data.length && data[0] === '*') {
+            self._state.conn.cleartext.emit('data', data);
+            return;
+          }
+        } else
+          return;
+      } else
+        return;
+    } else if (self._state.curExpected === 0
+               && (literalInfo = data.match(/^\* \d+ FETCH .+? \{(\d+)\}\r\n/))) {
+      self._state.curExpected = parseInt(literalInfo[1], 10);
+      var idxCRLF = data.indexOf(CRLF),
+          curReq = self._state.requests[0],
+          type = /BODY\[(.*)\](?:\<\d+\>)?/.exec(data.substring(0, idxCRLF)),
+          msg = new ImapMessage(),
+          desc = data.substring(data.indexOf("(")+1, idxCRLF).trim();
+      type = type[1];
+      curReq._desc = desc;
+      curReq._msg = msg;
+      curReq._fetcher.emit('message', msg);
+      curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
+      self._state.conn.cleartext.emit('data', data.substring(idxCRLF + 2));
       return;
     }
 
@@ -353,26 +361,6 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
       }
 
-      if (self._state.requests.length === 1
-          && self._state.requests[0].command !== 'LOGOUT') {
-        if (self._state.status === STATES.BOXSELECTED &&
-            self._state.capabilities.indexOf('IDLE') > -1) {
-          // According to RFC 2177, we should re-IDLE at least every 29
-          // minutes to avoid disconnection by the server
-          self._send('IDLE', self._send, true);
-        }
-        self._state.tmrKeepalive = setTimeout(function() {
-          if (self._state.isIdle) {
-            if (self._state.ext.idle.sentIdle) {
-              self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
-              if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
-                self._send('IDLE', self._send, true); // restart IDLE
-            } else
-              self._noop();
-          }
-        }, self._state.tmoKeepalive);
-      }
-
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
         self._state.box.name = self._state.box._newName;
         delete self._state.box._newName;
@@ -396,14 +384,36 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
         args.unshift(err);
         self._state.requests[0].callback.apply({}, args);
-      } else if (self._state.requests[0].command.indexOf("UID FETCH") === 0)
-        self._state.requests[0]._fetcher.emit('end');
+      }
 
+
+      var recentCmd = self._state.requests[0].command;
       self._state.requests.shift();
-      process.nextTick(function() { self._send(); });
+      if (self._state.requests.length === 0
+          && recentCmd !== 'LOGOUT') {
+        if (self._state.status === STATES.BOXSELECTED &&
+            self._state.capabilities.indexOf('IDLE') > -1) {
+          // According to RFC 2177, we should re-IDLE at least every 29
+          // minutes to avoid disconnection by the server
+          self._send('IDLE', undefined, true);
+        }
+        self._state.tmrKeepalive = setTimeout(function() {
+          if (self._state.isIdle) {
+            if (self._state.ext.idle.sentIdle) {
+              self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
+              if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
+                self._send('IDLE', undefined, true); // restart IDLE
+            } else
+              self._noop();
+          }
+        }, self._state.tmoKeepalive);
+      } else
+        process.nextTick(function() { self._send(); });
+
       self._state.isIdle = true;
     } else if (data[0] === 'IDLE') {
-      process.nextTick(function() { self._send(); });
+      if (self._state.requests.length > 0)
+        process.nextTick(function() { self._send(); });
       self._state.isIdle = false;
     } else {
       // unknown response
@@ -542,7 +552,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
       headers: true, // \_______ at most one of these can be used for any given fetch request
       body: false   //  /
     }
-  }, toFetch, bodyRange = '';
+  }, toFetch, bodyRange = '', self = this;
   if (typeof options !== 'object')
     options = {};
   extend(true, opts, options);
@@ -574,7 +584,15 @@ ImapConnection.prototype.fetch = function(uids, options) {
   this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
              + (opts.request.struct ? ' BODYSTRUCTURE' : '')
              + (typeof toFetch === 'string' ? ' BODY' + (!opts.markSeen ? '.PEEK' : '')
-             + '[' + toFetch + ']' + bodyRange : '') + ')');
+             + '[' + toFetch + ']' + bodyRange : '') + ')', function(e) {
+               var fetcher = self._state.requests[0]._fetcher;
+               if (e && fetcher)
+                 fetcher.emit('error', e);
+               else if (e && !fetcher)
+                 self.emit('error', e);
+               else if (fetcher)
+                 fetcher.emit('end');
+             });
   var imapFetcher = new ImapFetch();
   this._state.requests[this._state.requests.length-1]._fetcher = imapFetcher;
   return imapFetcher;
@@ -781,7 +799,7 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     if (cmd !== 'IDLE' && cmd !== 'DONE')
       prefix = 'A' + ++this._state.curId + ' ';
     this._state.conn.cleartext.write(prefix + cmd + CRLF);
-    debug('<<SENT>>: ' + prefix + cmd);
+    debug('\n<<SENT>>: ' + prefix + cmd + '\n');
   }
 };
 
