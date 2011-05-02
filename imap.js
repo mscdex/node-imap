@@ -257,11 +257,11 @@ ImapConnection.prototype.connect = function(loginCb) {
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if ((result = /^\[UIDVALIDITY (\d+)\]$/i.exec(data[2])) !== null)
+            if ((result = /^\[UIDVALIDITY (\d+)\].*/i.exec(data[2])) !== null)
               self._state.box.validity = result[1];
-            else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
+            else if ((result = /^\[UIDNEXT (\d+)\].*/i.exec(data[2])) !== null)
               self._state.box._uidnext = result[1];
-            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null) {
+            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\].*/i.exec(data[2])) !== null) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
