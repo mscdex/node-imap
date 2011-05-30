@@ -95,7 +95,7 @@ ImapConnection.prototype.connect = function(loginCb) {
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
 
-  this._state.tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
+  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this), this._options.connTimeout, loginCb);
   this._state.conn.setKeepAlive(true);
 
   if (this._options.secure) {
