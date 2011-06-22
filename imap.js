@@ -70,7 +70,8 @@ exports.ImapConnection = ImapConnection;
 ImapConnection.prototype.connect = function(loginCb) {
   var self = this,
       fnInit = function() {
-        // First get pre-auth capabilities, including server-supported auth mechanisms
+        // First get pre-auth capabilities, including server-supported auth
+        // mechanisms
         self._send('CAPABILITY', function() {
           // Next, attempt to login
           self._login(function(err, reentry) {
@@ -81,11 +82,13 @@ ImapConnection.prototype.connect = function(loginCb) {
             // Next, get the list of available namespaces if supported
             if (!reentry && self._state.capabilities.indexOf('NAMESPACE') > -1) {
               var fnMe = arguments.callee;
-              // Re-enter this function after we've obtained the available namespaces
+              // Re-enter this function after we've obtained the available
+              // namespaces
               self._send('NAMESPACE', function(e) { fnMe.call(this, e, true); });
               return;
             }
-            // Lastly, get the top-level mailbox hierarchy delimiter used by the server
+            // Lastly, get the top-level mailbox hierarchy delimiter used by the
+            // server
             self._send('LIST "" ""', loginCb);
           });
         });
@@ -95,7 +98,8 @@ ImapConnection.prototype.connect = function(loginCb) {
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
 
-  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this), this._options.connTimeout, loginCb);
+  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this),
+                                   this._options.connTimeout, loginCb);
   this._state.conn.setKeepAlive(true);
 
   if (this._options.secure) {
@@ -143,7 +147,8 @@ ImapConnection.prototype.connect = function(loginCb) {
         var chunk = data;
         self._state.curXferred += Buffer.byteLength(data, 'utf8');
         if (self._state.curXferred > self._state.curExpected) {
-          var pos = Buffer.byteLength(data, 'utf8')-(self._state.curXferred-self._state.curExpected),
+          var pos = Buffer.byteLength(data, 'utf8')
+                    - (self._state.curXferred - self._state.curExpected),
               extra = (new Buffer(data)).slice(pos).toString('utf8');
           if (pos > 0)
             chunk = (new Buffer(data)).slice(0, pos).toString('utf8');
@@ -178,7 +183,8 @@ ImapConnection.prototype.connect = function(loginCb) {
           } else
             restDesc[1] = '';
           parseFetch(curReq._desc + restDesc[1], curReq._headers, curReq._msg);
-          data = self._state.curData.substring(self._state.curData.indexOf(CRLF) + 2);
+          data = self._state.curData.substring(self._state.curData.indexOf(CRLF)
+                                               + 2);
           curReq._done = false;
           self._state.curXferred = 0;
           self._state.curExpected = 0;
@@ -226,7 +232,7 @@ ImapConnection.prototype.connect = function(loginCb) {
 
     if (data[0] === '*') { // Untagged server response
       if (self._state.status === STATES.NOAUTH) {
-        if (data[1] === 'PREAUTH') { // no need to login, the server pre-authenticated us
+        if (data[1] === 'PREAUTH') { // the server pre-authenticated us
           self._state.status = STATES.AUTH;
           if (self._state.numCapRecvs === 0)
             self._state.numCapRecvs = 1;
@@ -249,29 +255,39 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._state.capabilities = data[2].split(' ').map(up);
         break;
         case 'FLAGS':
-          if (self._state.status === STATES.BOXSELECTING)
-            self._state.box._flags = data[2].substr(1, data[2].length-2).split(' ').map(function(flag) {return flag.substr(1);});;
+          if (self._state.status === STATES.BOXSELECTING) {
+            self._state.box._flags = data[2].substr(1, data[2].length-2)
+                                            .split(' ').map(function(flag) {
+                                              return flag.substr(1);
+                                            });
+          }
         break;
         case 'OK':
-          if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])) !== null)
+          if (result = /^\[ALERT\] (.*)$/i.exec(data[2]))
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if ((result = /^\[UIDVALIDITY (\d+)\].*/i.exec(data[2])) !== null)
+            if (result = /^\[UIDVALIDITY (\d+)\].*/i.exec(data[2]))
               self._state.box.validity = result[1];
-            else if ((result = /^\[UIDNEXT (\d+)\].*/i.exec(data[2])) !== null)
+            else if (result = /^\[UIDNEXT (\d+)\].*/i.exec(data[2]))
               self._state.box._uidnext = result[1];
-            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\].*/i.exec(data[2])) !== null) {
+            else if (result = /^\[PERMANENTFLAGS \((.*)\)\].*/i.exec(data[2])) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
                 self._state.box._newKeywords = true;
                 self._state.box.permFlags.splice(idx, 1);
               }
-              self._state.box.keywords = self._state.box.permFlags.filter(function(flag) {return flag[0] !== '\\';});
+              self._state.box.keywords = self._state.box.permFlags
+                                             .filter(function(flag) {
+                                               return (flag[0] !== '\\');
+                                             });
               for (var i=0; i<self._state.box.keywords.length; i++)
                 self._state.box.permFlags.splice(self._state.box.permFlags.indexOf(self._state.box.keywords[i]), 1);
-              self._state.box.permFlags = self._state.box.permFlags.map(function(flag) {return flag.substr(1);});
+              self._state.box.permFlags = self._state.box.permFlags
+                                              .map(function(flag) {
+                                                return flag.substr(1);
+                                              });
             }
           }
         break;
@@ -279,7 +295,9 @@ ImapConnection.prototype.connect = function(loginCb) {
           parseNamespaces(data[2], self.namespaces);
         break;
         case 'SEARCH':
-          self._state.requests[0].args.push((typeof data[2] === 'undefined' || data[2].length === 0 ? [] : data[2].split(' ')));
+          self._state.requests[0].args.push(typeof data[2] === 'undefined'
+                                            || data[2].length === 0
+                                            ? [] : data[2].split(' '));
         break;
         /*case 'STATUS':
           var result = /UIDNEXT ([\d]+)\)$/.exec(data[2]);
@@ -287,22 +305,29 @@ ImapConnection.prototype.connect = function(loginCb) {
         break;*/
         case 'LIST':
           var result;
-          if (self.delim === null && (result = /^\(\\Noselect\) (.+?) ".*"$/.exec(data[2])) !== null)
-            self.delim = (result[1] === 'NIL' ? false : result[1].substring(1, result[1].length-1));
+          if (self.delim === null
+              && (result = /^\(\\Noselect\) (.+?) ".*"$/.exec(data[2])))
+            self.delim = (result[1] === 'NIL'
+                          ? false : result[1].substring(1, result[1].length-1));
           else if (self.delim !== null) {
             if (self._state.requests[0].args.length === 0)
               self._state.requests[0].args.push({});
             result = /^\((.*)\) (.+?) "(.+)"$/.exec(data[2]);
             var box = {
-              attribs: result[1].split(' ').map(function(attrib) {return attrib.substr(1).toUpperCase();})
-                                .filter(function(attrib) {return BOX_ATTRIBS.indexOf(attrib) > -1;}),
-              delim: (result[2] === 'NIL' ? false : result[2].substring(1, result[2].length-1)),
+              attribs: result[1].split(' ').map(function(attrib) {
+                         return attrib.substr(1).toUpperCase();
+                       }).filter(function(attrib) {
+                         return (BOX_ATTRIBS.indexOf(attrib) > -1);
+                       }),
+              delim: (result[2] === 'NIL'
+                      ? false : result[2].substring(1, result[2].length-1)),
               children: null,
               parent: null
             }, name = result[3], curChildren = self._state.requests[0].args[0];
 
             if (box.delim) {
-              var path = name.split(box.delim).filter(isNotEmpty), parent = null;
+              var path = name.split(box.delim).filter(isNotEmpty),
+                  parent = null;
               name = path.pop();
               for (var i=0,len=path.length; i<len; i++) {
                 if (!curChildren[path[i]])
@@ -320,27 +345,33 @@ ImapConnection.prototype.connect = function(loginCb) {
         default:
           if (/^\d+$/.test(data[1])) {
             switch (data[2]) {
-              case 'EXISTS': // mailbox total message count
+              case 'EXISTS':
+                // mailbox total message count
                 var prev = self._state.box.messages.total,
                     now = parseInt(data[1]);
                 self._state.box.messages.total = now;
                 if (self._state.status !== STATES.BOXSELECTING && now > prev) {
                   self._state.box.messages.new = now-prev;
-                  self.emit('mail', self._state.box.messages.new); // new mail notification
+                  self.emit('mail', self._state.box.messages.new); // new mail
                 }
               break;
-              case 'RECENT': // messages marked with the \Recent flag (i.e. new messages)
+              case 'RECENT':
+                // messages marked with the \Recent flag (i.e. new messages)
                 self._state.box.messages.new = parseInt(data[1]);
               break;
-              case 'EXPUNGE': // confirms permanent deletion of a single message
+              case 'EXPUNGE':
+                // confirms permanent deletion of a single message
                 if (self._state.box.messages.total > 0)
                   self._state.box.messages.total--;
               break;
               default:
-                if (/^FETCH/.test(data[2])) { // fetches without header or body (part) retrievals
+                // fetches without header or body (part) retrievals
+                if (/^FETCH/.test(data[2])) {
                   var curReq = self._state.requests[0],
                       msg = new ImapMessage();
-                  parseFetch(data[2].substring(data[2].indexOf("(")+1, data[2].lastIndexOf(")")), "", msg);
+                  parseFetch(data[2].substring(data[2].indexOf("(")+1,
+                                               data[2].lastIndexOf(")")),
+                             "", msg);
                   curReq._fetcher.emit('message', msg);
                   msg.emit('end');
                 }
@@ -369,7 +400,8 @@ ImapConnection.prototype.connect = function(loginCb) {
 
       if (typeof self._state.requests[0].callback === 'function') {
         var err = null;
-        var args = self._state.requests[0].args, cmd = self._state.requests[0].command;
+        var args = self._state.requests[0].args,
+            cmd = self._state.requests[0].command;
         if (data[1] !== 'OK') {
           err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
@@ -377,9 +409,12 @@ ImapConnection.prototype.connect = function(loginCb) {
         } else if (self._state.status === STATES.BOXSELECTED) {
           if (sendBox) // SELECT, EXAMINE, RENAME
             args.unshift(self._state.box);
-          // According to RFC 3501, UID commands do not give errors for non-existant user-supplied UIDs,
-          // so give the callback empty results if we unexpectedly received no untagged responses.
-          else if ((cmd.indexOf('UID FETCH') === 0 || cmd.indexOf('UID SEARCH') === 0) && args.length === 0)
+          // According to RFC 3501, UID commands do not give errors for
+          // non-existant user-supplied UIDs, so give the callback empty results
+          // if we unexpectedly received no untagged responses.
+          else if ((cmd.indexOf('UID FETCH') === 0
+                    || cmd.indexOf('UID SEARCH') === 0
+                   ) && args.length === 0)
             args.unshift([]);
         }
         args.unshift(err);
@@ -468,7 +503,8 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
   this._send((readOnly ? 'EXAMINE' : 'SELECT') + ' "' + escape(name) + '"', cb);
 };
 
-ImapConnection.prototype.closeBox = function(cb) { // also deletes any messages in this box marked with \Deleted
+// also deletes any messages in this box marked with \Deleted
+ImapConnection.prototype.closeBox = function(cb) {
   var self = this;
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
@@ -499,24 +535,29 @@ ImapConnection.prototype.getBoxes = function(namespace, cb) {
 ImapConnection.prototype.addBox = function(name, cb) {
   cb = arguments[arguments.length-1];
   if (typeof name !== 'string' || name.length === 0)
-    throw new Error('Mailbox name must be a string describing the full path of a new mailbox to be created');
+    throw new Error('Mailbox name must be a string describing the full path'
+                    + ' of a new mailbox to be created');
   this._send('CREATE "' + escape(name) + '"', cb);
 };
 
 ImapConnection.prototype.delBox = function(name, cb) {
   cb = arguments[arguments.length-1];
   if (typeof name !== 'string' || name.length === 0)
-    throw new Error('Mailbox name must be a string describing the full path of an existing mailbox to be deleted');
+    throw new Error('Mailbox name must be a string describing the full path'
+                    + ' of an existing mailbox to be deleted');
   this._send('DELETE "' + escape(name) + '"', cb);
 };
 
 ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
   cb = arguments[arguments.length-1];
   if (typeof oldname !== 'string' || oldname.length === 0)
-    throw new Error('Old mailbox name must be a string describing the full path of an existing mailbox to be renamed');
+    throw new Error('Old mailbox name must be a string describing the full path'
+                    + ' of an existing mailbox to be renamed');
   else if (typeof newname !== 'string' || newname.length === 0)
-    throw new Error('New mailbox name must be a string describing the full path of a new mailbox to be renamed to');
-  if (this._state.status === STATES.BOXSELECTED && oldname === this._state.box.name && oldname !== 'INBOX')
+    throw new Error('New mailbox name must be a string describing the full path'
+                    + ' of a new mailbox to be renamed to');
+  if (this._state.status === STATES.BOXSELECTED
+      && oldname === this._state.box.name && oldname !== 'INBOX')
     this._state.box._newName = oldname;
     
   this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
@@ -549,7 +590,8 @@ ImapConnection.prototype.fetch = function(uids, options) {
     markSeen: false,
     request: {
       struct: true,
-      headers: true, // \_______ at most one of these can be used for any given fetch request
+      headers: true, // \_______ at most one of these can be used for any given
+                    //   _______ fetch request
       body: false   //  /
     }
   }, toFetch, bodyRange = '', self = this;
@@ -561,29 +603,41 @@ ImapConnection.prototype.fetch = function(uids, options) {
     if (Array.isArray(opts.request.body)) {
       var rangeInfo;
       if (opts.request.body.length !== 2)
-        throw new Error("Expected Array of length 2 for body property for byte range");
+        throw new Error("Expected Array of length 2 for body byte range");
       else if (typeof opts.request.body[1] !== 'string'
                || !(rangeInfo = /^([\d]+)\-([\d]+)$/.exec(opts.request.body[1]))
                || parseInt(rangeInfo[1]) >= parseInt(rangeInfo[2]))
         throw new Error("Invalid body byte range format");
-      bodyRange = '<' + parseInt(rangeInfo[1]) + '.' + parseInt(rangeInfo[2]) + '>';
+      bodyRange = '<' + parseInt(rangeInfo[1]) + '.' + parseInt(rangeInfo[2])
+                  + '>';
       opts.request.body = opts.request.body[0];
     }
-    if (typeof opts.request.headers === 'boolean' && opts.request.headers === true)
-      toFetch = 'HEADER'; // fetches headers only
-    else if (typeof opts.request.body === 'boolean' && opts.request.body === true)
-      toFetch = 'TEXT'; // fetches the whole entire message text (minus the headers), including all message parts
-    else if (typeof opts.request.body === 'string') {
-      if (opts.request.body !== '' && !/^([\d]+[\.]{0,1})*[\d]+$/.test(opts.request.body))
+    if (typeof opts.request.headers === 'boolean'
+        && opts.request.headers === true) {
+      // fetches headers only
+      toFetch = 'HEADER';
+    } else if (typeof opts.request.body === 'boolean'
+               && opts.request.body === true) {
+      // fetches the whole entire message text (minus the headers), including
+      // all message parts
+      toFetch = 'TEXT';
+    } else if (typeof opts.request.body === 'string') {
+      if (opts.request.body !== ''
+          && !/^([\d]+[\.]{0,1})*[\d]+$/.test(opts.request.body))
         throw new Error("Invalid body partID format");
-      toFetch = opts.request.body; // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
+      // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
+      toFetch = opts.request.body;
     }
-  } else
-    toFetch = 'HEADER.FIELDS (' + opts.request.headers.join(' ').toUpperCase() + ')'; // fetch specific headers only
+  } else {
+    // fetch specific headers only
+    toFetch = 'HEADER.FIELDS (' + opts.request.headers.join(' ').toUpperCase()
+              + ')';
+  }
 
   this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
              + (opts.request.struct ? ' BODYSTRUCTURE' : '')
-             + (typeof toFetch === 'string' ? ' BODY' + (!opts.markSeen ? '.PEEK' : '')
+             + (typeof toFetch === 'string' ? ' BODY'
+             + (!opts.markSeen ? '.PEEK' : '')
              + '[' + toFetch + ']' + bodyRange : '') + ')', function(e) {
                var fetcher = self._state.requests[0]._fetcher;
                if (e && fetcher)
@@ -649,9 +703,10 @@ ImapConnection.prototype.move = function(uids, boxTo, cb) {
   var self = this;
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
-  if (self._state.box.permFlags.indexOf('Deleted') === -1)
-    throw new Error('Cannot move message: server does not allow deletion of messages');
-  else {
+  if (self._state.box.permFlags.indexOf('Deleted') === -1) {
+    throw new Error('Cannot move message: '
+                    + 'server does not allow deletion of messages');
+  } else {
     self.copy(uids, boxTo, function(err, reentryCount, deletedUIDs, counter) {
       if (err) {
         cb(err);
@@ -660,22 +715,37 @@ ImapConnection.prototype.move = function(uids, boxTo, cb) {
 
       var fnMe = arguments.callee;
       counter = counter || 0;
-      // Make sure we don't expunge any messages marked as Deleted except the one we are moving
-      if (typeof reentryCount === 'undefined')
-        self.search(['DELETED'], function(e, result) { fnMe.call(this, e, 1, result); });
-      else if (reentryCount === 1) {
-        if (counter < deletedUIDs.length)
-          self.delFlags(deletedUIDs[counter], 'DELETED', function(e) { process.nextTick(function(){fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);}); });
-        else
+      // Make sure we don't expunge any messages marked as Deleted except the
+      // one we are moving
+      if (typeof reentryCount === 'undefined') {
+        self.search(['DELETED'], function(e, result) {
+          fnMe.call(this, e, 1, result);
+        });
+      } else if (reentryCount === 1) {
+        if (counter < deletedUIDs.length) {
+          self.delFlags(deletedUIDs[counter], 'DELETED', function(e) {
+            process.nextTick(function() {
+              fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);
+            });
+          });
+        } else
           fnMe.call(this, err, reentryCount+1, deletedUIDs);
-      } else if (reentryCount === 2)
-        self.addFlags(uids, 'Deleted', function(e) { fnMe.call(this, e, reentryCount+1, deletedUIDs); });
-      else if (reentryCount === 3)
-        self.removeDeleted(function(e) { fnMe.call(this, e, reentryCount+1, deletedUIDs); });
-      else if (reentryCount === 4) {
-        if (counter < deletedUIDs.length)
-          self.addFlags(deletedUIDs[counter], 'DELETED', function(e) { process.nextTick(function(){fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);}); });
-        else
+      } else if (reentryCount === 2) {
+        self.addFlags(uids, 'Deleted', function(e) {
+          fnMe.call(this, e, reentryCount+1, deletedUIDs);
+        });
+      } else if (reentryCount === 3) {
+        self.removeDeleted(function(e) {
+          fnMe.call(this, e, reentryCount+1, deletedUIDs);
+        });
+      } else if (reentryCount === 4) {
+        if (counter < deletedUIDs.length) {
+          self.addFlags(deletedUIDs[counter], 'DELETED', function(e) {
+            process.nextTick(function() {
+              fnMe.call(this, e, reentryCount, deletedUIDs, counter+1);
+            });
+          });
+        } else
           cb();
       }
     });
@@ -691,7 +761,8 @@ ImapConnection.prototype._fnTmrConn = function(loginCb) {
 }
 
 ImapConnection.prototype._store = function(uids, flags, isAdding, cb) {
-  var isKeywords = (arguments.callee.caller === this.addKeywords || arguments.callee.caller === this.delKeywords);
+  var isKeywords = (arguments.callee.caller === this.addKeywords
+                    || arguments.callee.caller === this.delKeywords);
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
   if (typeof uids === 'undefined')
@@ -703,18 +774,25 @@ ImapConnection.prototype._store = function(uids, flags, isAdding, cb) {
   } catch(e) {
     throw e;
   }
-  if ((!Array.isArray(flags) && typeof flags !== 'string') || (Array.isArray(flags) && flags.length === 0))
-    throw new Error((isKeywords ? 'Keywords' : 'Flags') + ' argument must be a string or a non-empty Array');
+  if ((!Array.isArray(flags) && typeof flags !== 'string')
+      || (Array.isArray(flags) && flags.length === 0))
+    throw new Error((isKeywords ? 'Keywords' : 'Flags')
+                    + ' argument must be a string or a non-empty Array');
   if (!Array.isArray(flags))
     flags = [flags];
   for (var i=0; i<flags.length; i++) {
     if (!isKeywords) {
-      if (this._state.box.permFlags.indexOf(flags[i]) === -1 || flags[i] === '\\*' || flags[i] === '*')
-        throw new Error('The flag "' + flags[i] + '" is not allowed by the server for this mailbox');
+      if (this._state.box.permFlags.indexOf(flags[i]) === -1
+          || flags[i] === '\\*' || flags[i] === '*')
+        throw new Error('The flag "' + flags[i]
+                        + '" is not allowed by the server for this mailbox');
     } else {
-      // keyword contains any char except control characters (%x00-1F and %x7F) and: '(', ')', '{', ' ', '%', '*', '\', '"', ']'
-      if (/[\(\)\{\\\"\]\%\*\x00-\x20\x7F]/.test(flags[i]))
-        throw new Error('The keyword "' + flags[i] + '" contains invalid characters');
+      // keyword contains any char except control characters (%x00-1F and %x7F)
+      // and: '(', ')', '{', ' ', '%', '*', '\', '"', ']'
+      if (/[\(\)\{\\\"\]\%\*\x00-\x20\x7F]/.test(flags[i])) {
+        throw new Error('The keyword "' + flags[i]
+                        + '" contains invalid characters');
+      }
     }
   }
   if (!isKeywords)
@@ -722,7 +800,8 @@ ImapConnection.prototype._store = function(uids, flags, isAdding, cb) {
   flags = flags.join(' ');
   cb = arguments[arguments.length-1];
 
-  this._send('UID STORE ' + uids.join(',') + ' ' + (isAdding ? '+' : '-') + 'FLAGS.SILENT (' + flags + ')', cb);
+  this._send('UID STORE ' + uids.join(',') + ' ' + (isAdding ? '+' : '-')
+             + 'FLAGS.SILENT (' + flags + ')', cb);
 };
 
 ImapConnection.prototype._login = function(cb) {
@@ -731,7 +810,9 @@ ImapConnection.prototype._login = function(cb) {
         if (!err) {
           self._state.status = STATES.AUTH;
           if (self._state.numCapRecvs !== 2) {
-            self._send('CAPABILITY', cb); // fetch post-auth server capabilities if they were not automatically provided after login
+            // fetch post-auth server capabilities if they were not
+            // automatically provided after login
+            self._send('CAPABILITY', cb);
             return;
           }
         }
@@ -743,9 +824,11 @@ ImapConnection.prototype._login = function(cb) {
       return;
     }
     //if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') {
-      this._send('LOGIN "' + escape(this._options.username) + '" "' + escape(this._options.password) + '"', fnReturn);
+      this._send('LOGIN "' + escape(this._options.username) + '" "'
+                 + escape(this._options.password) + '"', fnReturn);
     /*} else {
-      cb(new Error('Unsupported authentication mechanism(s) detected. Unable to login.'));
+      cb(new Error('Unsupported authentication mechanism(s) detected. '
+                   + 'Unable to login.'));
       return;
     }*/
   }
@@ -811,9 +894,13 @@ util.inherits(ImapFetch, EventEmitter);
 /****** Utility Functions ******/
 
 function buildSearchQuery(options, isOrChild) {
-  var searchargs = '', months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var searchargs = '',
+      months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                'Oct', 'Nov', 'Dec'];
   for (var i=0,len=options.length; i<len; i++) {
-    var criteria = (isOrChild ? options : options[i]), args = null, modifier = (isOrChild ? '' : ' ');
+    var criteria = (isOrChild ? options : options[i]),
+        args = null,
+        modifier = (isOrChild ? '' : ' ');
     if (typeof criteria === 'string')
       criteria = criteria.toUpperCase();
     else if (Array.isArray(criteria)) {
@@ -822,11 +909,13 @@ function buildSearchQuery(options, isOrChild) {
       if (criteria.length > 0)
         criteria = criteria[0].toUpperCase();
     } else
-      throw new Error('Unexpected search option data type. Expected string or array. Got: ' + typeof criteria);
+      throw new Error('Unexpected search option data type. '
+                      + 'Expected string or array. Got: ' + typeof criteria);
     if (criteria === 'OR') {
       if (args.length !== 2)
         throw new Error('OR must have exactly two arguments');
-      searchargs += ' OR (' + buildSearchQuery(args[0], true) + ') (' + buildSearchQuery(args[1], true) + ')'
+      searchargs += ' OR (' + buildSearchQuery(args[0], true) + ') ('
+                    + buildSearchQuery(args[1], true) + ')'
     } else {
       if (criteria[0] === '!') {
         modifier += 'NOT ';
@@ -856,7 +945,8 @@ function buildSearchQuery(options, isOrChild) {
         case 'TEXT':
         case 'TO':
           if (!args || args.length !== 1)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
           searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '"';
         break;
         case 'BEFORE':
@@ -866,23 +956,29 @@ function buildSearchQuery(options, isOrChild) {
         case 'SENTSINCE':
         case 'SINCE':
           if (!args || args.length !== 1)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
           else if (!(args[0] instanceof Date)) {
             if ((args[0] = new Date(args[0])).toString() === 'Invalid Date')
-              throw new Error('Search option argument must be a Date object or a parseable date string');
+              throw new Error('Search option argument must be a Date object'
+                              + ' or a parseable date string');
           }
-          searchargs += modifier + criteria + ' ' + args[0].getDate() + '-' + months[args[0].getMonth()] + '-' + args[0].getFullYear();
+          searchargs += modifier + criteria + ' ' + args[0].getDate() + '-'
+                        + months[args[0].getMonth()] + '-'
+                        + args[0].getFullYear();
         break;
         case 'KEYWORD':
         case 'UNKEYWORD':
           if (!args || args.length !== 1)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
           searchargs += modifier + criteria + ' ' + args[0];
         break;
         case 'LARGER':
         case 'SMALLER':
           if (!args || args.length !== 1)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
           var num = parseInt(args[0]);
           if (isNaN(num))
             throw new Error('Search option argument must be a number');
@@ -890,12 +986,15 @@ function buildSearchQuery(options, isOrChild) {
         break;
         case 'HEADER':
           if (!args || args.length !== 2)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
-          searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '" "' + escape(''+args[1]) + '"';
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
+          searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '" "'
+                        + escape(''+args[1]) + '"';
         break;
         case 'UID':
           if (!args)
-            throw new Error('Incorrect number of arguments for search option: ' + criteria);
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
           args = args.slice(1);
           try {
             validateUIDList(args);
@@ -925,9 +1024,10 @@ function validateUIDList(uids) {
         continue;
     }
     intval = parseInt(''+uids[i]);
-    if (isNaN(intval))
-      throw new Error('Message ID must be an integer, "*", or a range: ' + uids[i]);
-    else if (typeof uids[i] !== 'number')
+    if (isNaN(intval)) {
+      throw new Error('Message ID must be an integer, "*", or a range: '
+                      + uids[i]);
+    } else if (typeof uids[i] !== 'number')
       uids[i] = intval;
   }
 }
@@ -980,7 +1080,9 @@ function parseFetch(str, literalData, fetchData) {
         header = headers[j].substring(0, headers[j].indexOf(': ')).toLowerCase();
         if (!fetchData.headers[header])
           fetchData.headers[header] = [];
-        fetchData.headers[header].push(headers[j].substr(headers[j].indexOf(': ')+2).replace(/\r\n/g, '').trim());
+        fetchData.headers[header].push(headers[j].substr(headers[j]
+                                                 .indexOf(': ')+2)
+                                                 .replace(/\r\n/g, '').trim());
       }
     }
   }
@@ -996,8 +1098,11 @@ function parseBodyStructure(cur, prefix, partID) {
     var part, partLen = cur.length, next;
     if (Array.isArray(cur[0])) { // multipart
       next = -1;
-      while (Array.isArray(cur[++next]))
-        ret.push(parseBodyStructure(cur[next], prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1));
+      while (Array.isArray(cur[++next])) {
+        ret.push(parseBodyStructure(cur[next], prefix
+                                               + (prefix !== '' ? '.' : '')
+                                               + (partID++).toString(), 1));
+      }
       part = { type: cur[next++].toLowerCase() };
       if (partLen > next) {
         if (Array.isArray(cur[next])) {
@@ -1010,20 +1115,30 @@ function parseBodyStructure(cur, prefix, partID) {
       }
     } else { // single part
       next = 7;
-      part = {
-        // the path identifier for this part, useful for fetching specific
-        // parts of a message
-        partID: (prefix !== '' ? prefix : '1'),
+      if (typeof cur[1] === 'string') {
+        part = {
+          // the path identifier for this part, useful for fetching specific
+          // parts of a message
+          partID: (prefix !== '' ? prefix : '1'),
 
-        // required fields as per RFC 3501 -- null or otherwise
-        type: cur[0].toLowerCase(), subtype: cur[1].toLowerCase(),
-        params: null, id: cur[3], description: cur[4], encoding: cur[5],
-        size: cur[6]
+          // required fields as per RFC 3501 -- null or otherwise
+          type: cur[0].toLowerCase(), subtype: cur[1].toLowerCase(),
+          params: null, id: cur[3], description: cur[4], encoding: cur[5],
+          size: cur[6]
+        }
+      } else {
+        // type information for malformed multipart body
+        part = { type: cur[0].toLowerCase(), params: null };
+        cur.splice(1, 0, null);
+        ++partLen;
+        next = 2;
       }
       if (Array.isArray(cur[2])) {
         part.params = {};
         for (var i=0,len=cur[2].length; i<len; i+=2)
           part.params[cur[2][i].toLowerCase()] = cur[2][i+1];
+        if (cur[1] === null)
+          ++next;
       }
       if (part.type === 'message' && part.subtype === 'rfc822') {
         // envelope
@@ -1075,7 +1190,8 @@ function parseBodyStructure(cur, prefix, partID) {
               else if (i === 7)
                 part.envelope.bcc = val;
             } else if (i === 8)
-              part.envelope['in-reply-to'] = cur[next][i]; // message ID being replied to
+              // message ID being replied to
+              part.envelope['in-reply-to'] = cur[next][i];
             else if (i === 9)
               part.envelope['message-id'] = cur[next][i];
             else
@@ -1087,7 +1203,9 @@ function parseBodyStructure(cur, prefix, partID) {
 
         // body
         if (partLen > next && Array.isArray(cur[next])) {
-          part.body = parseBodyStructure(cur[next], prefix + (prefix !== '' ? '.' : '') + (partID++).toString(), 1);
+          part.body = parseBodyStructure(cur[next], prefix
+                                                    + (prefix !== '' ? '.' : '')
+                                                    + (partID++).toString(), 1);
         } else
           part.body = null;
         ++next;
@@ -1096,7 +1214,7 @@ function parseBodyStructure(cur, prefix, partID) {
            || (part.type === 'message' && part.subtype === 'rfc822'))
           && partLen > next)
         part.lines = cur[next++];
-      if (partLen > next)
+      if (typeof cur[1] === 'string' && partLen > next)
         part.md5 = cur[next++];
     }
     // add any extra fields that may or may not be omitted entirely
@@ -1144,8 +1262,10 @@ function parseStructExtra(part, partLen, cur, next) {
 }
 
 String.prototype.explode = function(delimiter, limit) {
-  if (arguments.length < 2 || arguments[0] === undefined || arguments[1] === undefined ||
-      !delimiter || delimiter === '' || typeof delimiter === 'function' || typeof delimiter === 'object')
+  if (arguments.length < 2 || arguments[0] === undefined
+      || arguments[1] === undefined
+      || !delimiter || delimiter === '' || typeof delimiter === 'function'
+      || typeof delimiter === 'object')
       return false;
 
 	delimiter = (delimiter === true ? '1' : delimiter.toString());
@@ -1170,11 +1290,11 @@ function isNotEmpty(str) {
 }
 
 function escape(str) {
-  return str.replace('\\', '\\\\').replace('"', '\"');
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 function unescape(str) {
-  return str.replace('\"', '"').replace('\\\\', '\\');
+  return str.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
 }
 
 function up(str) {
@@ -1234,11 +1354,19 @@ function convStr(str) {
  *
  * http://code.jquery.com/jquery-1.4.2.js
  *
- * Modified by Brian White to use Array.isArray instead of the custom isArray method
+ * Modified by Brian White to use Array.isArray instead of the custom isArray
+ * method
  */
 function extend() {
   // copy reference to target object
-  var target = arguments[0] || {}, i = 1, length = arguments.length, deep = false, options, name, src, copy;
+  var target = arguments[0] || {},
+      i = 1,
+      length = arguments.length,
+      deep = false,
+      options,
+      name,
+      src,
+      copy;
 
   // Handle a deep copy situation
   if (typeof target === "boolean") {
@@ -1254,15 +1382,18 @@ function extend() {
 
   var isPlainObject = function(obj) {
     // Must be an Object.
-    // Because of IE, we also have to check the presence of the constructor property.
+    // Because of IE, we also have to check the presence of the constructor
+    // property.
     // Make sure that DOM nodes and window objects don't pass through, as well
-    if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType || obj.setInterval)
+    if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType
+        || obj.setInterval)
       return false;
     
     var has_own_constructor = hasOwnProperty.call(obj, "constructor");
-    var has_is_property_of_method = hasOwnProperty.call(obj.constructor.prototype, "isPrototypeOf");
+    var has_is_prop_of_method = hasOwnProperty.call(obj.constructor.prototype,
+                                                    "isPrototypeOf");
     // Not own constructor property must be Object
-    if (obj.constructor && !has_own_constructor && !has_is_property_of_method)
+    if (obj.constructor && !has_own_constructor && !has_is_prop_of_method)
       return false;
     
     // Own properties are enumerated firstly, so to speed up,
@@ -1290,7 +1421,8 @@ function extend() {
 
         // Recurse if we're merging object literal values or arrays
         if (deep && copy && (isPlainObject(copy) || Array.isArray(copy))) {
-          var clone = src && (isPlainObject(src) || Array.isArray(src)) ? src : Array.isArray(copy) ? [] : {};
+          var clone = src && (isPlainObject(src) || Array.isArray(src)
+                              ? src : (Array.isArray(copy) ? [] : {}));
 
           // Never move original objects, clone them
           target[name] = extend(deep, clone, copy);
