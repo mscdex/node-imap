@@ -95,7 +95,7 @@ ImapConnection.prototype.connect = function(loginCb) {
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
 
-  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this), this._options.connTimeout, loginCb);
+  this._state.tmrConn = setTimeout(this._fnTmrConn, this._options.connTimeout, loginCb);
   this._state.conn.setKeepAlive(true);
 
   if (this._options.secure) {
@@ -257,11 +257,11 @@ ImapConnection.prototype.connect = function(loginCb) {
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if ((result = /^\[UIDVALIDITY (\d+)\].*/i.exec(data[2])) !== null)
+            if ((result = /^\[UIDVALIDITY (\d+)\]$/i.exec(data[2])) !== null)
               self._state.box.validity = result[1];
-            else if ((result = /^\[UIDNEXT (\d+)\].*/i.exec(data[2])) !== null)
+            else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
               self._state.box._uidnext = result[1];
-            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\].*/i.exec(data[2])) !== null) {
+            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
@@ -1016,9 +1016,14 @@ function parseBodyStructure(cur, prefix, partID) {
         partID: (prefix !== '' ? prefix : '1'),
 
         // required fields as per RFC 3501 -- null or otherwise
-        type: cur[0].toLowerCase(), subtype: cur[1].toLowerCase(),
+        type: cur[0].toLowerCase(),
         params: null, id: cur[3], description: cur[4], encoding: cur[5],
         size: cur[6]
+      }
+      if (cur.length >= 2 && cur[1].toString() === 'String'){
+        part.subtype = cur[1].toLowerCase();
+      } else {
+        part.subtype = null;
       }
       if (Array.isArray(cur[2])) {
         part.params = {};
