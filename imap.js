@@ -1,13 +1,14 @@
 var util = require('util'), net = require('net'),
     tls = require('tls'), EventEmitter = require('events').EventEmitter;
-var emptyFn = function() {}, CRLF = "\r\n", debug=emptyFn,
+var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
     STATES = {
       NOCONNECT: 0,
       NOAUTH: 1,
       AUTH: 2,
       BOXSELECTING: 3,
       BOXSELECTED: 4
-    }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'];
+    }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
+    reFetch = /^\* \d+ FETCH .+? \{(\d+)\}\r\n/;
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -34,7 +35,7 @@ function ImapConnection (options) {
     tmrKeepalive: null,
     tmoKeepalive: 10000,
     tmrConn: null,
-    curData: '',
+    curData: null,
     curExpected: 0,
     curXferred: 0,
     capabilities: [],
@@ -108,9 +109,9 @@ ImapConnection.prototype.connect = function(loginCb) {
     this._state.conn.on('secure', function() {
       debug('Secure connection made.');
     });
-    this._state.conn.cleartext.setEncoding('utf8');
+    //this._state.conn.cleartext.setEncoding('utf8');
   } else {
-    this._state.conn.setEncoding('utf8');
+    //this._state.conn.setEncoding('utf8');
     this._state.conn.cleartext = this._state.conn;
   }
 
@@ -126,16 +127,19 @@ ImapConnection.prototype.connect = function(loginCb) {
   this._state.conn.cleartext.on('data', function(data) {
     if (data.length === 0) return;
     var trailingCRLF = false, literalInfo;
-    debug('\n<<RECEIVED>>: ' + util.inspect(data) + '\n');
+    debug('\n<<RECEIVED>>: ' + util.inspect(data.toString()) + '\n');
 
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
-        self._state.curData += data;
+        if (self._state.curData)
+          self._state.curData = self._state.curData.add(data);
+        else
+          self._state.curData = data;
         return;
       }
-      if (self._state.curData.length) {
-        data = self._state.curData + data;
-        self._state.curData = '';
+      if (self._state.curData && self._state.curData.length) {
+        data = self._state.curData.add(data);
+        self._state.curData = null;
       }
     }
 
@@ -145,22 +149,22 @@ ImapConnection.prototype.connect = function(loginCb) {
 
       if (!curReq._done) {
         var chunk = data;
-        self._state.curXferred += Buffer.byteLength(data, 'utf8');
+        self._state.curXferred += data.length;
         if (self._state.curXferred > self._state.curExpected) {
-          var pos = Buffer.byteLength(data, 'utf8')
+          var pos = data.length
                     - (self._state.curXferred - self._state.curExpected),
-              extra = (new Buffer(data)).slice(pos).toString('utf8');
+              extra = data.slice(pos);
           if (pos > 0)
-            chunk = (new Buffer(data)).slice(0, pos).toString('utf8');
+            chunk = data.slice(0, pos);
           else
             chunk = undefined;
           data = extra;
           curReq._done = 1;
         }
 
-        if (chunk) {
+        if (chunk && chunk.length) {
           if (curReq._msgtype === 'headers')
-            self._state.curData += chunk;
+            self._state.curData.append(chunk, self._state.curXferred);
           else
             curReq._msg.emit('data', chunk);
         }
@@ -169,13 +173,17 @@ ImapConnection.prototype.connect = function(loginCb) {
         var restDesc;
         if (curReq._done === 1) {
           if (curReq._msgtype === 'headers')
-            curReq._headers = self._state.curData;
-          self._state.curData = '';
+            curReq._headers = self._state.curData.toString();
+          self._state.curData = null;
           curReq._done = true;
         }
-        self._state.curData += data;
 
-        if (restDesc = self._state.curData.match(/^(.*?)\)\r\n/)) {
+        if (self._state.curData)
+          self._state.curData = self._state.curData.add(data);
+        else
+          self._state.curData = data;
+
+        if (restDesc = self._state.curData.toString().match(/^(.*?)\)\r\n/)) {
           if (restDesc[1]) {
             restDesc[1] = restDesc[1].trim();
             if (restDesc[1].length)
@@ -183,14 +191,14 @@ ImapConnection.prototype.connect = function(loginCb) {
           } else
             restDesc[1] = '';
           parseFetch(curReq._desc + restDesc[1], curReq._headers, curReq._msg);
-          data = self._state.curData.substring(self._state.curData.indexOf(CRLF)
-                                               + 2);
+          data = self._state.curData.slice(self._state.curData.indexOf(CRLF)
+                                           + 2);
           curReq._done = false;
           self._state.curXferred = 0;
           self._state.curExpected = 0;
-          self._state.curData = '';
+          self._state.curData = null;
           curReq._msg.emit('end');
-          if (data.length && data[0] === '*') {
+          if (data.length && data[0] === 42/* '*' */) {
             self._state.conn.cleartext.emit('data', data);
             return;
           }
@@ -199,36 +207,49 @@ ImapConnection.prototype.connect = function(loginCb) {
       } else
         return;
     } else if (self._state.curExpected === 0
-               && (literalInfo = data.match(/^\* \d+ FETCH .+? \{(\d+)\}\r\n/))) {
+               && (literalInfo = data.toString().match(reFetch))) {
       self._state.curExpected = parseInt(literalInfo[1], 10);
       var idxCRLF = data.indexOf(CRLF),
           curReq = self._state.requests[0],
-          type = /BODY\[(.*)\](?:\<\d+\>)?/.exec(data.substring(0, idxCRLF)),
+          type = /BODY\[(.*)\](?:\<\d+\>)?/
+                 .exec(data.toString().substring(0, idxCRLF)),
           msg = new ImapMessage(),
-          desc = data.substring(data.indexOf("(")+1, idxCRLF).trim();
+          desc = data.toString().substring(data.indexOf('(')+1, idxCRLF).trim();
       type = type[1];
       curReq._desc = desc;
       curReq._msg = msg;
       curReq._fetcher.emit('message', msg);
       curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
-      self._state.conn.cleartext.emit('data', data.substring(idxCRLF + 2));
+      if (curReq._msgtype === 'headers')
+        self._state.curData = new Buffer(self._state.curExpected);
+      self._state.conn.cleartext.emit('data', data.slice(idxCRLF + 2));
       return;
     }
 
     if (data.length === 0)
       return;
-    data = data.split(CRLF).filter(isNotEmpty);
+    var endsInCRLF = (data[data.length-2] === 13 && data[data.length-1] === 10);
+    data = data.split(CRLF);
 
     // Defer any extra server responses found in the incoming data
     if (data.length > 1) {
-      data.slice(1).forEach(function(line) {
-        process.nextTick(function() {
-          self._state.conn.cleartext.emit('data', line + CRLF);
-        });
-      });
+      for (var i=1,len=data.length; i<len; ++i) {
+        (function(line, isLast) {
+          process.nextTick(function() {
+            var needsCRLF = !isLast || (isLast && endsInCRLF),
+                b = new Buffer(needsCRLF ? line.length + 2 : line.length);
+            line.copy(b, 0, 0);
+            if (needsCRLF) {
+              b[b.length-2] = 13;
+              b[b.length-1] = 10;
+            }
+            self._state.conn.cleartext.emit('data', b);
+          });
+        })(data[i], i === len-1);
+      }
     }
 
-    data = data[0].explode(' ', 3);
+    data = data[0].toString().explode(' ', 3);
 
     if (data[0] === '*') { // Untagged server response
       if (self._state.status === STATES.NOAUTH) {
@@ -1436,6 +1457,67 @@ function extend() {
 
   // Return the modified object
   return target;
+};
+
+Buffer.prototype.append = function(buf, start) {
+  buf.copy(this, start, 0);
+};
+
+Buffer.prototype.add = function(buf) {
+  var newBuf = new Buffer(this.length + buf.length);
+  this.copy(newBuf, 0, 0);
+  buf.copy(newBuf, this.length, 0);
+  return newBuf;
+};
+
+Buffer.prototype.split = function(str) {
+  if ((typeof str !== 'string' && !Array.isArray(str))
+      || str.length === 0 || str.length > this.length)
+    return [this];
+  var search = !Array.isArray(str)
+                ? str.split('').map(function(el) { return el.charCodeAt(0); })
+                : str,
+      searchLen = search.length,
+      ret = [], pos, start = 0;
+
+  while ((pos = this.indexOf(search, start)) > -1) {
+    ret.push(this.slice(start, pos));
+    start = pos + searchLen;
+  }
+  if (!ret.length)
+    ret = [this];
+  else if (start < this.length)
+    ret.push(this.slice(start));
+  
+  return ret;
+};
+
+Buffer.prototype.indexOf = function(str, start) {
+  if (str.length > this.length)
+    return -1;
+  var search = !Array.isArray(str)
+                ? str.split('').map(function(el) { return el.charCodeAt(0); })
+                : str,
+      searchLen = search.length,
+      ret = -1, i, j, len;
+  for (i=start||0,len=this.length; i<len; ++i) {
+    if (this[i] == search[0] && (len-i) >= searchLen) {
+      if (searchLen > 1) {
+        for (j=1; j<searchLen; ++j) {
+          if (this[i+j] != search[j])
+            break;
+          else if (j == searchLen-1) {
+            ret = i;
+            break;
+          }
+        }
+      } else
+        ret = i;
+      if (ret > -1)
+        break;
+    }
+  }
+  return ret;
 };
 
 net.Stream.prototype.setSecure = function() {
