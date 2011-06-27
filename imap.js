@@ -584,7 +584,7 @@ ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
   if (this._state.status === STATES.BOXSELECTED
       && oldname === this._state.box.name && oldname !== 'INBOX')
     this._state.box._newName = oldname;
-    
+
   this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
 };
 
@@ -963,6 +963,7 @@ function buildSearchQuery(options, isOrChild) {
         case 'UNDRAFT':
         case 'UNFLAGGED':
         case 'UNSEEN':
+        case 'ALL':
           searchargs += modifier + criteria;
         break;
         case 'BCC':
@@ -1415,21 +1416,21 @@ function extend() {
     if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType
         || obj.setInterval)
       return false;
-    
+
     var has_own_constructor = hasOwnProperty.call(obj, "constructor");
     var has_is_prop_of_method = hasOwnProperty.call(obj.constructor.prototype,
                                                     "isPrototypeOf");
     // Not own constructor property must be Object
     if (obj.constructor && !has_own_constructor && !has_is_prop_of_method)
       return false;
-    
+
     // Own properties are enumerated firstly, so to speed up,
     // if last one is own, then all properties are own.
 
     var last_key;
     for (key in obj)
       last_key = key;
-    
+
     return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
   };
 
@@ -1494,7 +1495,7 @@ Buffer.prototype.split = function(str) {
     ret = [this];
   else if (start < this.length)
     ret.push(this.slice(start));
-  
+
   return ret;
 };
 
