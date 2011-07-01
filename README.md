@@ -307,6 +307,7 @@ ImapConnection Functions
 
 * **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with two parameters: the error (null if none) and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ].
     * The following message flags are valid criterion and do not require values:
+        * 'ALL' - All messages.
         * 'ANSWERED' - Messages with the Answered flag set.
         * 'DELETED' - Messages with the Deleted flag set.
         * 'DRAFT' - Messages with the Draft flag set.
