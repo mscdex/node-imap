@@ -163,8 +163,10 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
 
         if (chunk && chunk.length) {
-          if (curReq._msgtype === 'headers')
-            self._state.curData.append(chunk, self._state.curXferred);
+          if (curReq._msgtype === 'headers') {
+            self._state.curData.append(chunk, curReq.curPos);
+            curReq.curPos += chunk.length;
+          }
           else
             curReq._msg.emit('data', chunk);
         }
@@ -220,8 +222,10 @@ ImapConnection.prototype.connect = function(loginCb) {
       curReq._msg = msg;
       curReq._fetcher.emit('message', msg);
       curReq._msgtype = (type.indexOf('HEADER') === 0 ? 'headers' : 'body');
-      if (curReq._msgtype === 'headers')
+      if (curReq._msgtype === 'headers') {
         self._state.curData = new Buffer(self._state.curExpected);
+        curReq.curPos = 0;
+      }
       self._state.conn.cleartext.emit('data', data.slice(idxCRLF + 2));
       return;
     }
@@ -1016,7 +1020,6 @@ function buildSearchQuery(options, isOrChild) {
           if (!args)
             throw new Error('Incorrect number of arguments for search option: '
                             + criteria);
-          args = args.slice(1);
           try {
             validateUIDList(args);
           } catch(e) {
