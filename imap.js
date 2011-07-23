@@ -647,11 +647,14 @@ ImapConnection.prototype.fetch = function(uids, options) {
       // all message parts
       toFetch = 'TEXT';
     } else if (typeof opts.request.body === 'string') {
-      if (opts.request.body !== ''
-          && !/^([\d]+[\.]{0,1})*[\d]+$/.test(opts.request.body))
+      if (opts.request.body.toUpperCase() === 'FULL') {
+        // fetches the whole entire message (including the headers)
+        toFetch = '';
+      } else if (/^([\d]+[\.]{0,1})*[\d]+$/.test(opts.request.body)) {
+        // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
+        toFetch = opts.request.body;
+      } else
         throw new Error("Invalid body partID format");
-      // specific message part identifier, e.g. '1', '2', '1.1', '1.2', etc
-      toFetch = opts.request.body;
     }
   } else {
     // fetch specific headers only
