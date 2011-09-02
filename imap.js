@@ -331,13 +331,13 @@ ImapConnection.prototype.connect = function(loginCb) {
         case 'LIST':
           var result;
           if (self.delim === null
-              && (result = /^\(\\No[sS]elect\) (.+?) ".*"$/.exec(data[2])))
+              && (result = /^\(\\No[sS]elect\) (.+?) .*$/.exec(data[2])))
             self.delim = (result[1] === 'NIL'
                           ? false : result[1].substring(1, result[1].length-1));
           else if (self.delim !== null) {
             if (self._state.requests[0].args.length === 0)
               self._state.requests[0].args.push({});
-            result = /^\((.*)\) (.+?) "(.+)"$/.exec(data[2]);
+            result = /^\((.*)\) (.+?) "?(.+)"?$/.exec(data[2]);
             var box = {
               attribs: result[1].split(' ').map(function(attrib) {
                          return attrib.substr(1).toUpperCase();
