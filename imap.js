@@ -337,7 +337,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           else if (self.delim !== null) {
             if (self._state.requests[0].args.length === 0)
               self._state.requests[0].args.push({});
-            result = /^\((.*)\) (.+?) "(.+)"$/.exec(data[2]);
+            result = /^\((.*)\) (.+?) "?(.+)"?$/.exec(data[2]);
             var box = {
               attribs: result[1].split(' ').map(function(attrib) {
                          return attrib.substr(1).toUpperCase();
