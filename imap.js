@@ -98,6 +98,13 @@ ImapConnection.prototype.connect = function(loginCb) {
   this._reset();
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
+  this._state.conn.on('error', function(err) {
+    clearTimeout(self._state.tmrConn);
+    if (self._state.status === STATES.NOCONNECT)
+      loginCb(new Error('Unable to connect. Reason: ' + err));
+    self.emit('error', err);
+    debug('Error occurred: ' + err);
+  });
   this._state.conn.on('connect', function() {
     clearTimeout(self._state.tmrConn);
     debug('Connected to host.');
@@ -111,13 +118,6 @@ ImapConnection.prototype.connect = function(loginCb) {
     self._reset();
     debug('FIN packet received. Disconnecting...');
     self.emit('end');
-  });
-  this._state.conn.on('error', function(err) {
-    clearTimeout(self._state.tmrConn);
-    if (self._state.status === STATES.NOCONNECT)
-      loginCb(new Error('Unable to connect. Reason: ' + err));
-    self.emit('error', err);
-    debug('Error occurred: ' + err);
   });
   this._state.conn.on('close', function(had_error) {
     self._reset();
