@@ -98,6 +98,32 @@ ImapConnection.prototype.connect = function(loginCb) {
   this._reset();
 
   this._state.conn = net.createConnection(this._options.port, this._options.host);
+  this._state.conn.on('connect', function() {
+    clearTimeout(self._state.tmrConn);
+    debug('Connected to host.');
+    self._state.conn.cleartext.write('');
+    self._state.status = STATES.NOAUTH;
+  });
+  this._state.conn.on('ready', function() {
+    fnInit();
+  });
+  this._state.conn.on('end', function() {
+    self._reset();
+    debug('FIN packet received. Disconnecting...');
+    self.emit('end');
+  });
+  this._state.conn.on('error', function(err) {
+    clearTimeout(self._state.tmrConn);
+    if (self._state.status === STATES.NOCONNECT)
+      loginCb(new Error('Unable to connect. Reason: ' + err));
+    self.emit('error', err);
+    debug('Error occurred: ' + err);
+  });
+  this._state.conn.on('close', function(had_error) {
+    self._reset();
+    debug('Connection forcefully closed.');
+    self.emit('close', had_error);
+  });
 
   this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this),
                                    this._options.connTimeout, loginCb);
@@ -115,15 +141,6 @@ ImapConnection.prototype.connect = function(loginCb) {
     this._state.conn.cleartext = this._state.conn;
   }
 
-  this._state.conn.on('connect', function() {
-    clearTimeout(self._state.tmrConn);
-    debug('Connected to host.');
-    self._state.conn.cleartext.write('');
-    self._state.status = STATES.NOAUTH;
-  });
-  this._state.conn.on('ready', function() {
-    fnInit();
-  });
   this._state.conn.cleartext.on('data', function(data) {
     if (data.length === 0) return;
     var trailingCRLF = false, literalInfo;
@@ -478,23 +495,6 @@ ImapConnection.prototype.connect = function(loginCb) {
     } else {
       // unknown response
     }
-  });
-  this._state.conn.on('end', function() {
-    self._reset();
-    debug('FIN packet received. Disconnecting...');
-    self.emit('end');
-  });
-  this._state.conn.on('error', function(err) {
-    clearTimeout(self._state.tmrConn);
-    if (self._state.status === STATES.NOCONNECT)
-      loginCb(new Error('Unable to connect. Reason: ' + err));
-    self.emit('error', err);
-    debug('Error occurred: ' + err);
-  });
-  this._state.conn.on('close', function(had_error) {
-    self._reset();
-    debug('Connection forcefully closed.');
-    self.emit('close', had_error);
   });
 };
 
