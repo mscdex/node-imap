@@ -203,6 +203,8 @@ ImapConnection Events
 ImapConnection Properties
 -------------------------
 
+* **capabilities** - An Array containing the capabilities of the server.
+
 * **delim** - A String containing the (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be Boolean false.
 
 * **namespaces** - An Object containing 3 properties, one for each namespace type: personal (mailboxes that belong to the logged in user), other (mailboxes that belong to other users that the logged in user has access to), and shared (mailboxes that are accessible by any logged in user). The value of each of these properties is an Array of namespace Objects containing necessary information about each available namespace. There should always be one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list (if the server supports namespaces) with a blank namespace prefix. Each namespace Object has the following format (with example values):
@@ -363,6 +365,19 @@ ImapConnection Functions
 * **addKeywords**(Integer/String/Array, String/Array, Function) - _(void)_ - Adds the specified keyword(s) to the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with one parameter: the error (null if none).
 
 * **delKeywords**(Integer/String/Array, String/Array, Function) - _(void)_ - Removes the specified keyword(s) from the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single keyword or can be an Array of keywords. The Function parameter is the callback with one parameter: the error (null if none).
+
+
+Extensions Supported
+--------------------
+
+* **Gmail**
+    * Server capability: X-GM-EXT-1
+    * search() criteria extensions
+        * X-GM-RAW: string value which allows you to use Gmail's web interface search syntax, such as: "has:attachment in:unread"
+        * X-GM-THRID: allows you to search for a specific conversation/thread id which is associated with groups of messages
+        * X-GM-MSGID: allows you to search for a specific message given its account-wide unique id
+        * X-GM-LABELS: string value which allows you to search for specific messages that have the given label applied
+    * fetch() will automatically retrieve the thread id, unique message id, and labels with the message properties being 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively
 
 
 TODO

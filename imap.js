@@ -38,7 +38,6 @@ function ImapConnection (options) {
     curData: null,
     curExpected: 0,
     curXferred: 0,
-    capabilities: [],
     box: {
       _uidnext: 0,
       _flags: [],
@@ -64,6 +63,7 @@ function ImapConnection (options) {
     debug = this._options.debug;
   this.delim = null;
   this.namespaces = { personal: [], other: [], shared: [] };
+  this.capabilities = [];
 };
 util.inherits(ImapConnection, EventEmitter);
 exports.ImapConnection = ImapConnection;
@@ -81,7 +81,7 @@ ImapConnection.prototype.connect = function(loginCb) {
               return;
             }
             // Next, get the list of available namespaces if supported
-            if (!reentry && self._state.capabilities.indexOf('NAMESPACE') > -1) {
+            if (!reentry && self.capabilities.indexOf('NAMESPACE') > -1) {
               var fnMe = arguments.callee;
               // Re-enter this function after we've obtained the available
               // namespaces
@@ -277,7 +277,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         case 'CAPABILITY':
           if (self._state.numCapRecvs < 2)
             self._state.numCapRecvs++;
-          self._state.capabilities = data[2].split(' ').map(up);
+          self.capabilities = data[2].split(' ').map(up);
         break;
         case 'FLAGS':
           if (self._state.status === STATES.BOXSELECTING) {
@@ -452,7 +452,7 @@ ImapConnection.prototype.connect = function(loginCb) {
       if (self._state.requests.length === 0
           && recentCmd !== 'LOGOUT') {
         if (self._state.status === STATES.BOXSELECTED &&
-            self._state.capabilities.indexOf('IDLE') > -1) {
+            self.capabilities.indexOf('IDLE') > -1) {
           // According to RFC 2177, we should re-IDLE at least every 29
           // minutes to avoid disconnection by the server
           self._send('IDLE', undefined, true);
@@ -593,7 +593,8 @@ ImapConnection.prototype.search = function(options, cb) {
     throw new Error('No mailbox is currently selected');
   if (!Array.isArray(options))
     throw new Error('Expected array for search options');
-  this._send('UID SEARCH' + buildSearchQuery(options), cb);
+  this._send('UID SEARCH'
+             + buildSearchQuery(options, this.capabilities), cb);
 };
 
 ImapConnection.prototype.fetch = function(uids, options) {
@@ -662,7 +663,11 @@ ImapConnection.prototype.fetch = function(uids, options) {
               + ')';
   }
 
-  this._send('UID FETCH ' + uids.join(',') + ' (FLAGS INTERNALDATE'
+  var extensions = '';
+  if (this.capabilities.indexOf('X-GM-EXT-1') > -1)
+    extensions = 'X-GM-THRID X-GM-MSGID X-GM-LABELS ';
+
+  this._send('UID FETCH ' + uids.join(',') + ' (' + extensions + 'FLAGS INTERNALDATE'
              + (opts.request.struct ? ' BODYSTRUCTURE' : '')
              + (typeof toFetch === 'string' ? ' BODY'
              + (!opts.markSeen ? '.PEEK' : '')
@@ -674,7 +679,8 @@ ImapConnection.prototype.fetch = function(uids, options) {
                  self.emit('error', e);
                else if (fetcher)
                  fetcher.emit('end');
-             });
+             }
+  );
   var imapFetcher = new ImapFetch();
   this._state.requests[this._state.requests.length-1]._fetcher = imapFetcher;
   return imapFetcher;
@@ -847,7 +853,7 @@ ImapConnection.prototype._login = function(cb) {
         cb(err);
       };
   if (this._state.status === STATES.NOAUTH) {
-    if (typeof this._state.capabilities.LOGINDISABLED !== 'undefined') {
+    if (this.capabilities.indexOf('LOGINDISABLED') > -1) {
       cb(new Error('Logging in is disabled on this server'));
       return;
     }
@@ -867,11 +873,11 @@ ImapConnection.prototype._reset = function() {
   this._state.status = STATES.NOCONNECT;
   this._state.numCapRecvs = 0;
   this._state.requests = [];
-  this._state.capabilities = [];
   this._state.isIdle = true;
   this._state.isReady = false;
   this.namespaces = { personal: [], other: [], shared: [] };
   this.delim = null;
+  this.capabilities = [];
   this._resetBox();
 };
 ImapConnection.prototype._resetBox = function() {
@@ -921,7 +927,7 @@ util.inherits(ImapFetch, EventEmitter);
 
 /****** Utility Functions ******/
 
-function buildSearchQuery(options, isOrChild) {
+function buildSearchQuery(options, extensions, isOrChild) {
   var searchargs = '',
       months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
                 'Oct', 'Nov', 'Dec'];
@@ -942,14 +948,15 @@ function buildSearchQuery(options, isOrChild) {
     if (criteria === 'OR') {
       if (args.length !== 2)
         throw new Error('OR must have exactly two arguments');
-      searchargs += ' OR (' + buildSearchQuery(args[0], true) + ') ('
-                    + buildSearchQuery(args[1], true) + ')'
+      searchargs += ' OR (' + buildSearchQuery(args[0], extensions, true) + ') ('
+                    + buildSearchQuery(args[1], extensions, true) + ')'
     } else {
       if (criteria[0] === '!') {
         modifier += 'NOT ';
         criteria = criteria.substr(1);
       }
       switch(criteria) {
+        // -- Standard criteria --
         case 'ALL':
         case 'ANSWERED':
         case 'DELETED':
@@ -1031,6 +1038,38 @@ function buildSearchQuery(options, isOrChild) {
           }
           searchargs += modifier + criteria + ' ' + args.join(',');
         break;
+        // -- Extensions criteria --
+        case 'X-GM-MSGID': // Gmail unique message ID
+        case 'X-GM-THRID': // Gmail thread ID
+          if (extensions.indexOf('X-GM-EXT-1') === -1)
+            throw new Error('IMAP extension not available: ' + criteria);
+          var val;
+          if (!args || args.length !== 1)
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
+          else {
+            val = ''+args[0];
+            if (!(/^\d+$/.test(args[0])))
+              throw new Error('Invalid value');
+          }
+          searchargs += modifier + criteria + ' ' + val;
+        break;
+        case 'X-GM-RAW': // Gmail search syntax
+          if (extensions.indexOf('X-GM-EXT-1') === -1)
+            throw new Error('IMAP extension not available: ' + criteria);
+          if (!args || args.length !== 1)
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
+          searchargs += modifier + criteria + ' "' + escape(''+args[0]) + '"';
+        break;
+        case 'X-GM-LABELS': // Gmail labels
+          if (extensions.indexOf('X-GM-EXT-1') === -1)
+            throw new Error('IMAP extension not available: ' + criteria);
+          if (!args || args.length !== 1)
+            throw new Error('Incorrect number of arguments for search option: '
+                            + criteria);
+          searchargs += modifier + criteria + ' ' + args[0];
+        break;
         default:
           throw new Error('Unexpected search option: ' + criteria);
       }
@@ -1100,6 +1139,8 @@ function parseFetch(str, literalData, fetchData) {
       fetchData.flags = result[i+1].filter(isNotEmpty);
     else if (result[i] === 'BODYSTRUCTURE')
       fetchData.structure = parseBodyStructure(result[i+1]);
+    else if (typeof result[i] === 'string') // simple extensions
+      fetchData[result[i].toLowerCase()] = result[i+1];
     else if (Array.isArray(result[i]) && typeof result[i][0] === 'string' &&
              result[i][0].indexOf('HEADER') === 0 && literalData) {
       var headers = literalData.split(/\r\n(?=[\w])/), header;
@@ -1371,9 +1412,12 @@ function convStr(str) {
     return str.substring(1, str.length-1);
   else if (str === 'NIL')
     return null;
-  else if (/^\d+$/.test(str))
-    return parseInt(str, 10);
-  else
+  else if (/^\d+$/.test(str)) {
+    // some IMAP extensions utilize large (64-bit) integers, which JavaScript
+    // can't handle natively, so we'll just keep it as a string if it's too big
+    var val = parseInt(str, 10);
+    return (val.toString() === str ? val : str);
+  } else
     return str;
 }
 
