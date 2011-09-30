@@ -953,15 +953,19 @@ ImapConnection.prototype._login = function(cb) {
         }
         cb(err);
       };
+
   if (this._state.status === STATES.NOAUTH) {
     if (this.capabilities.indexOf('LOGINDISABLED') > -1) {
       cb(new Error('Logging in is disabled on this server'));
       return;
     }
-    //if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') {
+    if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options) {
+		this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
+    } else /* if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') */ {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
-    /*} else {
+	}
+    /* else {
       cb(new Error('Unsupported authentication mechanism(s) detected. '
                    + 'Unable to login.'));
       return;
