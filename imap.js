@@ -443,7 +443,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             args.unshift([]);
         }
         args.unshift(err);
-        self._state.requests[0].callback.apply({}, args);
+        self._state.requests[0].callback.apply(self, args);
       }
 
 
