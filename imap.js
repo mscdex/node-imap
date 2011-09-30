@@ -97,7 +97,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
             // Lastly, get the top-level mailbox hierarchy delimiter used by the
             // server
-            self._send('LIST "" ""', loginCb);
+            self._send(((self.capabilities.indexOf('XLIST') == -1) ? 'LIST' : 'XLIST') + ' "" ""', loginCb);
           });
         });
       };
@@ -334,6 +334,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._state.requests[0].args.push(parseInt(result[1]));
         break;*/
         case 'LIST':
+        case 'XLIST':
           var result;
           if (self.delim === null
               && (result = /^\(\\No[sS]elect\) (.+?) .*$/.exec(data[2])))
@@ -346,9 +347,9 @@ ImapConnection.prototype.connect = function(loginCb) {
             var box = {
               attribs: result[1].split(' ').map(function(attrib) {
                          return attrib.substr(1).toUpperCase();
-                       }).filter(function(attrib) {
+                       })/*.filter(function(attrib) {
                          return (BOX_ATTRIBS.indexOf(attrib) > -1);
-                       }),
+                       })*/,
               delim: (result[2] === 'NIL'
                       ? false : result[2].substring(1, result[2].length-1)),
               children: null,
@@ -588,7 +589,7 @@ ImapConnection.prototype.getBoxes = function(namespace, cb) {
   cb = arguments[arguments.length-1];
   if (arguments.length !== 2)
     namespace = '';
-  this._send('LIST "' + escape(namespace) + '" "*"', cb);
+  this._send(((this.capabilities.indexOf('XLIST') == -1) ? 'LIST' : 'XLIST') + ' "' + escape(namespace) + '" "*"', cb);
 };
 
 ImapConnection.prototype.addBox = function(name, cb) {
