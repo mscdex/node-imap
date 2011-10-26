@@ -402,6 +402,29 @@ ImapConnection.prototype.connect = function(loginCb) {
                   }
                 }
             }
+            if ((self._state.ext.idle.sentIdle || self._state.requests[0].command == 'NOOP') && /^(EXISTS|EXPUNGE|RECENT|FETCH)/.test(data[2])) {
+              // Emit 'idleResponse' event for untagged server responses received from a NOOP
+              // or while idling.
+              //
+              // In the case on new message arriving in mailbox, both the 'mail' event 
+              // (see 'EXISTS' case above) and this 'idleResponse' event will be triggered.
+              //
+              // In the case on flags changing on an existing message and the response
+              // is not from an IDLE command, both the 'message' event (see default
+              // case above) and this 'idleResponse' event will be triggered.
+              
+              // parse flags on FETCH response into data structure
+              var rData = data[2].trim().explode(' ',2);
+              if (rData[0] == 'FETCH') {
+                var flags = false;
+                try {
+                  flags = rData[1].match(/^\(FLAGS \((.*)\)\)/).pop().split(' ');
+                } catch (e) {}
+              }
+              
+              self.emit('idleResponse', parseInt(data[1]), rData[0], flags);
+            }
+            
           }
       }
     } else if (data[0].indexOf('A') === 0) { // Tagged server response
