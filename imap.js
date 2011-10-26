@@ -185,7 +185,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         else
           self._state.curData = data;
 
-        if (restDesc = self._state.curData.toString().match(/^(.*?)\)\r\n/)) {
+        if ((restDesc = self._state.curData.toString().match(/^(.*?)\)\r\n/))) {
           if (restDesc[1]) {
             restDesc[1] = restDesc[1].trim();
             if (restDesc[1].length)
@@ -288,15 +288,15 @@ ImapConnection.prototype.connect = function(loginCb) {
           }
         break;
         case 'OK':
-          if (result = /^\[ALERT\] (.*)$/i.exec(data[2]))
+          if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])))
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if (result = /^\[UIDVALIDITY (\d+)\]/i.exec(data[2]))
+            if ((result = /^\[UIDVALIDITY (\d+)\]/i.exec(data[2])))
               self._state.box.validity = result[1];
-            else if (result = /^\[UIDNEXT (\d+)\]/i.exec(data[2]))
+            else if ((result = /^\[UIDNEXT (\d+)\]/i.exec(data[2])))
               self._state.box._uidnext = result[1];
-            else if (result = /^\[PERMANENTFLAGS \((.*)\)\]/i.exec(data[2])) {
+            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]/i.exec(data[2]))) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
