@@ -1245,15 +1245,19 @@ function parseFetch(str, literalData, fetchData) {
       fetchData[result[i].toLowerCase()] = result[i+1];
     else if (Array.isArray(result[i]) && typeof result[i][0] === 'string' &&
              result[i][0].indexOf('HEADER') === 0 && literalData) {
-      var headers = literalData.split(/\r\n(?=[\w])/), header;
+      var headers = literalData.split(/\r\n(?=\w)/),
+          header,
+          match,
+          headerValue;
       fetchData.headers = {};
       for (var j=0,len2=headers.length; j<len2; ++j) {
-        header = headers[j].substring(0, headers[j].indexOf(': ')).toLowerCase();
+        match = headers[j].match(/(.*?):\s*(.*)/);
+        header = match[1].toLowerCase();
         if (!fetchData.headers[header])
           fetchData.headers[header] = [];
-        fetchData.headers[header].push(headers[j].substr(headers[j]
-                                                 .indexOf(': ')+2)
-                                                 .replace(/\r\n/g, '').trim());
+        headerValue = match[2].replace(/\r\n/g, '').trim();
+        if (headerValue)
+          fetchData.headers[header].push(headerValue);
       }
     }
   }
@@ -1711,3 +1715,7 @@ function pipe(pair, socket) {
 
   return cleartext;
 }
+
+exports.__test = {
+    parseFetch: parseFetch
+};
