@@ -132,13 +132,13 @@ ImapConnection.prototype.connect = function(loginCb) {
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
         if (self._state.curData)
-          self._state.curData = self._state.curData.add(data);
+          self._state.curData = bufferAppend(self._state.curData, data);
         else
           self._state.curData = data;
         return;
       }
       if (self._state.curData && self._state.curData.length) {
-        data = self._state.curData.add(data);
+        data = bufferAppend(self._state.curData, data);
         self._state.curData = null;
       }
     }
@@ -164,7 +164,7 @@ ImapConnection.prototype.connect = function(loginCb) {
 
         if (chunk && chunk.length) {
           if (curReq._msgtype === 'headers') {
-            self._state.curData.append(chunk, curReq.curPos);
+            chunk.copy(self._state.curData, curReq.curPos, 0);
             curReq.curPos += chunk.length;
           }
           else
@@ -181,7 +181,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
 
         if (self._state.curData)
-          self._state.curData = self._state.curData.add(data);
+          self._state.curData = bufferAppend(self._state.curData, data);
         else
           self._state.curData = data;
 
@@ -1365,13 +1365,13 @@ String.prototype.explode = function(delimiter, limit) {
       || typeof delimiter === 'object')
       return false;
 
-	delimiter = (delimiter === true ? '1' : delimiter.toString());
+  delimiter = (delimiter === true ? '1' : delimiter.toString());
 
   if (!limit || limit === 0)
     return this.split(delimiter);
   else if (limit < 0)
-		return false;
-	else if (limit > 0) {
+    return false;
+  else if (limit > 0) {
     var splitted = this.split(delimiter);
     var partA = splitted.splice(0, limit - 1);
     var partB = splitted.join(delimiter);
@@ -1379,11 +1379,11 @@ String.prototype.explode = function(delimiter, limit) {
     return partA;
   }
 
-	return false;
+  return false;
 }
 
 function isNotEmpty(str) {
-	return str.trim().length > 0;
+  return str.trim().length > 0;
 }
 
 function escape(str) {
@@ -1538,14 +1538,16 @@ function extend() {
   return target;
 };
 
-Buffer.prototype.append = function(buf, start) {
-  buf.copy(this, start, 0);
-};
+function bufferAppend(buf1, buf2) {
+  var newBuf = new Buffer(buf1.length + buf2.length);
+  buf1.copy(newBuf, 0, 0);
+  if (Buffer.isBuffer(buf2))
+    buf2.copy(newBuf, buf1.length, 0);
+  else if (Array.isArray(buf2)) {
+    for (var i=buf1.length, len=buf2.length; i<len; i++)
+      newBuf[i] = buf2[i];
+  }
 
-Buffer.prototype.add = function(buf) {
-  var newBuf = new Buffer(this.length + buf.length);
-  this.copy(newBuf, 0, 0);
-  buf.copy(newBuf, this.length, 0);
   return newBuf;
 };
 
