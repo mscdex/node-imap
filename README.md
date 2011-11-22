@@ -199,6 +199,8 @@ ImapConnection Events
 
 * **error**(Error) - Fires when an exception/error occurs (similar to net.Stream's error event). The given Error object represents the error raised.
 
+* **idleResponse**(Integer, String, Mixed) - Fires when an idling connection (or NOOP if server doesn't support IDLE) gets a response. Params supplied are: sequence id (Integer), response (String) and flags as an Array if the response is 'FETCH' or false otherwise.
+
 
 ImapConnection Properties
 -------------------------

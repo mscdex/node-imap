@@ -90,7 +90,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
             // Lastly, get the top-level mailbox hierarchy delimiter used by the
             // server
-            self._send('LIST "" ""', loginCb);
+            self._send(((self.capabilities.indexOf('XLIST') == -1) ? 'LIST' : 'XLIST') + ' "" ""', loginCb);
           });
         });
       };
@@ -185,7 +185,7 @@ ImapConnection.prototype.connect = function(loginCb) {
         else
           self._state.curData = data;
 
-        if (restDesc = self._state.curData.toString().match(/^(.*?)\)\r\n/)) {
+        if ((restDesc = self._state.curData.toString().match(/^(.*?)\)\r\n/))) {
           if (restDesc[1]) {
             restDesc[1] = restDesc[1].trim();
             if (restDesc[1].length)
@@ -288,15 +288,15 @@ ImapConnection.prototype.connect = function(loginCb) {
           }
         break;
         case 'OK':
-          if (result = /^\[ALERT\] (.*)$/i.exec(data[2]))
+          if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])))
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if (result = /^\[UIDVALIDITY (\d+)\]/i.exec(data[2]))
+            if ((result = /^\[UIDVALIDITY (\d+)\]/i.exec(data[2])))
               self._state.box.validity = result[1];
-            else if (result = /^\[UIDNEXT (\d+)\]/i.exec(data[2]))
+            else if ((result = /^\[UIDNEXT (\d+)\]/i.exec(data[2])))
               self._state.box._uidnext = result[1];
-            else if (result = /^\[PERMANENTFLAGS \((.*)\)\]/i.exec(data[2])) {
+            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]/i.exec(data[2]))) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
@@ -329,6 +329,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._state.requests[0].args.push(parseInt(result[1]));
         break;*/
         case 'LIST':
+        case 'XLIST':
           var result;
           if (self.delim === null
               && (result = /^\(\\No[sS]elect\) (.+?) .*$/.exec(data[2])))
@@ -341,9 +342,9 @@ ImapConnection.prototype.connect = function(loginCb) {
             var box = {
               attribs: result[1].split(' ').map(function(attrib) {
                          return attrib.substr(1).toUpperCase();
-                       }).filter(function(attrib) {
+                       })/*.filter(function(attrib) {
                          return (BOX_ATTRIBS.indexOf(attrib) > -1);
-                       }),
+                       })*/,
               delim: (result[2] === 'NIL'
                       ? false : result[2].substring(1, result[2].length-1)),
               children: null,
@@ -392,15 +393,38 @@ ImapConnection.prototype.connect = function(loginCb) {
               default:
                 // fetches without header or body (part) retrievals
                 if (/^FETCH/.test(data[2])) {
-                  var curReq = self._state.requests[0],
-                      msg = new ImapMessage();
-                  parseFetch(data[2].substring(data[2].indexOf("(")+1,
-                                               data[2].lastIndexOf(")")),
-                             "", msg);
-                  curReq._fetcher.emit('message', msg);
-                  msg.emit('end');
+                  if (self._state.requests.length > 0) {
+                    var curReq = self._state.requests[0];
+                    var msg = new ImapMessage();
+                    parseFetch(data[2].substring(data[2].indexOf("(")+1, data[2].lastIndexOf(")")), "", msg);
+                    curReq._fetcher.emit('message', msg);
+                    msg.emit('end');
+                  }
                 }
             }
+            if ((self._state.ext.idle.sentIdle || self._state.requests[0].command == 'NOOP') && /^(EXISTS|EXPUNGE|RECENT|FETCH)/.test(data[2])) {
+              // Emit 'idleResponse' event for untagged server responses received from a NOOP
+              // or while idling.
+              //
+              // In the case on new message arriving in mailbox, both the 'mail' event 
+              // (see 'EXISTS' case above) and this 'idleResponse' event will be triggered.
+              //
+              // In the case on flags changing on an existing message and the response
+              // is not from an IDLE command, both the 'message' event (see default
+              // case above) and this 'idleResponse' event will be triggered.
+              
+              // parse flags on FETCH response into data structure
+              var rData = data[2].trim().explode(' ',2);
+              if (rData[0] == 'FETCH') {
+                var flags = false;
+                try {
+                  flags = rData[1].match(/^\(FLAGS \((.*)\)\)/).pop().split(' ');
+                } catch (e) {}
+              }
+              
+              self.emit('idleResponse', parseInt(data[1]), rData[0], flags);
+            }
+            
           }
       }
     } else if (data[0].indexOf('A') === 0) { // Tagged server response
@@ -443,7 +467,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             args.unshift([]);
         }
         args.unshift(err);
-        self._state.requests[0].callback.apply({}, args);
+        self._state.requests[0].callback.apply(self, args);
       }
 
 
@@ -554,7 +578,7 @@ ImapConnection.prototype.getBoxes = function(namespace, cb) {
   cb = arguments[arguments.length-1];
   if (arguments.length !== 2)
     namespace = '';
-  this._send('LIST "' + escape(namespace) + '" "*"', cb);
+  this._send(((this.capabilities.indexOf('XLIST') == -1) ? 'LIST' : 'XLIST') + ' "' + escape(namespace) + '" "*"', cb);
 };
 
 ImapConnection.prototype.addBox = function(name, cb) {
@@ -852,15 +876,19 @@ ImapConnection.prototype._login = function(cb) {
         }
         cb(err);
       };
+
   if (this._state.status === STATES.NOAUTH) {
     if (this.capabilities.indexOf('LOGINDISABLED') > -1) {
       cb(new Error('Logging in is disabled on this server'));
       return;
     }
-    //if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') {
+    if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options) {
+		this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
+    } else /* if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') */ {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
-    /*} else {
+	}
+    /* else {
       cb(new Error('Unsupported authentication mechanism(s) detected. '
                    + 'Unable to login.'));
       return;
