@@ -903,6 +903,9 @@ ImapConnection.prototype._reset = function() {
   this._state.requests = [];
   this._state.isIdle = true;
   this._state.isReady = false;
+  this._state.ext.idle.sentIdle = false;
+  this._state.ext.idle.timeWaited = 0;
+
   this.namespaces = { personal: [], other: [], shared: [] };
   this.delim = null;
   this.capabilities = [];
