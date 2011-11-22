@@ -369,6 +369,9 @@ ImapConnection.prototype.connect = function(loginCb) {
         break;
         default:
           if (/^\d+$/.test(data[1])) {
+            var isUnsolicited = (self._state.requests[0] &&
+                      self._state.requests[0].command.indexOf('NOOP') > -1) ||
+                      (self._state.isIdle && self._state.ext.idle.sentIdle);
             switch (data[2]) {
               case 'EXISTS':
                 // mailbox total message count
@@ -386,19 +389,25 @@ ImapConnection.prototype.connect = function(loginCb) {
               break;
               case 'EXPUNGE':
                 // confirms permanent deletion of a single message
+                // TODO: emit 'deleted' event for unsolicited expunge responses
                 if (self._state.box.messages.total > 0)
                   self._state.box.messages.total--;
               break;
               default:
                 // fetches without header or body (part) retrievals
+                // TODO: emit event to notify flags for a message have changed
+                //       for unsolicited fetch responses
                 if (/^FETCH/.test(data[2])) {
-                  var curReq = self._state.requests[0],
-                      msg = new ImapMessage();
-                  parseFetch(data[2].substring(data[2].indexOf("(")+1,
-                                               data[2].lastIndexOf(")")),
-                             "", msg);
-                  curReq._fetcher.emit('message', msg);
-                  msg.emit('end');
+                  if (self._state.requests.length &&
+                      self._state.requests[0].command.indexOf('FETCH') > -1) {
+                    var curReq = self._state.requests[0],
+                        msg = new ImapMessage();
+                    parseFetch(data[2].substring(data[2].indexOf("(")+1,
+                                                 data[2].lastIndexOf(")")),
+                               "", msg);
+                    curReq._fetcher.emit('message', msg);
+                    msg.emit('end');
+                  }
                 }
             }
           }
