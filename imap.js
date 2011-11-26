@@ -8,7 +8,7 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
       BOXSELECTING: 3,
       BOXSELECTED: 4
     }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
-    reFetch = /^\* \d+ FETCH .+? \{(\d+)\}\r\n/;
+    reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -144,6 +144,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     }
 
     // Don't mess with incoming data if it's part of a literal
+    var strdata;
     if (self._state.curExpected > 0) {
       var curReq = self._state.requests[0];
 
@@ -209,14 +210,14 @@ ImapConnection.prototype.connect = function(loginCb) {
       } else
         return;
     } else if (self._state.curExpected === 0
-               && (literalInfo = data.toString().match(reFetch))) {
-      self._state.curExpected = parseInt(literalInfo[1], 10);
+               && (literalInfo = (strdata = data.toString()).match(reFetch))) {
+      self._state.curExpected = parseInt(literalInfo[2], 10);
       var idxCRLF = data.indexOf(CRLF),
           curReq = self._state.requests[0],
-          type = /BODY\[(.*)\](?:\<\d+\>)?/
-                 .exec(data.toString().substring(0, idxCRLF)),
+          type = /BODY\[(.*)\](?:\<\d+\>)?/.exec(strdata.substring(0, idxCRLF)),
           msg = new ImapMessage(),
-          desc = data.toString().substring(data.indexOf('(')+1, idxCRLF).trim();
+          desc = strdata.substring(data.indexOf('(')+1, idxCRLF).trim();
+      msg.seqno = parseInt(literalInfo[1], 10);
       type = type[1];
       curReq._desc = desc;
       curReq._msg = msg;
@@ -389,30 +390,31 @@ ImapConnection.prototype.connect = function(loginCb) {
               break;
               case 'EXPUNGE':
                 // confirms permanent deletion of a single message
-                // TODO: emit 'deleted' event for unsolicited expunge responses
                 if (self._state.box.messages.total > 0)
                   self._state.box.messages.total--;
+                if (isUnsolicited)
+                  self.emit('deleted', parseInt(data[1], 10));
               break;
               default:
                 // fetches without header or body (part) retrievals
-                // TODO: emit event to notify flags for a message have changed
-                //       for unsolicited fetch responses
                 if (/^FETCH/.test(data[2])) {
+                  var msg = new ImapMessage();
+                  parseFetch(data[2].substring(data[2].indexOf("(")+1,
+                                               data[2].lastIndexOf(")")),
+                             "", msg);
+                  msg.seqno = parseInt(data[1], 10);
                   if (self._state.requests.length &&
                       self._state.requests[0].command.indexOf('FETCH') > -1) {
-                    var curReq = self._state.requests[0],
-                        msg = new ImapMessage();
-                    parseFetch(data[2].substring(data[2].indexOf("(")+1,
-                                                 data[2].lastIndexOf(")")),
-                               "", msg);
+                    var curReq = self._state.requests[0];
                     curReq._fetcher.emit('message', msg);
                     msg.emit('end');
-                  }
+                  } else if (isUnsolicited)
+                    self.emit('msgupdate', msg);
                 }
             }
           }
       }
-    } else if (data[0].indexOf('A') === 0) { // Tagged server response
+    } else if (data[0][0] === 'A') { // Tagged server response
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
@@ -609,6 +611,7 @@ ImapConnection.prototype.search = function(options, cb) {
 ImapConnection.prototype.fetch = function(uids, options) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
+
   if (typeof uids === undefined || typeof uids === null
       || (Array.isArray(uids) && uids.length === 0))
     throw new Error('Nothing to fetch');
