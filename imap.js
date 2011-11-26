@@ -715,7 +715,7 @@ ImapConnection.prototype.delFlags = function(uids, flags, cb) {
 };
 
 ImapConnection.prototype.addKeywords = function(uids, flags, cb) {
-  if (!self._state.box._newKeywords)
+  if (!this._state.box._newKeywords)
     throw new Error('This mailbox does not allow new keywords to be added');
   try {
     this._store(uids, flags, true, cb);
