@@ -14,6 +14,11 @@ Requirements
 * An IMAP server -- tested with gmail
 
 
+Installation
+============
+
+    npm install imap
+
 Example
 =======
 
