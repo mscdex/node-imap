@@ -1487,7 +1487,7 @@ function extend() {
     // if last one is own, then all properties are own.
 
     var last_key;
-    for (key in obj)
+    for (var key in obj)
       last_key = key;
     
     return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
