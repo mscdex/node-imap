@@ -626,6 +626,7 @@ ImapConnection.prototype.fetch = function(uids, options) {
 
   var opts = {
     markSeen: false,
+    useSequence: false,
     request: {
       struct: true,
       headers: true, // \_______ at most one of these can be used for any given
@@ -679,7 +680,9 @@ ImapConnection.prototype.fetch = function(uids, options) {
   if (this.capabilities.indexOf('X-GM-EXT-1') > -1)
     extensions = 'X-GM-THRID X-GM-MSGID X-GM-LABELS ';
 
-  this._send('UID FETCH ' + uids.join(',') + ' (' + extensions + 'FLAGS INTERNALDATE'
+  var uid = opts.useSequence ? '' : 'UID ';
+
+  this._send(uid + 'FETCH ' + uids.join(',') + ' (' + extensions + 'UID FLAGS INTERNALDATE'
              + (opts.request.struct ? ' BODYSTRUCTURE' : '')
              + (typeof toFetch === 'string' ? ' BODY'
              + (!opts.markSeen ? '.PEEK' : '')
