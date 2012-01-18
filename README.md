@@ -14,6 +14,11 @@ Requirements
 * An IMAP server -- tested with gmail
 
 
+Installation
+============
+
+    npm install imap
+
 Example
 =======
 
@@ -81,6 +86,7 @@ node-imap exposes one object: **ImapConnection**.
 * _ImapMessage_ is an Object representing an email message. It consists of:
     * Properties:
         * **id** - An Integer that uniquely identifies this message (within its mailbox).
+        * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event).
         * **flags** - An Array containing the flags currently set on this message.
         * **date** - A String containing the internal server date for the message (always represented in GMT?)
         * **headers** - An Object containing the headers of the message, **if headers were requested when calling fetch().** Note: The value of each property in the object is an Array containing the value(s) for that particular header name (just in case there are duplicate headers).
@@ -192,6 +198,10 @@ ImapConnection Events
 * **alert**(String) - Fires when the server issues an alert (e.g. "the server is going down for maintenance"). The supplied String is the text of the alert message.
 
 * **mail**(Integer) - Fires when new mail arrives in the currently open mailbox. The supplied Integer specifies the number of new messages.
+
+* **deleted**(Integer) - Fires when a message is deleted from another IMAP connection's session. The Integer value is the *sequence number* (instead of the unique ID) of the message that was deleted. The sequence numbers of all messages higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep continuity of sequence numbers.
+
+* **msgupdate**(ImapMessage) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available properties in this case will almost always be 'seqno' and 'flags' (and obviously no 'data' or 'end' events will be emitted on the object).
 
 * **close**(Boolean) - Fires when the connection is completely closed (similar to net.Stream's close event). The specified Boolean indicates whether the connection was terminated due to a transmission error or not.
 
@@ -308,6 +318,8 @@ ImapConnection Functions
         }
 
 * **removeDeleted**(Function) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with one parameter: the error (null if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
+
+**All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence numbers instead of unique ids, conn.seq.fetch() fetches by sequence number(s) instead of unique ids, etc):**
 
 * **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with two parameters: the error (null if none) and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ].
     * The following message flags are valid criterion and do not require values:
