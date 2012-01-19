@@ -7,7 +7,9 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
       AUTH: 2,
       BOXSELECTING: 3,
       BOXSELECTED: 4
-    }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
+    }, 
+    BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
+    BOX_STATUS_DATA_ITEMS = ['MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN'],
     reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
 
 function ImapConnection (options) {
@@ -328,10 +330,14 @@ ImapConnection.prototype.connect = function(loginCb) {
                                             || data[2].length === 0
                                             ? [] : data[2].split(' '));
         break;
-        /*case 'STATUS':
-          var result = /UIDNEXT ([\d]+)\)$/.exec(data[2]);
-          self._state.requests[0].args.push(parseInt(result[1]));
-        break;*/
+        case 'STATUS':
+          var result = {}, foo;
+          data[2].match(new RegExp('(('+ BOX_STATUS_DATA_ITEMS.join('|')+') \\d*)','gi')).forEach(function (elm) {
+            foo = elm.split(' ');
+            result[foo[0].toLowerCase()] = parseInt(foo[1], 10);
+          });
+          self._state.requests[0].args.push(result);
+        break;
         case 'LIST':
         case 'XLIST':
           var result;
@@ -564,6 +570,29 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
   this._state.box.name = name;
 
   this._send((readOnly ? 'EXAMINE' : 'SELECT') + ' "' + escape(name) + '"', cb);
+};
+
+ImapConnection.prototype.boxStatus = function (name, dataItems, cb) {
+  if (this._state.status < STATES.AUTH) {
+    throw new Error('Not connected or authenticated');
+  }
+  if (typeof cb !== 'function') {
+    if (typeof dataItems === 'function') {
+      cb = dataItems;
+      dataItems = BOX_STATUS_DATA_ITEMS;
+    } else {
+      // doing a STATUS call without having a callback
+      // to do something with the results has no purpose
+      return false;
+    }
+  }
+  // filter out invalid data items for STATUS calls
+  // see: http://tools.ietf.org/html/rfc3501#section-6.3.10
+  dataItems = dataItems.filter(function(elm, idx) {
+    return (BOX_STATUS_DATA_ITEMS.indexOf(elm) > -1);
+  });
+
+  this._send('STATUS "' + escape(name) + '" ('+ dataItems.join(' ') +')', cb);
 };
 
 // also deletes any messages in this box marked with \Deleted
