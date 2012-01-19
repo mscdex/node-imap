@@ -252,6 +252,8 @@ ImapConnection Functions
 
 * **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
 
+* **boxStatus**(String[, Array], Function) - _(void)_ - Requests the status of the indicated mailbox, see http://tools.ietf.org/html/rfc3501#section-6.3.10 for more details on the STATUS call and when it's wise to use it. The String parameter is the name (including any necessary prefix/path) of the mailbox. The optional Array parameter specifies status data items you want to get. Valid values for this array are: 'MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY' and 'UNSEEN'. If you don't submit that array, the call will get all of them. The Function parameter is the callback with two parameters: the error (null if none), and an object whose properties are the requested status data items (all lowercase) and the value is the corresponding value obtained from the server.
+
 * **addBox**(String, Function) - _(void)_ - Creates a new mailbox on the server. The String parameter is the name (including any necessary prefix/path) of the new mailbox to create. The Function parameter is the callback with one parameter: the error (null if none).
 
 * **delBox**(String, Function) - _(void)_ - Removes a specific mailbox that exists on the server. The String parameter is the name (including any necessary prefix/path) of the mailbox to remove. The Function parameter is the callback with one parameter: the error (null if none).
