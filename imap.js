@@ -617,7 +617,32 @@ ImapConnection.prototype._search = function(which, options, cb) {
              + buildSearchQuery(options, this.capabilities), cb);
 };
 
-ImapConnection.prototype.seq.fetch = function(seqnos, options) {
+ImapConnection.prototype.append = function(mimedata, flags, date, cb) {
+  if (this._state.status !== STATES.BOXSELECTED) {
+    throw new Error('No mailbox is currently selected');
+  }
+  cmd = 'APPEND '+this._state.box.name+' ';
+  if(flags && flags.length)
+    if (!Array.isArray(flags))
+      throw new Error('Expected null or array for flags');
+    cmd += "("+flags.join(' ')+") ";
+  if(date){
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                'Oct', 'Nov', 'Dec'];
+    if (!(date instanceof Date))
+      throw new Error('Expected null or Date object for date');
+    cmd += '"'+date.getDate()+'-'+months[date.getMonth()]+'-'+date.getFullYear();
+    cmd += ' '+('0'+date.getHours().toString()).slice(-2)+':'+('0'+date.getMinutes().toString()).slice(-2)+':'+('0'+date.getSeconds().toString()).slice(-2);
+    cmd += ((date.getTimezoneOffset() > 0) ? ' -' : ' +' );
+    cmd += ('0'+(-date.getTimezoneOffset() / 60).toString()).slice(-2);
+    cmd += ('0'+(-date.getTimezoneOffset() % 60).toString()).slice(-2);
+    cmd += '" ';
+  }
+  cmd += '{'+mimedata.length+"}\r\n" + mimedata;
+  this._send(cmd, cb);
+}
+
+ImapConnection.prototype.fetch_seq = function(seqnos, options) {
   return this._fetch('', seqnos, options);
 };
 ImapConnection.prototype.fetch = function(uids, options) {
