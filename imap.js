@@ -414,7 +414,8 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
           }
       }
-    } else if (data[0][0] === 'A') { // Tagged server response
+    } else if (data[0][0] === 'A' || 
+        (data[0] === '+' && self._state.requests.length ) ) { // Tagged server response or continutation response
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
@@ -427,7 +428,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._resetBox();
         }
       }
-
+debugger;
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
         self._state.box.name = self._state.box._newName;
         delete self._state.box._newName;
@@ -438,7 +439,14 @@ ImapConnection.prototype.connect = function(loginCb) {
         var err = null;
         var args = self._state.requests[0].args,
             cmd = self._state.requests[0].command;
-        if (data[1] !== 'OK') {
+        if (data[0] === '+') {
+          if (cmd.indexOf('APPEND') !== 0) {
+            err = new Error('Unexpected continuation');
+            err.type = 'continuation';
+            err.request = cmd;
+          } else
+            return self._state.requests[0].callback();
+        } else if (data[1] !== 'OK') {
           err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
           err.request = cmd;
@@ -466,6 +474,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             self.capabilities.indexOf('IDLE') > -1) {
           // According to RFC 2177, we should re-IDLE at least every 29
           // minutes to avoid disconnection by the server
+debugger;
           self._send('IDLE', undefined, true);
         }
         self._state.tmrKeepalive = setTimeout(function() {
@@ -639,17 +648,17 @@ ImapConnection.prototype.append = function(data, options, cb) {
     cmd += ('0'+(-options.date.getTimezoneOffset() % 60)).slice(-2);
     cmd += '"';
   }
-  if (data instanceof Buffer) {
-    cmd += ' {'+data.length+"}\r\n"
-    cmdbuf = new Buffer(Buffer.byteLength(cmd)+data.length);
-    cmdbuf.write(cmd);
-    data.copy(cmdbuf, Buffer.byteLength(cmd));
-    this._send(cmdbuf, cb);
-  } else {
-    cmd += ' {'+Buffer.byteLength(data.toString())+"}\r\n"
-    cmd += data.toString(); // Send the command+data as a string
-    this._send(cmd, cb);
-  }
+  cmd += ' {';
+  cmd += (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data));
+  cmd += '}\r\n';
+  var self = this, step = 1;
+  this._send(cmd, function(err) {
+    if (err || step++ === 2)
+      return cb(err);
+    self._state.conn.cleartext.write(data);
+    self._state.conn.cleartext.write(CRLF);
+    debug('\n<<SENT>>: ' + util.inspect(data.toString()) + '\n');
+  });
 }
 
 ImapConnection.prototype.fetch = function(uids, options) {
@@ -976,12 +985,12 @@ ImapConnection.prototype._noop = function() {
   if (this._state.status >= STATES.AUTH)
     this._send('NOOP');
 };
-ImapConnection.prototype._send = function(cmdobj, cb, bypass) {
-  if (typeof cmdobj !== 'undefined' && !bypass)
-    this._state.requests.push({ command: cmdobj, callback: cb, args: [] });
-  if ((typeof cmdobj === 'undefined' && this._state.requests.length) ||
+ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
+  if (typeof cmdstr !== 'undefined' && !bypass)
+    this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
+  if ((typeof cmdstr === 'undefined' && this._state.requests.length) ||
       this._state.requests.length === 1 || bypass) {
-    var prefix = '', cmd = (bypass ? cmdobj : this._state.requests[0].command);
+    var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
     if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
       this._send('DONE', undefined, true);
