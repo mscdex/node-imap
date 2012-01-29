@@ -9,6 +9,8 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
       BOXSELECTING: 3,
       BOXSELECTED: 4
     }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
+    MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'],
     reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
 
 function ImapConnection (options) {
@@ -613,30 +615,43 @@ ImapConnection.prototype._search = function(which, options, cb) {
              + buildSearchQuery(options, this.capabilities), cb);
 };
 
-ImapConnection.prototype.append = function(mimedata, flags, date, cb) {
-  if (this._state.status !== STATES.BOXSELECTED) {
-    throw new Error('No mailbox is currently selected');
+ImapConnection.prototype.append = function(data, options, cb) {
+  options = options || {};
+  if (!('mailbox' in options)) {
+    if (this._state.status !== STATES.BOXSELECTED)
+      throw new Error('No mailbox specified or currently selected');
+    else
+      options.mailbox = this._state.box.name
   }
-  cmd = 'APPEND '+this._state.box.name+' ';
-  if(flags && flags.length)
-    if (!Array.isArray(flags))
-      throw new Error('Expected null or array for flags');
-    cmd += "("+flags.join(' ')+") ";
-  if(date){
-    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                'Oct', 'Nov', 'Dec'];
-    if (!(date instanceof Date))
+  cmd = 'APPEND "'+escape(options.mailbox)+'"';
+  if ('flags' in options) {
+    if (!Array.isArray(options.flags))
+      options.flags = Array(options.flags);
+    cmd += " (\\"+options.flags.join(' \\')+")";
+  }
+  if ('date' in options) {
+    if (!(options.date instanceof Date))
       throw new Error('Expected null or Date object for date');
-    cmd += '"'+date.getDate()+'-'+months[date.getMonth()]+'-'+date.getFullYear();
-    cmd += ' '+('0'+date.getHours().toString()).slice(-2)+':'+('0'+date.getMinutes().toString()).slice(-2)+':'+('0'+date.getSeconds().toString()).slice(-2);
-    cmd += ((date.getTimezoneOffset() > 0) ? ' -' : ' +' );
-    cmd += ('0'+(-date.getTimezoneOffset() / 60).toString()).slice(-2);
-    cmd += ('0'+(-date.getTimezoneOffset() % 60).toString()).slice(-2);
-    cmd += '" ';
+    cmd += ' "'+options.date.getDate()+'-'+MONTHS[options.date.getMonth()]+'-'+options.date.getFullYear();
+    cmd += ' '+('0'+options.date.getHours()).slice(-2)+':'+('0'+options.date.getMinutes()).slice(-2)+':'+('0'+options.date.getSeconds()).slice(-2);
+    cmd += ((options.date.getTimezoneOffset() > 0) ? ' -' : ' +' );
+    cmd += ('0'+(-options.date.getTimezoneOffset() / 60)).slice(-2);
+    cmd += ('0'+(-options.date.getTimezoneOffset() % 60)).slice(-2);
+    cmd += '"';
   }
-  cmd += '{'+mimedata.length+"}\r\n" + mimedata;
-  this._send(cmd, cb);
+  if (data instanceof Buffer) {
+    cmd += ' {'+data.length+"}\r\n"
+    cmdbuf = new Buffer(Buffer.byteLength(cmd)+data.length);
+    cmdbuf.write(cmd);
+    data.copy(cmdbuf, Buffer.byteLength(cmd));
+    this._send(cmdbuf, cb);
+  } else {
+    cmd += ' {'+Buffer.byteLength(data.toString())+"}\r\n"
+    cmd += data.toString(); // Send the command+data as a string
+    this._send(cmd, cb);
+  }
 }
+
 ImapConnection.prototype.fetch = function(uids, options) {
   return this._fetch('UID ', uids, options);
 };
@@ -961,12 +976,12 @@ ImapConnection.prototype._noop = function() {
   if (this._state.status >= STATES.AUTH)
     this._send('NOOP');
 };
-ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
-  if (typeof cmdstr !== 'undefined' && !bypass)
-    this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
-  if ((typeof cmdstr === 'undefined' && this._state.requests.length) ||
+ImapConnection.prototype._send = function(cmdobj, cb, bypass) {
+  if (typeof cmdobj !== 'undefined' && !bypass)
+    this._state.requests.push({ command: cmdobj, callback: cb, args: [] });
+  if ((typeof cmdobj === 'undefined' && this._state.requests.length) ||
       this._state.requests.length === 1 || bypass) {
-    var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
+    var prefix = '', cmd = (bypass ? cmdobj : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
     if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
       this._send('DONE', undefined, true);
@@ -981,7 +996,9 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     }
     if (cmd !== 'IDLE' && cmd !== 'DONE')
       prefix = 'A' + ++this._state.curId + ' ';
-    this._state.conn.cleartext.write(prefix + cmd + CRLF);
+    this._state.conn.cleartext.write(prefix);
+    this._state.conn.cleartext.write(cmd);
+    this._state.conn.cleartext.write(CRLF);
     debug('\n<<SENT>>: ' + prefix + cmd + '\n');
   }
 };
@@ -994,9 +1011,7 @@ util.inherits(ImapFetch, EventEmitter);
 /****** Utility Functions ******/
 
 function buildSearchQuery(options, extensions, isOrChild) {
-  var searchargs = '',
-      months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                'Oct', 'Nov', 'Dec'];
+  var searchargs = '';
   for (var i=0,len=options.length; i<len; i++) {
     var criteria = (isOrChild ? options : options[i]),
         args = null,
@@ -1066,7 +1081,7 @@ function buildSearchQuery(options, extensions, isOrChild) {
                               + ' or a parseable date string');
           }
           searchargs += modifier + criteria + ' ' + args[0].getDate() + '-'
-                        + months[args[0].getMonth()] + '-'
+                        + MONTHS[args[0].getMonth()] + '-'
                         + args[0].getFullYear();
         break;
         case 'KEYWORD':
