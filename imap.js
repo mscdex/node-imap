@@ -415,7 +415,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           }
       }
     } else if (data[0][0] === 'A' || 
-        (data[0] === '+' && self._state.requests.length ) ) { // Tagged server response or continutation response
+        (data[0] === '+' && self._state.requests.length && !self._state.isIdle)) { // Tagged server response or continutation response
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
