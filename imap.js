@@ -428,7 +428,6 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._resetBox();
         }
       }
-debugger;
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
         self._state.box.name = self._state.box._newName;
         delete self._state.box._newName;
@@ -474,7 +473,6 @@ debugger;
             self.capabilities.indexOf('IDLE') > -1) {
           // According to RFC 2177, we should re-IDLE at least every 29
           // minutes to avoid disconnection by the server
-debugger;
           self._send('IDLE', undefined, true);
         }
         self._state.tmrKeepalive = setTimeout(function() {
