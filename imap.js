@@ -648,7 +648,7 @@ ImapConnection.prototype.append = function(data, options, cb) {
   }
   cmd += ' {';
   cmd += (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data));
-  cmd += '}\r\n';
+  cmd += '}';
   var self = this, step = 1;
   this._send(cmd, function(err) {
     if (err || step++ === 2)
