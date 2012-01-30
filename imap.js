@@ -9,6 +9,8 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
       BOXSELECTING: 3,
       BOXSELECTED: 4
     }, BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
+    MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'],
     reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
 
 function ImapConnection (options) {
@@ -412,7 +414,8 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
           }
       }
-    } else if (data[0][0] === 'A') { // Tagged server response
+    } else if (data[0][0] === 'A' || 
+        (data[0] === '+' && self._state.requests.length && !self._state.isIdle)) { // Tagged server response or continutation response
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
@@ -425,7 +428,6 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._resetBox();
         }
       }
-
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
         self._state.box.name = self._state.box._newName;
         delete self._state.box._newName;
@@ -436,7 +438,14 @@ ImapConnection.prototype.connect = function(loginCb) {
         var err = null;
         var args = self._state.requests[0].args,
             cmd = self._state.requests[0].command;
-        if (data[1] !== 'OK') {
+        if (data[0] === '+') {
+          if (cmd.indexOf('APPEND') !== 0) {
+            err = new Error('Unexpected continuation');
+            err.type = 'continuation';
+            err.request = cmd;
+          } else
+            return self._state.requests[0].callback();
+        } else if (data[1] !== 'OK') {
           err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
           err.request = cmd;
@@ -612,6 +621,43 @@ ImapConnection.prototype._search = function(which, options, cb) {
   this._send(which + 'SEARCH'
              + buildSearchQuery(options, this.capabilities), cb);
 };
+
+ImapConnection.prototype.append = function(data, options, cb) {
+  options = options || {};
+  if (!('mailbox' in options)) {
+    if (this._state.status !== STATES.BOXSELECTED)
+      throw new Error('No mailbox specified or currently selected');
+    else
+      options.mailbox = this._state.box.name
+  }
+  cmd = 'APPEND "'+escape(options.mailbox)+'"';
+  if ('flags' in options) {
+    if (!Array.isArray(options.flags))
+      options.flags = Array(options.flags);
+    cmd += " (\\"+options.flags.join(' \\')+")";
+  }
+  if ('date' in options) {
+    if (!(options.date instanceof Date))
+      throw new Error('Expected null or Date object for date');
+    cmd += ' "'+options.date.getDate()+'-'+MONTHS[options.date.getMonth()]+'-'+options.date.getFullYear();
+    cmd += ' '+('0'+options.date.getHours()).slice(-2)+':'+('0'+options.date.getMinutes()).slice(-2)+':'+('0'+options.date.getSeconds()).slice(-2);
+    cmd += ((options.date.getTimezoneOffset() > 0) ? ' -' : ' +' );
+    cmd += ('0'+(-options.date.getTimezoneOffset() / 60)).slice(-2);
+    cmd += ('0'+(-options.date.getTimezoneOffset() % 60)).slice(-2);
+    cmd += '"';
+  }
+  cmd += ' {';
+  cmd += (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data));
+  cmd += '}';
+  var self = this, step = 1;
+  this._send(cmd, function(err) {
+    if (err || step++ === 2)
+      return cb(err);
+    self._state.conn.cleartext.write(data);
+    self._state.conn.cleartext.write(CRLF);
+    debug('\n<<SENT>>: ' + util.inspect(data.toString()) + '\n');
+  });
+}
 
 ImapConnection.prototype.fetch = function(uids, options) {
   return this._fetch('UID ', uids, options);
@@ -957,7 +1003,9 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     }
     if (cmd !== 'IDLE' && cmd !== 'DONE')
       prefix = 'A' + ++this._state.curId + ' ';
-    this._state.conn.cleartext.write(prefix + cmd + CRLF);
+    this._state.conn.cleartext.write(prefix);
+    this._state.conn.cleartext.write(cmd);
+    this._state.conn.cleartext.write(CRLF);
     debug('\n<<SENT>>: ' + prefix + cmd + '\n');
   }
 };
@@ -970,9 +1018,7 @@ util.inherits(ImapFetch, EventEmitter);
 /****** Utility Functions ******/
 
 function buildSearchQuery(options, extensions, isOrChild) {
-  var searchargs = '',
-      months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                'Oct', 'Nov', 'Dec'];
+  var searchargs = '';
   for (var i=0,len=options.length; i<len; i++) {
     var criteria = (isOrChild ? options : options[i]),
         args = null,
@@ -1042,7 +1088,7 @@ function buildSearchQuery(options, extensions, isOrChild) {
                               + ' or a parseable date string');
           }
           searchargs += modifier + criteria + ' ' + args[0].getDate() + '-'
-                        + months[args[0].getMonth()] + '-'
+                        + MONTHS[args[0].getMonth()] + '-'
                         + args[0].getFullYear();
         break;
         case 'KEYWORD':

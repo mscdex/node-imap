@@ -370,6 +370,12 @@ ImapConnection Functions
 
 * **move**(Integer/String/Array, String, Function) - _(void)_ - Moves the message(s) with the message ID(s) identified by the first parameter, in the currently open mailbox, to the mailbox specified by the second parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with one parameter: the error (null if none). **Note:** The message in the destination mailbox will have a new message ID.
 
+* **append**(Buffer/String, Object, Function) - _(void)_ - Appends a message to selected mailbox. The first parameter is either a string or Buffer containing a RFC-822 compatible MIME message. The second parameter is a configuration object. Valid options are:
+    * **mailbox** - (optional) The name of the mailbox to append the message to. If not specified, the currently connected mailbox is assumed.
+    * **flags** - (optional) Either a string or an Array of flags to append to the message, eg. `['Seen', 'Flagged']`
+    * **date** - (optional) A Date object that denotes when the message was received.
+The Function parameter is the callback with one parameter: the error (null if none).
+
 * **addFlags**(Integer/String/Array, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with one parameter: the error (null if none).
 
 * **delFlags**(Integer/String/Array, String/Array, Function) - _(void)_ - Removes the specified flag(s) from the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with one parameter: the error (null if none).
