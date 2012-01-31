@@ -13,6 +13,10 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
               'Oct', 'Nov', 'Dec'],
     reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
 
+var IDLE_NONE = 1,
+    IDLE_WAIT = 2,
+    IDLE_READY = 3;
+
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
     return new ImapConnection(options);
@@ -52,10 +56,10 @@ function ImapConnection (options) {
       messages: { total: 0, new: 0 }
     },
     ext: {
-      // Capability-specific state stuff
+      // Capability-specific state info
       idle: {
         MAX_WAIT: 1740000, // 29 mins in ms
-        sentIdle: false,
+        state: IDLE_NONE,
         timeWaited: 0 // ms
       }
     }
@@ -321,7 +325,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           parseNamespaces(data[2], self.namespaces);
         break;
         case 'SEARCH':
-          self._state.requests[0].args.push(typeof data[2] === 'undefined'
+          self._state.requests[0].args.push(data[2] === undefined
                                             || data[2].length === 0
                                             ? [] : data[2].split(' '));
         break;
@@ -372,7 +376,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           if (/^\d+$/.test(data[1])) {
             var isUnsolicited = (self._state.requests[0] &&
                       self._state.requests[0].command.indexOf('NOOP') > -1) ||
-                      (self._state.isIdle && self._state.ext.idle.sentIdle);
+                      (self._state.isIdle && self._state.ext.idle.state === IDLE_READY);
             switch (data[2]) {
               case 'EXISTS':
                 // mailbox total message count
@@ -414,8 +418,14 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
           }
       }
-    } else if (data[0][0] === 'A' || 
-        (data[0] === '+' && self._state.requests.length && !self._state.isIdle)) { // Tagged server response or continutation response
+    } else if (data[0][0] === 'A' || data[0] === '+') {
+      // Tagged server response or continuation response
+
+      if (data[0] === '+' && self._state.ext.idle.state === IDLE_WAIT) {
+        self._state.ext.idle.state = IDLE_READY;
+        return process.nextTick(function() { self._send(); });
+      }
+
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
@@ -428,6 +438,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           self._resetBox();
         }
       }
+
       if (self._state.requests[0].command.indexOf('RENAME') > -1) {
         self._state.box.name = self._state.box._newName;
         delete self._state.box._newName;
@@ -477,11 +488,11 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
         self._state.tmrKeepalive = setTimeout(function() {
           if (self._state.isIdle) {
-            if (self._state.ext.idle.sentIdle) {
+            if (self._state.ext.idle.state === IDLE_READY) {
               self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
               if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
                 self._send('IDLE', undefined, true); // restart IDLE
-            } else
+            } else if (self.capabilities.indexOf('IDLE') === -1)
               self._noop();
           }
         }, self._state.tmoKeepalive);
@@ -490,9 +501,11 @@ ImapConnection.prototype.connect = function(loginCb) {
 
       self._state.isIdle = true;
     } else if (data[0] === 'IDLE') {
-      if (self._state.requests.length > 0)
+      if (self._state.requests.length)
         process.nextTick(function() { self._send(); });
       self._state.isIdle = false;
+      self._state.ext.idle.state = IDLE_NONE;
+      self._state.ext.idle.timeWaited = 0;
     } else {
       // unknown response
     }
@@ -536,12 +549,11 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
     throw new Error('Not connected or authenticated');
   if (this._state.status === STATES.BOXSELECTED)
     this._resetBox();
-  if (typeof cb === 'undefined') {
-    if(typeof readOnly === 'undefined') {
+  if (cb === undefined) {
+    if (readOnly === undefined)
       cb = emptyFn;
-    } else {
+    else
       cb = readOnly;
-    }
     readOnly = false;
   }
   this._state.status = STATES.BOXSELECTING;
@@ -666,7 +678,7 @@ ImapConnection.prototype._fetch = function(which, uids, options) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
 
-  if (typeof uids === undefined || typeof uids === null
+  if (uids === undefined || uids === null
       || (Array.isArray(uids) && uids.length === 0))
     throw new Error('Nothing to fetch');
 
@@ -807,7 +819,7 @@ ImapConnection.prototype._move = function(which, uids, boxTo, cb) {
       counter = counter || 0;
       // Make sure we don't expunge any messages marked as Deleted except the
       // one we are moving
-      if (typeof reentryCount === 'undefined') {
+      if (reentryCount === undefined) {
         self.search(['DELETED'], function(e, result) {
           fnMe.call(this, e, 1, result);
         });
@@ -886,7 +898,7 @@ ImapConnection.prototype._store = function(which, uids, flags, isAdding, cb) {
                     || arguments.callee.caller === this.delKeywords);
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
-  if (typeof uids === 'undefined')
+  if (uids === undefined)
     throw new Error('The message ID(s) must be specified');
 
   if (!Array.isArray(uids))
@@ -960,7 +972,7 @@ ImapConnection.prototype._reset = function() {
   this._state.requests = [];
   this._state.isIdle = true;
   this._state.isReady = false;
-  this._state.ext.idle.sentIdle = false;
+  this._state.ext.idle.state = IDLE_NONE;
   this._state.ext.idle.timeWaited = 0;
 
   this.namespaces = { personal: [], other: [], shared: [] };
@@ -984,22 +996,21 @@ ImapConnection.prototype._noop = function() {
     this._send('NOOP');
 };
 ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
-  if (typeof cmdstr !== 'undefined' && !bypass)
+  if (cmdstr !== undefined && !bypass)
     this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
-  if ((typeof cmdstr === 'undefined' && this._state.requests.length) ||
+  if (this._state.ext.idle.state === IDLE_WAIT)
+    return;
+  if ((cmdstr === undefined && this._state.requests.length) ||
       this._state.requests.length === 1 || bypass) {
     var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
-    if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
-      this._send('DONE', undefined, true);
-      this._state.ext.idle.sentIdle = false;
-      this._state.ext.idle.timeWaited = 0;
-      return;
-    } else if (cmd === 'IDLE') {
+    if (this._state.ext.idle.state === IDLE_READY && cmd !== 'DONE')
+      return this._send('DONE', undefined, true);
+    else if (cmd === 'IDLE') {
        // we use a different prefix to differentiate and disregard the tagged
        // response the server will send us when we issue DONE
       prefix = 'IDLE ';
-      this._state.ext.idle.sentIdle = true;
+      this._state.ext.idle.state = IDLE_WAIT;
     }
     if (cmd !== 'IDLE' && cmd !== 'DONE')
       prefix = 'A' + ++this._state.curId + ' ';
@@ -1243,7 +1254,7 @@ function parseFetch(str, literalData, fetchData) {
 
 function parseBodyStructure(cur, prefix, partID) {
   var ret = [];
-  if (typeof prefix === 'undefined') {
+  if (prefix === undefined) {
     var result = (Array.isArray(cur) ? cur : parseExpr(cur));
     if (result.length)
       ret = parseBodyStructure(result, '', 1);
@@ -1559,7 +1570,7 @@ function extend() {
     for (var key in obj)
       last_key = key;
     
-    return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
+    return last_key === undefined || hasOwnProperty.call(obj, last_key);
   };
 
 
@@ -1584,7 +1595,7 @@ function extend() {
           target[name] = extend(deep, clone, copy);
 
         // Don't bring in undefined values
-        } else if (typeof copy !== "undefined")
+        } else if (copy !== undefined)
           target[name] = copy;
       }
     }
