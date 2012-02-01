@@ -635,6 +635,10 @@ ImapConnection.prototype._search = function(which, options, cb) {
 };
 
 ImapConnection.prototype.append = function(data, options, cb) {
+  if (typeof options === 'function') {
+    cb = options;
+    options = {};
+  }
   options = options || {};
   if (!('mailbox' in options)) {
     if (this._state.status !== STATES.BOXSELECTED)
