@@ -317,6 +317,11 @@ ImapConnection Functions
 
 * **removeDeleted**(Function) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the mailbox that is currently open. The Function parameter is the callback with one parameter: the error (null if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
+* **append**(Buffer/String, [Object,] Function) - _(void)_ - Appends a message to selected mailbox. The first parameter is a string or Buffer containing an RFC-822 compatible MIME message. The Function parameter is the callback with one parameter: the error (null if none). The second parameter is an options object. Valid options are:
+    * **mailbox** - The name of the mailbox to append the message to. **Default:** the currently open mailbox
+    * **flags** - Either a string (e.g. 'Seen') or an Array (e.g. `['Seen', 'Flagged']`) of flags to append to the message. **Default:** (no flags)
+    * **date** - A Date object that denotes when the message was received. **Default:** (current date/time)
+
 **All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence numbers instead of unique ids, conn.seq.fetch() fetches by sequence number(s) instead of unique ids, etc):**
 
 * **search**(Array, Function) - _(void)_ - Searches the currently open mailbox for messages using specific criterion. The Function parameter is the callback with two parameters: the error (null if none) and an Array containing the message IDs matching the search criterion. The Array parameter is a list of Arrays containing the criterion (and any required arguments) to be used. Prefix the criteria name with an "!" to negate. For example, to search for unread messages since April 20, 2010 you could use: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]. To search for messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ].
@@ -369,12 +374,6 @@ ImapConnection Functions
 * **copy**(Integer/String/Array, String, Function) - _(void)_ - Copies the message(s) with the message ID(s) identified by the first parameter, in the currently open mailbox, to the mailbox specified by the second parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with one parameter: the error (null if none).
 
 * **move**(Integer/String/Array, String, Function) - _(void)_ - Moves the message(s) with the message ID(s) identified by the first parameter, in the currently open mailbox, to the mailbox specified by the second parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The Function parameter is the callback with one parameter: the error (null if none). **Note:** The message in the destination mailbox will have a new message ID.
-
-* **append**(Buffer/String, Object, Function) - _(void)_ - Appends a message to selected mailbox. The first parameter is either a string or Buffer containing a RFC-822 compatible MIME message. The second parameter is a configuration object. Valid options are:
-    * **mailbox** - (optional) The name of the mailbox to append the message to. If not specified, the currently connected mailbox is assumed.
-    * **flags** - (optional) Either a string or an Array of flags to append to the message, eg. `['Seen', 'Flagged']`
-    * **date** - (optional) A Date object that denotes when the message was received.
-The Function parameter is the callback with one parameter: the error (null if none).
 
 * **addFlags**(Integer/String/Array, String/Array, Function) - _(void)_ - Adds the specified flag(s) to the message(s) identified by the first parameter. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '*' or '2504:*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second parameter can either be a String containing a single flag or can be an Array of flags. The Function parameter is the callback with one parameter: the error (null if none).
 
