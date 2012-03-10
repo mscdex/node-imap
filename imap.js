@@ -1,5 +1,6 @@
 var util = require('util'), net = require('net'),
-    tls = require('tls'), EventEmitter = require('events').EventEmitter;
+    tls = require('tls'), EventEmitter = require('events').EventEmitter,
+    Socket = net.Socket;
 var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
     STATES = {
       NOCONNECT: 0,
@@ -10,7 +11,13 @@ var emptyFn = function() {}, CRLF = '\r\n', debug=emptyFn,
     }, 
     BOX_ATTRIBS = ['NOINFERIORS', 'NOSELECT', 'MARKED', 'UNMARKED'],
     BOX_STATUS_DATA_ITEMS = ['MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY', 'UNSEEN'],
+    MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'],
     reFetch = /^\* (\d+) FETCH .+? \{(\d+)\}\r\n/;
+
+var IDLE_NONE = 1,
+    IDLE_WAIT = 2,
+    IDLE_READY = 3;
 
 function ImapConnection (options) {
   if (!(this instanceof ImapConnection))
@@ -51,10 +58,10 @@ function ImapConnection (options) {
       messages: { total: 0, new: 0 }
     },
     ext: {
-      // Capability-specific state stuff
+      // Capability-specific state info
       idle: {
         MAX_WAIT: 1740000, // 29 mins in ms
-        sentIdle: false,
+        state: IDLE_NONE,
         timeWaited: 0 // ms
       }
     }
@@ -69,9 +76,6 @@ function ImapConnection (options) {
 };
 util.inherits(ImapConnection, EventEmitter);
 exports.ImapConnection = ImapConnection;
-
-/* Namespace for seqno-based commands */
-ImapConnection.prototype.seq = {};
 
 ImapConnection.prototype.connect = function(loginCb) {
   var self = this,
@@ -102,10 +106,7 @@ ImapConnection.prototype.connect = function(loginCb) {
   loginCb = loginCb || emptyFn;
   this._reset();
 
-  this._state.conn = net.createConnection(this._options.port, this._options.host);
-
-  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this),
-                                   this._options.connTimeout, loginCb);
+  this._state.conn = new Socket();
   this._state.conn.setKeepAlive(true);
 
   if (this._options.secure) {
@@ -326,7 +327,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           parseNamespaces(data[2], self.namespaces);
         break;
         case 'SEARCH':
-          self._state.requests[0].args.push(typeof data[2] === 'undefined'
+          self._state.requests[0].args.push(data[2] === undefined
                                             || data[2].length === 0
                                             ? [] : data[2].split(' '));
         break;
@@ -382,7 +383,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           if (/^\d+$/.test(data[1])) {
             var isUnsolicited = (self._state.requests[0] &&
                       self._state.requests[0].command.indexOf('NOOP') > -1) ||
-                      (self._state.isIdle && self._state.ext.idle.sentIdle);
+                      (self._state.isIdle && self._state.ext.idle.state === IDLE_READY);
             switch (data[2]) {
               case 'EXISTS':
                 // mailbox total message count
@@ -447,7 +448,14 @@ ImapConnection.prototype.connect = function(loginCb) {
             
           }
       }
-    } else if (data[0][0] === 'A') { // Tagged server response
+    } else if (data[0][0] === 'A' || data[0] === '+') {
+      // Tagged server response or continuation response
+
+      if (data[0] === '+' && self._state.ext.idle.state === IDLE_WAIT) {
+        self._state.ext.idle.state = IDLE_READY;
+        return process.nextTick(function() { self._send(); });
+      }
+
       var sendBox = false;
       clearTimeout(self._state.tmrKeepalive);
 
@@ -471,7 +479,14 @@ ImapConnection.prototype.connect = function(loginCb) {
         var err = null;
         var args = self._state.requests[0].args,
             cmd = self._state.requests[0].command;
-        if (data[1] !== 'OK') {
+        if (data[0] === '+') {
+          if (cmd.indexOf('APPEND') !== 0) {
+            err = new Error('Unexpected continuation');
+            err.type = 'continuation';
+            err.request = cmd;
+          } else
+            return self._state.requests[0].callback();
+        } else if (data[1] !== 'OK') {
           err = new Error('Error while executing request: ' + data[2]);
           err.type = data[1];
           err.request = cmd;
@@ -503,11 +518,11 @@ ImapConnection.prototype.connect = function(loginCb) {
         }
         self._state.tmrKeepalive = setTimeout(function() {
           if (self._state.isIdle) {
-            if (self._state.ext.idle.sentIdle) {
+            if (self._state.ext.idle.state === IDLE_READY) {
               self._state.ext.idle.timeWaited += self._state.tmoKeepalive;
               if (self._state.ext.idle.timeWaited >= self._state.ext.idle.MAX_WAIT)
                 self._send('IDLE', undefined, true); // restart IDLE
-            } else
+            } else if (self.capabilities.indexOf('IDLE') === -1)
               self._noop();
           }
         }, self._state.tmoKeepalive);
@@ -516,9 +531,11 @@ ImapConnection.prototype.connect = function(loginCb) {
 
       self._state.isIdle = true;
     } else if (data[0] === 'IDLE') {
-      if (self._state.requests.length > 0)
+      if (self._state.requests.length)
         process.nextTick(function() { self._send(); });
       self._state.isIdle = false;
+      self._state.ext.idle.state = IDLE_NONE;
+      self._state.ext.idle.timeWaited = 0;
     } else {
       // unknown response
     }
@@ -540,6 +557,10 @@ ImapConnection.prototype.connect = function(loginCb) {
     debug('Connection forcefully closed.');
     self.emit('close', had_error);
   });
+
+  this._state.conn.connect(this._options.port, this._options.host);
+  this._state.tmrConn = setTimeout(this._fnTmrConn.bind(this),
+                                   this._options.connTimeout, loginCb);
 };
 
 ImapConnection.prototype.isAuthenticated = function() {
@@ -558,12 +579,11 @@ ImapConnection.prototype.openBox = function(name, readOnly, cb) {
     throw new Error('Not connected or authenticated');
   if (this._state.status === STATES.BOXSELECTED)
     this._resetBox();
-  if (typeof cb === 'undefined') {
-    if(typeof readOnly === 'undefined') {
+  if (cb === undefined) {
+    if (readOnly === undefined)
       cb = emptyFn;
-    } else {
+    else
       cb = readOnly;
-    }
     readOnly = false;
   }
   this._state.status = STATES.BOXSELECTING;
@@ -655,9 +675,6 @@ ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
   this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
 };
 
-ImapConnection.prototype.seq.search = function(options, cb) {
-  this._search('', options, cb);
-};
 ImapConnection.prototype.search = function(options, cb) {
   this._search('UID ', options, cb);
 };
@@ -670,9 +687,47 @@ ImapConnection.prototype._search = function(which, options, cb) {
              + buildSearchQuery(options, this.capabilities), cb);
 };
 
-ImapConnection.prototype.seq.fetch = function(seqnos, options) {
-  return this._fetch('', seqnos, options);
-};
+ImapConnection.prototype.append = function(data, options, cb) {
+  if (typeof options === 'function') {
+    cb = options;
+    options = {};
+  }
+  options = options || {};
+  if (!('mailbox' in options)) {
+    if (this._state.status !== STATES.BOXSELECTED)
+      throw new Error('No mailbox specified or currently selected');
+    else
+      options.mailbox = this._state.box.name
+  }
+  cmd = 'APPEND "'+escape(options.mailbox)+'"';
+  if ('flags' in options) {
+    if (!Array.isArray(options.flags))
+      options.flags = Array(options.flags);
+    cmd += " (\\"+options.flags.join(' \\')+")";
+  }
+  if ('date' in options) {
+    if (!(options.date instanceof Date))
+      throw new Error('Expected null or Date object for date');
+    cmd += ' "'+options.date.getDate()+'-'+MONTHS[options.date.getMonth()]+'-'+options.date.getFullYear();
+    cmd += ' '+('0'+options.date.getHours()).slice(-2)+':'+('0'+options.date.getMinutes()).slice(-2)+':'+('0'+options.date.getSeconds()).slice(-2);
+    cmd += ((options.date.getTimezoneOffset() > 0) ? ' -' : ' +' );
+    cmd += ('0'+(-options.date.getTimezoneOffset() / 60)).slice(-2);
+    cmd += ('0'+(-options.date.getTimezoneOffset() % 60)).slice(-2);
+    cmd += '"';
+  }
+  cmd += ' {';
+  cmd += (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data));
+  cmd += '}';
+  var self = this, step = 1;
+  this._send(cmd, function(err) {
+    if (err || step++ === 2)
+      return cb(err);
+    self._state.conn.cleartext.write(data);
+    self._state.conn.cleartext.write(CRLF);
+    debug('\n<<SENT>>: ' + util.inspect(data.toString()) + '\n');
+  });
+}
+
 ImapConnection.prototype.fetch = function(uids, options) {
   return this._fetch('UID ', uids, options);
 };
@@ -680,7 +735,7 @@ ImapConnection.prototype._fetch = function(which, uids, options) {
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
 
-  if (typeof uids === undefined || typeof uids === null
+  if (uids === undefined || uids === null
       || (Array.isArray(uids) && uids.length === 0))
     throw new Error('Nothing to fetch');
 
@@ -744,7 +799,7 @@ ImapConnection.prototype._fetch = function(which, uids, options) {
     extensions = 'X-GM-THRID X-GM-MSGID X-GM-LABELS ';
 
   this._send(which + 'FETCH ' + uids.join(',') + ' (' + extensions
-             + 'FLAGS INTERNALDATE'
+             + 'UID FLAGS INTERNALDATE'
              + (opts.request.struct ? ' BODYSTRUCTURE' : '')
              + (typeof toFetch === 'string' ? ' BODY'
              + (!opts.markSeen ? '.PEEK' : '')
@@ -763,23 +818,14 @@ ImapConnection.prototype._fetch = function(which, uids, options) {
   return imapFetcher;
 };
 
-ImapConnection.prototype.seq.addFlags = function(seqnos, flags, cb) {
-  this._store('', seqnos, flags, true, cb);
-};
 ImapConnection.prototype.addFlags = function(uids, flags, cb) {
   this._store('UID ', uids, flags, true, cb);
 };
 
-ImapConnection.prototype.seq.delFlags = function(seqnos, flags, cb) {
-  this._store('', seqnos, flags, false, cb);
-};
 ImapConnection.prototype.delFlags = function(uids, flags, cb) {
   this._store('UID ', uids, flags, false, cb);
 };
 
-ImapConnection.prototype.seq.addKeywords = function(seqnos, flags, cb) {
-  return this._addKeywords('', seqnos, flags, cb);
-};
 ImapConnection.prototype.addKeywords = function(uids, flags, cb) {
   return this._addKeywords('UID ', uids, flags, cb);
 };
@@ -789,16 +835,10 @@ ImapConnection.prototype._addKeywords = function(which, uids, flags, cb) {
   this._store(which, uids, flags, true, cb);
 };
 
-ImapConnection.prototype.seq.delKeywords = function(seqnos, flags, cb) {
-  this._store('', seqnos, flags, false, cb);
-};
 ImapConnection.prototype.delKeywords = function(uids, flags, cb) {
   this._store('UID ', uids, flags, false, cb);
 };
 
-ImapConnection.prototype.seq.copy = function(seqnos, boxTo, cb) {
-  return this._copy('', seqnos, boxTo, cb);
-};
 ImapConnection.prototype.copy = function(uids, boxTo, cb) {
   return this._copy('UID ', uids, boxTo, cb);
 };
@@ -814,9 +854,6 @@ ImapConnection.prototype._copy = function(which, uids, boxTo, cb) {
   this._send(which + 'COPY ' + uids.join(',') + ' "' + escape(boxTo) + '"', cb);
 };
 
-ImapConnection.prototype.seq.move = function(seqnos, boxTo, cb) {
-  return this._move('', seqnos, boxTo, cb);
-};
 ImapConnection.prototype.move = function(uids, boxTo, cb) {
   return this._move('UID ', uids, boxTo, cb);
 };
@@ -839,7 +876,7 @@ ImapConnection.prototype._move = function(which, uids, boxTo, cb) {
       counter = counter || 0;
       // Make sure we don't expunge any messages marked as Deleted except the
       // one we are moving
-      if (typeof reentryCount === 'undefined') {
+      if (reentryCount === undefined) {
         self.search(['DELETED'], function(e, result) {
           fnMe.call(this, e, 1, result);
         });
@@ -874,6 +911,37 @@ ImapConnection.prototype._move = function(which, uids, boxTo, cb) {
   }
 };
 
+/* Namespace for seqno-based commands */
+ImapConnection.prototype.__defineGetter__('seq', function() {
+  var self = this;
+  return {
+    move: function(seqnos, boxTo, cb) {
+      return self._move('', seqnos, boxTo, cb);
+    },
+    copy: function(seqnos, boxTo, cb) {
+      return self._copy('', seqnos, boxTo, cb);
+    },
+    delKeywords: function(seqnos, flags, cb) {
+      self._store('', seqnos, flags, false, cb);
+    },
+    addKeywords: function(seqnos, flags, cb) {
+      return self._addKeywords('', seqnos, flags, cb);
+    },
+    delFlags: function(seqnos, flags, cb) {
+      self._store('', seqnos, flags, false, cb);
+    },
+    addFlags: function(seqnos, flags, cb) {
+      self._store('', seqnos, flags, true, cb);
+    },
+    fetch: function(seqnos, options) {
+      return self._fetch('', seqnos, options);
+    },
+    search: function(options, cb) {
+      self._search('', options, cb);
+    }
+  };
+});
+
 
 /****** Private Functions ******/
 
@@ -887,7 +955,7 @@ ImapConnection.prototype._store = function(which, uids, flags, isAdding, cb) {
                     || arguments.callee.caller === this.delKeywords);
   if (this._state.status !== STATES.BOXSELECTED)
     throw new Error('No mailbox is currently selected');
-  if (typeof uids === 'undefined')
+  if (uids === undefined)
     throw new Error('The message ID(s) must be specified');
 
   if (!Array.isArray(uids))
@@ -960,7 +1028,7 @@ ImapConnection.prototype._reset = function() {
   this._state.requests = [];
   this._state.isIdle = true;
   this._state.isReady = false;
-  this._state.ext.idle.sentIdle = false;
+  this._state.ext.idle.state = IDLE_NONE;
   this._state.ext.idle.timeWaited = 0;
 
   this.namespaces = { personal: [], other: [], shared: [] };
@@ -984,26 +1052,27 @@ ImapConnection.prototype._noop = function() {
     this._send('NOOP');
 };
 ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
-  if (typeof cmdstr !== 'undefined' && !bypass)
+  if (cmdstr !== undefined && !bypass)
     this._state.requests.push({ command: cmdstr, callback: cb, args: [] });
-  if ((typeof cmdstr === 'undefined' && this._state.requests.length) ||
+  if (this._state.ext.idle.state === IDLE_WAIT)
+    return;
+  if ((cmdstr === undefined && this._state.requests.length) ||
       this._state.requests.length === 1 || bypass) {
     var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command);
     clearTimeout(this._state.tmrKeepalive);
-    if (this._state.ext.idle.sentIdle && cmd !== 'DONE') {
-      this._send('DONE', undefined, true);
-      this._state.ext.idle.sentIdle = false;
-      this._state.ext.idle.timeWaited = 0;
-      return;
-    } else if (cmd === 'IDLE') {
+    if (this._state.ext.idle.state === IDLE_READY && cmd !== 'DONE')
+      return this._send('DONE', undefined, true);
+    else if (cmd === 'IDLE') {
        // we use a different prefix to differentiate and disregard the tagged
        // response the server will send us when we issue DONE
       prefix = 'IDLE ';
-      this._state.ext.idle.sentIdle = true;
+      this._state.ext.idle.state = IDLE_WAIT;
     }
     if (cmd !== 'IDLE' && cmd !== 'DONE')
       prefix = 'A' + ++this._state.curId + ' ';
-    this._state.conn.cleartext.write(prefix + cmd + CRLF);
+    this._state.conn.cleartext.write(prefix);
+    this._state.conn.cleartext.write(cmd);
+    this._state.conn.cleartext.write(CRLF);
     debug('\n<<SENT>>: ' + prefix + cmd + '\n');
   }
 };
@@ -1016,9 +1085,7 @@ util.inherits(ImapFetch, EventEmitter);
 /****** Utility Functions ******/
 
 function buildSearchQuery(options, extensions, isOrChild) {
-  var searchargs = '',
-      months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                'Oct', 'Nov', 'Dec'];
+  var searchargs = '';
   for (var i=0,len=options.length; i<len; i++) {
     var criteria = (isOrChild ? options : options[i]),
         args = null,
@@ -1088,7 +1155,7 @@ function buildSearchQuery(options, extensions, isOrChild) {
                               + ' or a parseable date string');
           }
           searchargs += modifier + criteria + ' ' + args[0].getDate() + '-'
-                        + months[args[0].getMonth()] + '-'
+                        + MONTHS[args[0].getMonth()] + '-'
                         + args[0].getFullYear();
         break;
         case 'KEYWORD':
@@ -1243,7 +1310,7 @@ function parseFetch(str, literalData, fetchData) {
 
 function parseBodyStructure(cur, prefix, partID) {
   var ret = [];
-  if (typeof prefix === 'undefined') {
+  if (prefix === undefined) {
     var result = (Array.isArray(cur) ? cur : parseExpr(cur));
     if (result.length)
       ret = parseBodyStructure(result, '', 1);
@@ -1559,7 +1626,7 @@ function extend() {
     for (var key in obj)
       last_key = key;
     
-    return typeof last_key === "undefined" || hasOwnProperty.call(obj, last_key);
+    return last_key === undefined || hasOwnProperty.call(obj, last_key);
   };
 
 
@@ -1584,7 +1651,7 @@ function extend() {
           target[name] = extend(deep, clone, copy);
 
         // Don't bring in undefined values
-        } else if (typeof copy !== "undefined")
+        } else if (copy !== undefined)
           target[name] = copy;
       }
     }
