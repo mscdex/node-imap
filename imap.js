@@ -423,7 +423,7 @@ ImapConnection.prototype.connect = function(loginCb) {
                     self.emit('msgupdate', msg);
                 }
             }
-            if ((self._state.ext.idle.sentIdle || self._state.requests[0].command == 'NOOP') && /^(EXISTS|EXPUNGE|RECENT|FETCH)/.test(data[2])) {
+            if ((self._state.ext.idle.state === IDLE_READY || self._state.requests[0].command == 'NOOP') && /^(EXISTS|EXPUNGE|RECENT|FETCH)/.test(data[2])) {
               // Emit 'idleResponse' event for untagged server responses received from a NOOP
               // or while idling.
               //
