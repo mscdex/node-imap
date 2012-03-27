@@ -541,6 +541,9 @@ ImapConnection.prototype.connect = function(loginCb) {
     }
   });
   this._state.conn.on('end', function() {
+    if (self._state.status === STATES.NOAUTH) {
+      loginCb(new Error('Unable to authenticate.'));
+    }
     self._reset();
     debug.call(self._options,'FIN packet received. Disconnecting...');
     self.emit('end');
