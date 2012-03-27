@@ -113,7 +113,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     // TODO: support STARTTLS
     this._state.conn.cleartext = this._state.conn.setSecure();
     this._state.conn.on('secure', function() {
-      debug('Secure connection made.');
+      debug.call(self._options,'Secure connection made.');
     });
     //this._state.conn.cleartext.setEncoding('utf8');
   } else {
@@ -123,7 +123,7 @@ ImapConnection.prototype.connect = function(loginCb) {
 
   this._state.conn.on('connect', function() {
     clearTimeout(self._state.tmrConn);
-    debug('Connected to host.');
+    debug.call(self._options,'Connected to host.');
     self._state.conn.cleartext.write('');
     self._state.status = STATES.NOAUTH;
   });
@@ -133,7 +133,7 @@ ImapConnection.prototype.connect = function(loginCb) {
   this._state.conn.cleartext.on('data', function(data) {
     if (data.length === 0) return;
     var trailingCRLF = false, literalInfo;
-    debug('\n<<RECEIVED>>: ' + util.inspect(data.toString()) + '\n');
+    debug.call(self._options,'\n<<RECEIVED>>: ' + util.inspect(data.toString()) + '\n');
 
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
@@ -542,19 +542,19 @@ ImapConnection.prototype.connect = function(loginCb) {
   });
   this._state.conn.on('end', function() {
     self._reset();
-    debug('FIN packet received. Disconnecting...');
+    debug.call(self._options,'FIN packet received. Disconnecting...');
     self.emit('end');
   });
   this._state.conn.on('error', function(err) {
     clearTimeout(self._state.tmrConn);
     if (self._state.status === STATES.NOCONNECT)
       loginCb(new Error('Unable to connect. Reason: ' + err));
+    debug.call(self._options,'Error occurred: ' + err);
     self.emit('error', err);
-    debug('Error occurred: ' + err);
   });
   this._state.conn.on('close', function(had_error) {
     self._reset();
-    debug('Connection forcefully closed.');
+    debug.call(self._options,'Connection forcefully closed.');
     self.emit('close', had_error);
   });
 
@@ -724,7 +724,7 @@ ImapConnection.prototype.append = function(data, options, cb) {
       return cb(err);
     self._state.conn.cleartext.write(data);
     self._state.conn.cleartext.write(CRLF);
-    debug('\n<<SENT>>: ' + util.inspect(data.toString()) + '\n');
+    debug.call(self._options,'\n<<SENT>>: ' + util.inspect(data.toString()) + '\n');
   });
 }
 
@@ -1073,7 +1073,7 @@ ImapConnection.prototype._send = function(cmdstr, cb, bypass) {
     this._state.conn.cleartext.write(prefix);
     this._state.conn.cleartext.write(cmd);
     this._state.conn.cleartext.write(CRLF);
-    debug('\n<<SENT>>: ' + prefix + cmd + '\n');
+    debug.call(this._options,'\n<<SENT>>: ' + prefix + cmd + '\n');
   }
 };
 
