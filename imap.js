@@ -134,7 +134,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     debug('\n<<RECEIVED>>: ' + util.inspect(data.toString()) + '\n');
 
     if (self._state.curExpected === 0) {
-      if (data.indexOf(CRLF) === -1) {
+      if (bufferIndexOf(data, CRLF) === -1) {
         if (self._state.curData)
           self._state.curData = bufferAppend(self._state.curData, data);
         else
@@ -198,7 +198,7 @@ ImapConnection.prototype.connect = function(loginCb) {
           } else
             restDesc[1] = '';
           parseFetch(curReq._desc + restDesc[1], curReq._headers, curReq._msg);
-          data = self._state.curData.slice(self._state.curData.indexOf(CRLF)
+          data = self._state.curData.slice(bufferIndexOf(self._state.curData, CRLF)
                                            + 2);
           curReq._done = false;
           self._state.curXferred = 0;
@@ -216,11 +216,11 @@ ImapConnection.prototype.connect = function(loginCb) {
     } else if (self._state.curExpected === 0
                && (literalInfo = (strdata = data.toString()).match(reFetch))) {
       self._state.curExpected = parseInt(literalInfo[2], 10);
-      var idxCRLF = data.indexOf(CRLF),
+      var idxCRLF = bufferIndexOf(data, CRLF),
           curReq = self._state.requests[0],
           type = /BODY\[(.*)\](?:\<\d+\>)?/.exec(strdata.substring(0, idxCRLF)),
           msg = new ImapMessage(),
-          desc = strdata.substring(data.indexOf('(')+1, idxCRLF).trim();
+          desc = strdata.substring(bufferIndexOf(data, '(')+1, idxCRLF).trim();
       msg.seqno = parseInt(literalInfo[1], 10);
       type = type[1];
       curReq._desc = desc;
@@ -238,7 +238,7 @@ ImapConnection.prototype.connect = function(loginCb) {
     if (data.length === 0)
       return;
     var endsInCRLF = (data[data.length-2] === 13 && data[data.length-1] === 10);
-    data = data.split(CRLF);
+    data = bufferSplit(data, CRLF);
 
     // Defer any extra server responses found in the incoming data
     if (data.length > 1) {
@@ -1622,41 +1622,41 @@ function bufferAppend(buf1, buf2) {
   return newBuf;
 };
 
-Buffer.prototype.split = function(str) {
+function bufferSplit(buf, str) {
   if ((typeof str !== 'string' && !Array.isArray(str))
-      || str.length === 0 || str.length > this.length)
-    return [this];
+      || str.length === 0 || str.length > buf.length)
+    return [buf];
   var search = !Array.isArray(str)
                 ? str.split('').map(function(el) { return el.charCodeAt(0); })
                 : str,
       searchLen = search.length,
       ret = [], pos, start = 0;
 
-  while ((pos = this.indexOf(search, start)) > -1) {
-    ret.push(this.slice(start, pos));
+  while ((pos = bufferIndexOf(buf, search, start)) > -1) {
+    ret.push(buf.slice(start, pos));
     start = pos + searchLen;
   }
   if (!ret.length)
-    ret = [this];
-  else if (start < this.length)
-    ret.push(this.slice(start));
+    ret = [buf];
+  else if (start < buf.length)
+    ret.push(buf.slice(start));
   
   return ret;
 };
 
-Buffer.prototype.indexOf = function(str, start) {
-  if (str.length > this.length)
+function bufferIndexOf(buf, str, start) {
+  if (str.length > buf.length)
     return -1;
   var search = !Array.isArray(str)
                 ? str.split('').map(function(el) { return el.charCodeAt(0); })
                 : str,
       searchLen = search.length,
       ret = -1, i, j, len;
-  for (i=start||0,len=this.length; i<len; ++i) {
-    if (this[i] == search[0] && (len-i) >= searchLen) {
+  for (i=start||0,len=buf.length; i<len; ++i) {
+    if (buf[i] == search[0] && (len-i) >= searchLen) {
       if (searchLen > 1) {
         for (j=1; j<searchLen; ++j) {
-          if (this[i+j] != search[j])
+          if (buf[i+j] != search[j])
             break;
           else if (j == searchLen-1) {
             ret = i;
