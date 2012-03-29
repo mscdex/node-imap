@@ -209,6 +209,8 @@ ImapConnection Events
 
 * **error**(Error) - Fires when an exception/error occurs (similar to net.Stream's error event). The given Error object represents the error raised.
 
+* **idleResponse**(Integer, String, Mixed) - Fires when an idling connection (or NOOP if server doesn't support IDLE) gets a response. Params supplied are: sequence id (Integer), response (String) and flags as an Array if the response is 'FETCH' or false otherwise.
+
 
 ImapConnection Properties
 -------------------------
@@ -249,6 +251,8 @@ ImapConnection Functions
 * **openBox**(String[, Boolean], Function) - _(void)_ - Opens a specific mailbox that exists on the server. The String parameter is the name (including any necessary prefix/path) of the mailbox to open. The optional Boolean parameter specifies if the mailbox should be opened in read-only mode (defaults to false). The Function parameter is the callback with two parameters: the error (null if none), and the _Box_ object of the newly opened mailbox.
 
 * **closeBox**(Function) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Also, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The Function parameter is the callback with one parameter: the error (null if none).
+
+* **boxStatus**(String[, Array], Function) - _(void)_ - Requests the status of the indicated mailbox, see http://tools.ietf.org/html/rfc3501#section-6.3.10 for more details on the STATUS call and when it's wise to use it. The String parameter is the name (including any necessary prefix/path) of the mailbox. The optional Array parameter specifies status data items you want to get. Valid values for this array are: 'MESSAGES', 'RECENT', 'UIDNEXT', 'UIDVALIDITY' and 'UNSEEN'. If you don't submit that array, the call will get all of them. The Function parameter is the callback with two parameters: the error (null if none), and an object whose properties are the requested status data items (all lowercase) and the value is the corresponding value obtained from the server.
 
 * **addBox**(String, Function) - _(void)_ - Creates a new mailbox on the server. The String parameter is the name (including any necessary prefix/path) of the new mailbox to create. The Function parameter is the callback with one parameter: the error (null if none).
 
