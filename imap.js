@@ -1695,7 +1695,7 @@ function pipe(pair, socket) {
 
   function onerror(e) {
     if (cleartext._controlReleased)
-      cleartext.socket.emit('error', e);
+      cleartext.emit('error', e);
   }
 
   function onclose() {
