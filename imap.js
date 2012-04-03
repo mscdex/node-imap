@@ -97,7 +97,8 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
             // Lastly, get the top-level mailbox hierarchy delimiter used by the
             // server
-            self._send(((self.capabilities.indexOf('XLIST') == -1) ? 'LIST' : 'XLIST') + ' "" ""', loginCb);
+            self._send((self.capabilities.indexOf('XLIST') === -1
+                        ? 'LIST' : 'XLIST') + ' "" ""', loginCb);
           });
         });
       };
@@ -956,21 +957,18 @@ ImapConnection.prototype._login = function(cb) {
       };
 
   if (this._state.status === STATES.NOAUTH) {
-    if (this.capabilities.indexOf('LOGINDISABLED') > -1) {
-      cb(new Error('Logging in is disabled on this server'));
-      return;
-    }
-    if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options) {
-		this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
-    } else /* if (typeof this._state.capabilities['AUTH=PLAIN'] !== 'undefined') */ {
+    if (this.capabilities.indexOf('LOGINDISABLED') > -1)
+      return cb(new Error('Logging in is disabled on this server'));
+
+    if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options)
+      this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
+    else if (this._state.capabilities['AUTH=PLAIN'] !== undefined) {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
-	}
-    /* else {
-      cb(new Error('Unsupported authentication mechanism(s) detected. '
-                   + 'Unable to login.'));
-      return;
-    }*/
+    } else {
+      return cb(new Error('Unsupported authentication mechanism(s) detected. '
+                          + 'Unable to login.'));
+    }
   }
 };
 ImapConnection.prototype._reset = function() {
