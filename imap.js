@@ -332,10 +332,6 @@ ImapConnection.prototype.connect = function(loginCb) {
                                             || data[2].length === 0
                                             ? [] : data[2].split(' '));
         break;
-        /*case 'STATUS':
-          var result = /UIDNEXT ([\d]+)\)$/.exec(data[2]);
-          self._state.requests[0].args.push(parseInt(result[1]));
-        break;*/
         case 'LIST':
         case 'XLIST':
           var result;
