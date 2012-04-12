@@ -958,9 +958,9 @@ ImapConnection.prototype._login = function(cb) {
     if (this.capabilities.indexOf('LOGINDISABLED') > -1)
       return cb(new Error('Logging in is disabled on this server'));
 
-    if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options)
+    if (this.capabilities.indexOf('AUTH=XOAUTH') !== -1 && 'xoauth' in this._options)
       this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
-    else if (this._state.capabilities['AUTH=PLAIN'] !== undefined) {
+    else if (this.capabilities.indexOf('AUTH=PLAIN') !== -1) {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
     } else {
