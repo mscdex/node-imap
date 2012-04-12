@@ -960,13 +960,13 @@ ImapConnection.prototype._login = function(cb) {
 
     if (this.capabilities.indexOf('AUTH=XOAUTH') >= 0 && 'xoauth' in this._options)
       this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
-    else if (this._state.capabilities['AUTH=PLAIN'] !== undefined) {
+    else //if (this.capabilities.indexOf('AUTH=PLAIN') >=0 ) {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
-    } else {
-      return cb(new Error('Unsupported authentication mechanism(s) detected. '
-                          + 'Unable to login.'));
-    }
+    // } else {
+    //   return cb(new Error('Unsupported authentication mechanism(s) detected. '
+    //                       + 'Unable to login.'));
+    // }
   }
 };
 ImapConnection.prototype._reset = function() {
