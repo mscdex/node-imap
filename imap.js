@@ -346,18 +346,18 @@ ImapConnection.prototype.connect = function(loginCb) {
           else if (self.delim !== null) {
             if (self._state.requests[0].args.length === 0)
               self._state.requests[0].args.push({});
-            result = /^\((.*)\) (.+?) "?([^"]+)"?$/.exec(data[2]);
+            result = /^\((.*)\) (.+?) (.+)$/.exec(data[2]);
             var box = {
-              attribs: result[1].split(' ').map(function(attrib) {
-                         return attrib.substr(1).toUpperCase();
-                       })/*.filter(function(attrib) {
-                         return (BOX_ATTRIBS.indexOf(attrib) > -1);
-                       })*/,
-              delim: (result[2] === 'NIL'
-                      ? false : result[2].substring(1, result[2].length-1)),
-              children: null,
-              parent: null
-            }, name = result[3], curChildren = self._state.requests[0].args[0];
+                  attribs: result[1].split(' ').map(function(attrib) {
+                             return attrib.substr(1).toUpperCase();
+                           }),
+                  delim: (result[2] === 'NIL'
+                          ? false : result[2].substring(1, result[2].length-1)),
+                  children: null,
+                  parent: null
+                }, name = result[3], curChildren = self._state.requests[0].args[0];
+            if (name[0] === '"' && name[name.length-1] === '"')
+              name = name.substring(1, name.length - 1);
 
             if (box.delim) {
               var path = name.split(box.delim).filter(isNotEmpty),
