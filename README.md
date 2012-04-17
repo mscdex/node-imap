@@ -4,7 +4,7 @@ Description
 node-imap is an IMAP module for [node.js](http://nodejs.org/) that provides an asynchronous interface for communicating with an IMAP mail server.
 
 This module does not perform any magic such as auto-decoding of messages/attachments or parsing of email addresses (node-imap leaves all mail header values as-is).
-If you are in need of this kind of extra functionality, check out andris9's [mime.js](http://github.com/andris9/mailparser/blob/master/mime.js) (requires [node-iconv](http://github.com/bnoordhuis/node-iconv)) set of functions, part of his [mailparser](http://github.com/andris9/mailparser) module.
+If you are in need of this kind of extra functionality, check out andris9's [mimelib](https://github.com/andris9/mimelib) module. Also check out his [mailparser](http://github.com/andris9/mailparser) module, which comes in handy after you fetch() a 'full' raw email message with this module.
 
 
 Requirements
