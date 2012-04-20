@@ -955,16 +955,18 @@ ImapConnection.prototype._login = function(cb) {
       };
 
   if (this._state.status === STATES.NOAUTH) {
-    if (this.capabilities.indexOf('LOGINDISABLED') > -1)
+    if (this.capabilities.indexOf('LOGINDISABLED') !== -1)
       return cb(new Error('Logging in is disabled on this server'));
 
     if (this.capabilities.indexOf('AUTH=XOAUTH') !== -1 && 'xoauth' in this._options)
       this._send('AUTHENTICATE XOAUTH ' + escape(this._options.xoauth), fnReturn);
-    else if (this.capabilities.indexOf('AUTH=PLAIN') !== -1) {
+    else if (this.capabilities.indexOf('AUTH=PLAIN') !== -1 ||
+             // Kludge due to GMail no longer advertising plaintext auth ...
+             this.capabilities.indexOf('X-GM-EXT-1') !== -1) {
       this._send('LOGIN "' + escape(this._options.username) + '" "'
                  + escape(this._options.password) + '"', fnReturn);
     } else {
-      return cb(new Error('Unsupported authentication mechanism(s) detected. '
+      return cb(new Error('No supported authentication method(s) available. '
                           + 'Unable to login.'));
     }
   }
