@@ -369,9 +369,8 @@ ImapConnection.prototype.connect = function(loginCb) {
               }
               box.parent = parent;
             }
-            if ( ! curChildren[name] ) {
+            if (!curChildren[name])
               curChildren[name] = box;
-            }
           }
         break;
         default:
