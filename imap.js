@@ -369,7 +369,9 @@ ImapConnection.prototype.connect = function(loginCb) {
               }
               box.parent = parent;
             }
-            curChildren[name] = box;
+            if ( ! curChildren[name] ) {
+              curChildren[name] = box;
+            }
           }
         break;
         default:
@@ -618,7 +620,7 @@ ImapConnection.prototype.renameBox = function(oldname, newname, cb) {
   if (this._state.status === STATES.BOXSELECTED
       && oldname === this._state.box.name && oldname !== 'INBOX')
     this._state.box._newName = oldname;
-    
+
   this._send('RENAME "' + escape(oldname) + '" "' + escape(newname) + '"', cb);
 };
 
@@ -1561,21 +1563,21 @@ function extend() {
     if (!obj || toString.call(obj) !== "[object Object]" || obj.nodeType
         || obj.setInterval)
       return false;
-    
+
     var has_own_constructor = hasOwnProperty.call(obj, "constructor");
     var has_is_prop_of_method = hasOwnProperty.call(obj.constructor.prototype,
                                                     "isPrototypeOf");
     // Not own constructor property must be Object
     if (obj.constructor && !has_own_constructor && !has_is_prop_of_method)
       return false;
-    
+
     // Own properties are enumerated firstly, so to speed up,
     // if last one is own, then all properties are own.
 
     var last_key;
     for (var key in obj)
       last_key = key;
-    
+
     return last_key === undefined || hasOwnProperty.call(obj, last_key);
   };
 
@@ -1642,7 +1644,7 @@ function bufferSplit(buf, str) {
     ret = [buf];
   else if (start < buf.length)
     ret.push(buf.slice(start));
-  
+
   return ret;
 };
 
