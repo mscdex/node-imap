@@ -400,11 +400,12 @@ Extensions Supported
 TODO
 ----
 
-A bunch of things not yet implemented in no particular order:
+Several things not yet implemented in no particular order:
 
 * Support STARTTLS
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * Support additional IMAP commands/extensions:
+  * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
