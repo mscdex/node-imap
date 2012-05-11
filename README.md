@@ -361,7 +361,13 @@ ImapConnection Functions
         * 'LARGER' - Messages with a size larger than the specified number of bytes.
         * 'SMALLER' - Messages with a size smaller than the specified number of bytes.
     * The following are valid criterion that require one or more Integer values:
-        * 'UID' - Messages with message IDs corresponding to the specified message ID set. Ranges are permitted (e.g. '2504:2507' or '*' or '2504:*').
+        * 'UID' - Messages with message IDs corresponding to the specified message ID
+          set. Ranges are permitted, such as the following:
+
+                ['UID', '2504:2507']
+                ['UID', '*']
+                ['UID', '2504:*']
+
     * **Note:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example above).
 
 * **fetch**(Integer/String/Array, Object) - _ImapFetch_ - Fetches the message(s) identified by the first parameter, in the currently open mailbox. The first parameter can either be an Integer for a single message ID, a String for a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an Array containing any number of the aforementioned Integers and/or Strings. The second (Object) parameter is a set of options used to determine how and what exactly to fetch. The valid options are:
