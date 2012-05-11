@@ -235,8 +235,9 @@ ImapConnection Functions
 **Note:** Message ID sets for message ID range arguments are not guaranteed to be contiguous.
 
 * **(constructor)**([Object]) - _ImapConnection_ - Creates and returns a new instance of ImapConnection using the specified configuration object. Valid properties of the passed in object are:
-    * **username** - A String representing the username for authentication.
-    * **password** - A String representing the password for authentication.
+    * **username** - A String representing the username for plain-text authentication.
+    * **password** - A String representing the password for plain-text authentication.
+    * **xoauth** - A String containing an OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it.
     * **host** - A String representing the hostname or IP address of the IMAP server. **Default:** "localhost"
     * **port** - An Integer representing the port of the IMAP server. **Default:** 143
     * **secure** - A Boolean indicating the connection should use SSL/TLS. **Default:** false
