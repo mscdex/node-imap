@@ -128,9 +128,27 @@ ImapConnection.prototype.connect = function(loginCb) {
     self._state.conn.cleartext.write('');
     self._state.status = STATES.NOAUTH;
   });
-  this._state.conn.on('ready', function() {
-    fnInit();
+  this._state.conn.on('end', function() {
+    self._reset();
+    self.debug('FIN packet received. Disconnecting...');
+    self.emit('end');
   });
+  function errorHandler(err) {
+    clearTimeout(self._state.tmrConn);
+    if (self._state.status === STATES.NOCONNECT)
+      loginCb(new Error('Unable to connect. Reason: ' + err));
+    self.emit('error', err);
+    self.debug('Error occurred: ' + err);
+  }
+  //this._state.conn.on('error', errorHandler);
+  this._state.conn.cleartext.on('error', errorHandler);
+  this._state.conn.on('close', function(had_error) {
+    self._reset();
+    self.debug('Connection forcefully closed.');
+    self.emit('close', had_error);
+  });
+  this._state.conn.on('ready', fnInit);
+
   this._state.conn.cleartext.on('data', function(data) {
     if (data.length === 0) return;
     var trailingCRLF = false, literalInfo;
@@ -510,23 +528,6 @@ ImapConnection.prototype.connect = function(loginCb) {
     } else {
       // unknown response
     }
-  });
-  this._state.conn.on('end', function() {
-    self._reset();
-    self.debug('FIN packet received. Disconnecting...');
-    self.emit('end');
-  });
-  this._state.conn.on('error', function(err) {
-    clearTimeout(self._state.tmrConn);
-    if (self._state.status === STATES.NOCONNECT)
-      loginCb(new Error('Unable to connect. Reason: ' + err));
-    self.emit('error', err);
-    self.debug('Error occurred: ' + err);
-  });
-  this._state.conn.on('close', function(had_error) {
-    self._reset();
-    self.debug('Connection forcefully closed.');
-    self.emit('close', had_error);
   });
 
   this._state.conn.connect(this._options.port, this._options.host);
