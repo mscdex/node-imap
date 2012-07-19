@@ -99,8 +99,7 @@ ImapConnection.prototype.connect = function(loginCb) {
             }
             // Lastly, get the top-level mailbox hierarchy delimiter used by the
             // server
-            self._send((self.capabilities.indexOf('XLIST') === -1
-                        ? 'LIST' : 'XLIST') + ' "" ""', loginCb);
+            self._send('LIST "" ""', loginCb);
           });
         });
       };
