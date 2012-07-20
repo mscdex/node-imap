@@ -27,26 +27,28 @@ var tests = {
      { flags: [ '\\Seen' ],
        date: '17-Jul-1996 02:44:25 -0700',
        'rfc822.size': 4286,
-       envelope: [ 'Wed, 17 Jul 1996 02:23:25 -0700 (PDT)',
-                   'IMAP4rev1 WG mtg summary and minutes',
-                 [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
-                 [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
-                 [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
-                 [ [ null, null, 'imap', 'cac.washington.edu' ] ],
-                 [ [ null, null, 'minutes', 'CNRI.Reston.VA.US' ],
-                   [ 'John Klensin', null, 'KLENSIN', 'MIT.EDU' ] ],
-                 null,
-                 null,
-                '<B27397-0100000@cac.washington.edu>'
+       envelope: [
+        'Wed, 17 Jul 1996 02:23:25 -0700 (PDT)',
+        'IMAP4rev1 WG mtg summary and minutes',
+        [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
+        [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
+        [ [ 'Terry Gray', null, 'gray', 'cac.washington.edu' ] ],
+        [ [ null, null, 'imap', 'cac.washington.edu' ] ],
+        [ [ null, null, 'minutes', 'CNRI.Reston.VA.US' ],
+          [ 'John Klensin', null, 'KLENSIN', 'MIT.EDU' ] ],
+        null,
+        null,
+        '<B27397-0100000@cac.washington.edu>'
        ],
-       body: [ 'TEXT',
-               'PLAIN',
-               [ 'CHARSET', 'US-ASCII' ],
-               null,
-               null,
-               '7BIT',
-               3028,
-               92
+       body: [
+        'TEXT',
+        'PLAIN',
+        [ 'CHARSET', 'US-ASCII' ],
+        null,
+        null,
+        '7BIT',
+        3028,
+        92
        ]
      }
     ],
