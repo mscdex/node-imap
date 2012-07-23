@@ -53,6 +53,49 @@ var tests = {
      }
     ],
 
+    ['BODYSTRUCTURE (("text" "plain" ("charset" "us-ascii") NIL NIL "quoted-printable" 370 19 NIL NIL NIL NIL)("application" "pdf" ("x-mac-hide-extension" "yes" "x-unix-mode" "0644" "name" "filename.pdf") NIL NIL "base64" 2067794 NIL ("inline" ("filename" "filename.pdf")) NIL NIL) "mixed" ("boundary" "Apple-Mail=_801866EE-56A0-4F30-8DB3-2496094971D1") NIL NIL NIL)',
+     { structure:
+      [ { type: 'mixed',
+          params: { boundary: 'Apple-Mail=_801866EE-56A0-4F30-8DB3-2496094971D1' },
+
+          disposition: null,
+          language: null,
+          location: null
+        },
+        [ { partID: '1',
+            type: 'text',
+            subtype: 'plain',
+            params: { charset: 'us-ascii' },
+            id: null,
+            description: null,
+            encoding: 'quoted-printable',
+            size: 370,
+            lines: 19,
+            md5: null,
+            disposition: null,
+            language: null,
+            location: null
+        } ],
+        [ { partID: '2',
+             type: 'application',
+             subtype: 'pdf',
+             params:
+              { 'x-mac-hide-extension': 'yes',
+                'x-unix-mode': '0644',
+                name: 'filename.pdf' },
+             id: null,
+             description: null,
+             encoding: 'base64',
+             size: 2067794,
+             md5: null,
+             disposition: { type: 'inline', params: { filename: 'filename.pdf' } },
+             language: null,
+             location: null
+        } ]
+      ]
+     }
+    ],
+
     ['BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 266 16 NIL ("INLINE" NIL) NIL)("TEXT" "HTML" ("CHARSET" "utf-8") NIL NIL "7BIT" 7343 65 NIL ("INLINE" NIL) NIL) "ALTERNATIVE" ("BOUNDARY" "--4c81da7e1fb95-MultiPart-Mime-Boundary") NIL NIL)',
      { structure:
       [ { type: 'alternative',
@@ -70,7 +113,7 @@ var tests = {
             size: 266,
             lines: 16,
             md5: null,
-            disposition: { INLINE: null },
+            disposition: { type: 'INLINE', params: null },
             language: null
         } ],
         [ { partID: '2',
@@ -83,7 +126,7 @@ var tests = {
             size: 7343,
             lines: 65,
             md5: null,
-            disposition: { INLINE: null },
+            disposition: { type: 'INLINE', params: null },
             language: null
         } ]
       ]
@@ -175,51 +218,19 @@ var tests = {
               encoding: 'BASE64',
               size: 98,
               md5: null,
-              disposition: { filename: 'license' },
+              disposition: { type: 'ATTACHMENT', params: { filename: 'license' } },
               language: null
           } ]
         ]
      }
     ]
-  ],
-
-  literals: [
-    ['BODY[HEADER]',
-     'Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)\r\n\
-From: Terry Gray <gray@cac.washington.edu>\r\n\
-Subject: IMAP4rev1 WG mtg summary and minutes\r\n\
-To: imap@cac.washington.edu\r\n\
-cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>\r\n\
-Message-Id: <B27397-0100000@cac.washington.edu>\r\n\
-MIME-Version: 1.0\r\n\
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII\r\n\
-\r\n',
-     { headers:
-        { date: [ 'Wed, 17 Jul 1996 02:23:25 -0700 (PDT)' ],
-          from: [ 'Terry Gray <gray@cac.washington.edu>' ],
-          subject: [ 'IMAP4rev1 WG mtg summary and minutes' ],
-          to: [ 'imap@cac.washington.edu' ],
-          cc: [ 'minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>' ],
-          'message-id': [ '<B27397-0100000@cac.washington.edu>' ],
-          'mime-version': [ '1.0' ],
-          'content-type': [ 'TEXT/PLAIN; CHARSET=US-ASCII' ]
-        }
-     }
-    ]
   ]
-  
 };
 
 var result;
 
 for (var i=0,len=tests.simple.length; i<len; ++i) {
   result = {};
-  parseFetch(tests.simple[i][0], null, result);
+  parseFetch(tests.simple[i][0], result);
   assert.deepEqual(tests.simple[i][1], result);
-}
-
-for (var i=0,len=tests.literals.length; i<len; ++i) {
-  result = {};
-  parseFetch(tests.literals[i][0], tests.literals[i][1], result);
-  assert.deepEqual(tests.literals[i][2], result);
 }
