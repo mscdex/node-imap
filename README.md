@@ -177,7 +177,7 @@ node-imap exposes one object: **ImapConnection**.
         * **end**() - Emitted when the fetch is complete for this message and its properties
 * _ImapFetch_ is an object that emits these events:
     * **message**(<_ImapMessage_>msg) - Emitted for each message resulting from a fetch request
-    * **end** - Emitted when the fetch request is complete
+    * **end**() - Emitted when the fetch request is complete
 
 A message structure with multiple parts might look something like the following:
 
