@@ -157,26 +157,26 @@ node-imap exposes one object: **ImapConnection**.
 
 #### Data types
 
-* _Box_ is an Object representing the currently open mailbox, and has the following properties:
-    * **name** - A String containing the name of this mailbox.
-    * **validity** - A String containing a number that indicates whether the message IDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message IDs for this mailbox are still valid.
-    * **permFlags** - An Array containing the flags that can be permanently added/removed to/from messages in this mailbox.
-    * **messages** - An Object containing properties about message counts for this mailbox.
+* _Box_ is an object representing the currently open mailbox, and has the following properties:
+    * **name** - A string containing the name of this mailbox.
+    * **validity** - A string containing a number that indicates whether the message IDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message IDs for this mailbox are still valid.
+    * **permFlags** - An array containing the flags that can be permanently added/removed to/from messages in this mailbox.
+    * **messages** - An object containing properties about message counts for this mailbox.
         * **total** - An Integer representing total number of messages in this mailbox.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
-* _ImapMessage_ is an Object representing an email message. It consists of:
+* _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
         * **id** - An Integer that uniquely identifies this message (within its mailbox).
         * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event).
-        * **flags** - An Array containing the flags currently set on this message.
-        * **date** - A String containing the internal server date for the message (always represented in GMT?)
-        * **headers** - An Object containing the headers of the message, **if headers were requested when calling fetch().** Note: Duplicate headers are dealt with by storing the duplicated values in an array keyed on the header name (e.g. { to: ['foo@bar.com', 'bar@baz.com'] }).
-        * **structure** - An Array containing the structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
+        * **flags** - An array containing the flags currently set on this message.
+        * **date** - A string containing the internal server date for the message (always represented in GMT?)
+        * **headers** - An object containing the headers of the message, **if headers were requested when calling fetch().** Note: Duplicate headers are dealt with by storing the duplicated values in an array keyed on the header name (e.g. { to: ['foo@bar.com', 'bar@baz.com'] }).
+        * **structure** - An array containing the structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
     * Events:
-        * **data**(String) - Emitted for each message body chunk if a message body is being fetched
-        * **end** - Emitted when the fetch is complete for this message and its properties
-* _ImapFetch_ is an Object that emits these events:
-    * **message**(ImapMessage) - Emitted for each message resulting from a fetch request
+        * **data**(<_Buffer_>chunk) - Emitted for each message body chunk if a message body is being fetched
+        * **end**() - Emitted when the fetch is complete for this message and its properties
+* _ImapFetch_ is an object that emits these events:
+    * **message**(<_ImapMessage_>msg) - Emitted for each message resulting from a fetch request
     * **end** - Emitted when the fetch request is complete
 
 A message structure with multiple parts might look something like the following:
@@ -275,14 +275,14 @@ Lastly, here are the system flags defined by the IMAP spec (that may be added/re
 * Deleted - Message is "deleted" for removal
 * Draft - Message has not completed composition (marked as a draft).
 
-It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** Array first.
-Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags** Array.
+It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** array first.
+Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags** array.
 
 
 ImapConnection Events
 ---------------------
 
-* **alert**(<_string_>message) - Fires when the server issues an alert (e.g. "the server is going down for maintenance").
+* **alert**(<_string_>alertMsg) - Fires when the server issues an alert (e.g. "the server is going down for maintenance").
 
 * **mail**(<_integer_>numNewMsgs) - Fires when new mail arrives in the currently open mailbox.
 
@@ -290,11 +290,11 @@ ImapConnection Events
 
 * **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
 
-* **close**(<_boolean_>hadError) - Fires when the connection is completely closed (similar to net.Stream's close event).
+* **close**(<_boolean_>hadError) - Fires when the connection is completely closed.
 
-* **end**() - Fires when the connection is ended (similar to net.Stream's end event).
+* **end**() - Fires when the connection is ended.
 
-* **error**(<_Error_>err) - Fires when an exception/error occurs (similar to net.Stream's error event).
+* **error**(<_Error_>err) - Fires when an exception/error occurs.
 
 
 ImapConnection Properties
@@ -308,20 +308,20 @@ ImapConnection Properties
 
    * **personal** - <_array_> - Mailboxes that belong to the logged in user
 
-   * **other** - <_array_> -Mailboxes that belong to other users that the logged in user has access to
+   * **other** - <_array_> - Mailboxes that belong to other users that the logged in user has access to
 
    * **shared** - <_array_> - Mailboxes that are accessible by any logged in user
    
    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
 
 ```javascript
-  { prefix: '' // A String containing the prefix to use to access mailboxes in this namespace
-  , delim: '/' // A String containing the hierarchy delimiter for this namespace, or boolean false
+  { prefix: '' // A string containing the prefix to use to access mailboxes in this namespace
+  , delim: '/' // A string containing the hierarchy delimiter for this namespace, or boolean false
               //  for a flat namespace with no hierarchy
-  , extensions: [ // An Array of namespace extensions supported by this namespace, or null if none
+  , extensions: [ // An array of namespace extensions supported by this namespace, or null if none
                   // are specified
-        { name: 'X-FOO-BAR' // A String indicating the extension name
-        , params: [ 'BAZ' ] // An Array of Strings containing the parameters for this extension,
+        { name: 'X-FOO-BAR' // A string indicating the extension name
+        , params: [ 'BAZ' ] // An array of strings containing the parameters for this extension,
                             // or null if none are specified
         }
     ]
@@ -473,7 +473,7 @@ ImapConnection Functions
 
         * 'UNSEEN' - Messages that do not have the Seen flag set.
 
-    * The following are valid types that require String value(s):
+    * The following are valid types that require string value(s):
 
         * 'BCC' - Messages that contain the specified string in the BCC field.
 
@@ -491,9 +491,9 @@ ImapConnection Functions
 
         * 'KEYWORD' - Messages with the specified keyword set.
 
-        * 'HEADER' - **Requires two String values, with the first being the header name and the second being the value to search for.** If this second string is empty, all messages that contain the given header name will be returned.
+        * 'HEADER' - **Requires two string values, with the first being the header name and the second being the value to search for.** If this second string is empty, all messages that contain the given header name will be returned.
 
-    * The following are valid types that require a String parseable by JavaScript's Date object OR a Date instance:
+    * The following are valid types that require a string parseable by JavaScript's Date object OR a Date instance:
 
         * 'BEFORE' - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
 
