@@ -517,13 +517,15 @@ ImapConnection Functions
 
         * 'UID' - Messages with message IDs corresponding to the specified message ID set. Ranges are permitted (e.g. '2504:2507' or '\*' or '2504:\*').
 
-    * **Note:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example above).
+    * **Note #1:** For the ID-based search (i.e. "conn.search()"), you can retrieve the IDs for sequence numbers by just supplying an array of sequence numbers and/or ranges as a criteria (e.g. [ '24:29', 19, '66:*' ]).
+
+    * **Note #2:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example below).
 
   criteria examples:
 
     * Unread messages since April 20, 2010: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]
 
-    * Messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ].
+    * Messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ]
 
     * All messages that have 'node-imap' in the subject header: [ ['HEADER', 'SUBJECT', 'node-imap'] ]
 
