@@ -302,7 +302,7 @@ ImapConnection Properties
 
 * **capabilities** - <_array_> - Contains the IMAP capabilities of the server.
 
-* **delim** - <_string_> - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
+* **delimiter** - <_string_> - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
 
 * **namespaces** - <_object_> - Contains information about each namespace type (if supported by the server) with the following properties:
 
@@ -316,7 +316,7 @@ ImapConnection Properties
 
 ```javascript
   { prefix: '' // A string containing the prefix to use to access mailboxes in this namespace
-  , delim: '/' // A string containing the hierarchy delimiter for this namespace, or boolean false
+  , delimiter: '/' // A string containing the hierarchy delimiter for this namespace, or boolean false
               //  for a flat namespace with no hierarchy
   , extensions: [ // An array of namespace extensions supported by this namespace, or null if none
                   // are specified
@@ -372,54 +372,54 @@ ImapConnection Functions
   { INBOX: // mailbox name
      { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
                    // be opened
-     , delim: '/' // hierarchy delimiter for accessing this mailbox's direct children.
+     , delimiter: '/' // hierarchy delimiter for accessing this mailbox's direct children.
      , children: null // an object containing another structure similar in format to this top level,
                       // otherwise null if no children
      , parent: null // pointer to parent mailbox, null if at the top level
      }
   , Work:
      { attribs: []
-     , delim: '/'
+     , delimiter: '/'
      , children: null
      , parent: null
      }
   , '[Gmail]':
      { attribs: [ 'NOSELECT' ]
-     , delim: '/'
+     , delimiter: '/'
      , children:
         { 'All Mail':
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
         , Drafts:
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
         , 'Sent Mail':
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
         , Spam:
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
         , Starred:
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
         , Trash:
            { attribs: []
-           , delim: '/'
+           , delimiter: '/'
            , children: null
            , parent: [Circular]
            }
