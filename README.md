@@ -350,6 +350,8 @@ ImapConnection Functions
 
     * **connTimeout** - <_integer_> - Number of milliseconds to wait for a connection to be established. **Default:** 10000
 
+    * **debug** - <_function_> - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
+
 * **connect**(<_function_>callback) - _(void)_ - Attempts to connect and log into the IMAP server. The callback has one parameter: the error (falsey if none).
 
 * **logout**(<_function_>callback) - _(void)_ - Closes the connection to the server.
