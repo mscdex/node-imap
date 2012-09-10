@@ -349,6 +349,8 @@ ImapConnection Functions
     * **secure** - <_boolean_> - Use SSL/TLS? **Default:** false
 
     * **connTimeout** - <_integer_> - Number of milliseconds to wait for a connection to be established. **Default:** 10000
+	
+	* **debug** - <_boolean_> or <_function_> - Print debug messages ? Print to Stdout - debug: console.log **Default:** false
 
     * **debug** - <_function_> - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
 
