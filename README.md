@@ -159,14 +159,14 @@ node-imap exposes one object: **ImapConnection**.
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - A string containing the name of this mailbox.
-    * **validity** - A string containing a number that indicates whether the message IDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message IDs for this mailbox are still valid.
+    * **validity** - A string containing a number that indicates whether the message UIDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message UIDs for this mailbox are still valid.
     * **permFlags** - An array containing the flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - An object containing properties about message counts for this mailbox.
         * **total** - An Integer representing total number of messages in this mailbox.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
-        * **id** - An Integer that uniquely identifies this message (within its mailbox).
+        * **uid** - An Integer that uniquely identifies this message (within its mailbox).
         * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event).
         * **flags** - An array containing the flags currently set on this message.
         * **date** - A string containing the internal server date for the message (always represented in GMT?)
@@ -286,7 +286,7 @@ ImapConnection Events
 
 * **mail**(<_integer_>numNewMsgs) - Fires when new mail arrives in the currently open mailbox.
 
-* **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique ID) of the message that was deleted. The sequence numbers of all messages higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity of the sequence numbers.
+* **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. The sequence numbers of all messages higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity of the sequence numbers.
 
 * **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
 
@@ -443,7 +443,7 @@ ImapConnection Functions
     
   The callback has one parameter: the error (falsey if none).
 
-**All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of unique ids, conn.seq.fetch() fetches by sequence number(s) instead of unique ids, etc):**
+**All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of UIDs, conn.seq.fetch() fetches by sequence number(s) instead of UIDs, etc):**
 
 * **search**(<_array_>criteria, <_function_>callback) - _(void)_ - Searches the currently open mailbox for messages using given criteria. criteria is a list describing what you want to find. For criteria types that require arguments, use an array instead of just the string criteria type name (e.g. ['FROM', 'foo@bar.com']). Prefix criteria types with an "!" to negate.
 
@@ -519,9 +519,9 @@ ImapConnection Functions
 
     * The following are valid criterion that require one or more Integer values:
 
-        * 'UID' - Messages with message IDs corresponding to the specified message ID set. Ranges are permitted (e.g. '2504:2507' or '\*' or '2504:\*').
+        * 'UID' - Messages with UIDs corresponding to the specified UID set. Ranges are permitted (e.g. '2504:2507' or '\*' or '2504:\*').
 
-    * **Note #1:** For the ID-based search (i.e. "conn.search()"), you can retrieve the IDs for sequence numbers by just supplying an array of sequence numbers and/or ranges as a criteria (e.g. [ '24:29', 19, '66:*' ]).
+    * **Note #1:** For the UID-based search (i.e. "conn.search()"), you can retrieve the UIDs for sequence numbers by just supplying an array of sequence numbers and/or ranges as a criteria (e.g. [ '24:29', 19, '66:*' ]).
 
     * **Note #2:** By default, all criterion are ANDed together. You can use the special 'OR' on **two** criterion to find messages matching either search criteria (see example below).
 
@@ -535,9 +535,9 @@ ImapConnection Functions
 
     * All messages that _do not_ have 'node-imap' in the subject header: [ ['!HEADER', 'SUBJECT', 'node-imap'] ]
     
-  The callback has two parameters: the error (falsey if none), and an array containing the message IDs matching the search criteria.
+  The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria.
 
-* **fetch**(<_mixed_>source, <_object_>options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. Valid options are:
+* **fetch**(<_mixed_>source, <_object_>options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. Valid options are:
 
     * **markSeen** - <_boolean_> - Mark message(s) as read when fetched. **Default:** false
 
@@ -549,17 +549,17 @@ ImapConnection Functions
 
         * **body** - <_mixed_> - Boolean true fetches the entire raw message body. A string containing a valid partID (see _FetchResult_'s structure property) fetches the entire body of that particular part. The string 'full' fetches the entire (unparsed) email message, including the headers. An array can be given to specify a byte range of the content, where the first value is boolean true or a partID and the second value is the byte range. For example, to fetch the first 500 bytes: '0-500'. **Default:** false
 
-* **copy**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. The callback has one parameter: the error (falsey if none).
+* **copy**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none).
 
-* **move**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. The callback has one parameter: the error (falsey if none). **Note:** The message(s) in the destination mailbox will have a new message ID.
+* **move**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none). **Note:** The message(s) in the destination mailbox will have a new message UID.
 
-* **addFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Adds flag(s) to message(s). source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
+* **addFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Adds flag(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
 
-* **delFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Removes flag(s) from message(s). source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
+* **delFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Removes flag(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
 
-* **addKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Adds keyword(s) to message(s). source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
+* **addKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Adds keyword(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
 
-* **delKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Removes keyword(s) from message(s). source can be a message ID, a message ID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message IDs and/or message ID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
+* **delKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Removes keyword(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
 
 
 Extensions Supported
