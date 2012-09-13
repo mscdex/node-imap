@@ -76,6 +76,41 @@ Example
   });
 ```
 
+* Here is a modified version of the first example that retrieves the 'from' header and buffers the entire body of the newest message:
+
+```javascript
+  // using the functions and variables already defined in the first example ...
+
+  openInbox(function(err, mailbox) {
+    if (err) die(err);
+    var fetch = imap.seq.fetch(mailbox.messages.total + ':*',
+                               { request: {
+                                   headers: ['from'],
+                                   body: true,
+                                   struct: false } });
+    fetch.on('message', function(msg) {
+      console.log('Got a message with sequence number ' + msg.seqno);
+      var body = '';
+      msg.on('data', function(chunk) {
+        body += chunk.toString('utf8');
+      });
+      msg.on('end', function() {
+        // msg.headers is now an object containing the requested header(s) ...
+        console.log('Finished message.');
+        console.log('UID: ' + msg.uid);
+        console.log('Flags: ' + msg.flags);
+        console.log('Date: ' + msg.date);
+        console.log('From: ' + msg.headers.from[0]);
+        console.log('Body: ' + body);
+      });
+    });
+    fetch.on('end', function() {
+      console.log('Done fetching all messages!');
+      imap.logout(cb);
+    });
+  });
+```
+
 * Here is a modified version of the first example that retrieves all (parsed) headers and writes the entire body of each message to a file:
 
 ```javascript
@@ -166,8 +201,8 @@ node-imap exposes one object: **ImapConnection**.
         * **new** - An Integer representing the number of new (unread) messages in this mailbox.
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
+        * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
         * **uid** - An Integer that uniquely identifies this message (within its mailbox).
-        * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event).
         * **flags** - An array containing the flags currently set on this message.
         * **date** - A string containing the internal server date for the message (always represented in GMT?)
         * **headers** - An object containing the headers of the message, **if headers were requested when calling fetch().** Note: Duplicate headers are dealt with by storing the duplicated values in an array keyed on the header name (e.g. { to: ['foo@bar.com', 'bar@baz.com'] }).
@@ -537,7 +572,7 @@ ImapConnection Functions
     
   The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria.
 
-* **fetch**(<_mixed_>source, <_object_>options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. Valid options are:
+* **fetch**(<_mixed_>source, <_object_>options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. Note: currently you can only fetch headers AND a body when `body` is set to true (partID and byte ranges not supported yet when also requesting headers). Valid options are:
 
     * **markSeen** - <_boolean_> - Mark message(s) as read when fetched. **Default:** false
 
