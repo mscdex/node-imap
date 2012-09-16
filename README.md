@@ -321,9 +321,9 @@ ImapConnection Events
 
 * **mail**(<_integer_>numNewMsgs) - Fires when new mail arrives in the currently open mailbox.
 
-* **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. The sequence numbers of all messages higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity of the sequence numbers.
+* **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity.
 
-* **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
+* **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available ImapMessage properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
 
 * **close**(<_boolean_>hadError) - Fires when the connection is completely closed.
 
@@ -367,9 +367,9 @@ ImapConnection Properties
 ImapConnection Functions
 ------------------------
 
-**Note:** Message ID sets for message ID range arguments are not guaranteed to be contiguous.
+**Note:** Message UID ranges are not guaranteed to be contiguous.
 
-* **(constructor)**([<_object_>config]) - _ImapConnection_ - Creates and returns a new instance of ImapConnection using the specified configuration object. Valid config properties are:
+* **(constructor)**([<_object_>config]) - _ImapConnection_ - Creates and returns a new instance of _ImapConnection_ using the specified configuration object. Valid config properties are:
 
     * **username** - <_string_> - Username for plain-text authentication.
 
@@ -466,7 +466,7 @@ ImapConnection Functions
   }
 ```
 
-* **removeDeleted**(<_function_>callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the mailbox that is currently open. The callback has one parameter: the error (falsey if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
+* **removeDeleted**(<_function_>callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the currently open mailbox. The callback has one parameter: the error (falsey if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
 * **append**(<_mixed_>msgData, [<_object_>options,] <_function_>callback) - _(void)_ - Appends a message to selected mailbox. msgData is a string or Buffer containing an RFC-822 compatible MIME message. Valid options are:
 
@@ -624,7 +624,7 @@ Several things not yet implemented in no particular order:
 
 * Support STARTTLS
 * Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
-* Multipart parsing capabilities
+* Multipart parsing capabilities?
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
