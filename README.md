@@ -70,7 +70,7 @@ Example
       });
       fetch.on('end', function() {
         console.log('Done fetching all messages!');
-        imap.logout(cb);
+        imap.logout();
       });
     });
   });
@@ -106,7 +106,7 @@ Example
     });
     fetch.on('end', function() {
       console.log('Done fetching all messages!');
-      imap.logout(cb);
+      imap.logout();
     });
   });
 ```
@@ -142,7 +142,7 @@ Example
       });
       fetch.on('end', function() {
         console.log('Done fetching all messages!');
-        imap.logout(cb);
+        imap.logout();
       });
     });
   });
@@ -177,7 +177,7 @@ Example
       });
       fetch.on('end', function() {
         console.log('Done fetching all messages!');
-        imap.logout(cb);
+        imap.logout();
       });
     });
   });
