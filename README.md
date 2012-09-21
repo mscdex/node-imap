@@ -596,12 +596,6 @@ ImapConnection Functions
 
 * **delKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Removes keyword(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
 
-* **setLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - When X-GM-EXT1 capability present, replaces labels(s) of message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
-
-* **addLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - When X-GM-EXT1 capability present, adds labels(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
-
-* **delLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - When X-GM-EXT1 capability present, removes labels(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
-
 
 Extensions Supported
 --------------------
@@ -621,6 +615,11 @@ Extensions Supported
         * X-GM-LABELS: string value which allows you to search for specific messages that have the given label applied
 
     * fetch() will automatically retrieve the thread id, unique message id, and labels with the message properties being 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively
+
+    * Additional ImapConnection Functions
+        * **setLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Replaces labels(s) of message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+        * **addLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Adds labels(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+        * **delLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Removes labels(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
 
 
 TODO
