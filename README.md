@@ -376,6 +376,8 @@ ImapConnection Functions
     * **password** - <_string_> - Password for plain-text authentication.
 
     * **xoauth** - <_string_> - OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it.
+    
+    * **xoauth2** - <_string_> - OAuth2 token for [SASL XOAuth2 authentication](https://developers.google.com/google-apps/gmail/xoauth2_protocol) for servers that support it.
 
     * **host** - <_string_> - Hostname or IP address of the IMAP server. **Default:** "localhost"
 
