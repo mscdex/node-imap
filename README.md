@@ -622,10 +622,35 @@ Extensions Supported
 
     * fetch() will automatically retrieve the thread id, unique message id, and labels with the message properties being 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively
 
-    * Additional ImapConnection Functions
+    * Additional ImapConnection functions
+
         * **setLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Replaces labels(s) of message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+
         * **addLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Adds labels(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+
         * **delLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Removes labels(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+
+* **SORT**
+
+    * Server capability: SORT
+
+    * Additional ImapConnection functions
+
+      * **sort**(<_array_>sortCriteria, <_array_>searchCriteria, <_function_>callback) - _(void)_ - Performs a sorted search(). Valid sortCriteria are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
+
+        * ARRIVAL - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
+
+        * CC - The mailbox of the **first** "cc" address.
+
+        * DATE - Message sent date and time.
+
+        * FROM - The mailbox of the **first** "from" address.
+
+        * SIZE - Size of the message in octets.
+
+        * SUBJECT - Base subject text.
+
+        * TO - The mailbox of the **first** "to" address.
 
 
 TODO
@@ -641,6 +666,5 @@ Several things not yet implemented in no particular order:
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
   * GETQUOTA (via QUOTA extension -- http://tools.ietf.org/html/rfc2087)
   * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
-  * SORT (via SORT extension -- http://tools.ietf.org/html/rfc5256)
   * THREAD (via THREAD=ORDEREDSUBJECT and/or THREAD=REFERENCES extension(s) -- http://tools.ietf.org/html/rfc5256)
   * ID (via ID extension -- http://tools.ietf.org/html/rfc2971) ?
