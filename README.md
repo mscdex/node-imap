@@ -196,6 +196,7 @@ node-imap exposes one object: **ImapConnection**.
     * **name** - <_string_> - The name of this mailbox.
     * **readOnly** - <_boolean_> - True if this mailbox was opened in read-only mode.
     * **uidvalidity** - <_integer_> - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened. It is possible for this to change during a session, in which case a 'uidvalidity' event will be emitted on the ImapConnection instance.
+    * **uidnext** - <_integer_> - The uid that will be assigned to the next message that arrives at this mailbox.
     * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - <_object_> Contains various message counts for this mailbox:
         * **total** - <_integer_> - Total number of messages in this mailbox.
