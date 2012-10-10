@@ -193,20 +193,20 @@ node-imap exposes one object: **ImapConnection**.
 #### Data types
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
-    * **name** - A string containing the name of this mailbox.
-    * **validity** - A string containing a number that indicates whether the message UIDs in this mailbox have changed or not. In other words, as long as this value does not change on future openings of this mailbox, any cached message UIDs for this mailbox are still valid.
-    * **permFlags** - An array containing the flags that can be permanently added/removed to/from messages in this mailbox.
-    * **messages** - An object containing properties about message counts for this mailbox.
-        * **total** - An Integer representing total number of messages in this mailbox.
-        * **new** - An Integer representing the number of new (unread) messages in this mailbox.
+    * **name** - <_string_> - The name of this mailbox.
+    * **validity** - <_string_> - A number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
+    * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
+    * **messages** - <_object_> Contains various message counts for this mailbox:
+        * **total** - <_integer_> - Total number of messages in this mailbox.
+        * **new** - <_integer_> - Number of new (unread) messages in this mailbox.
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
-        * **seqno** - An Integer that designates this message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
-        * **uid** - An Integer that uniquely identifies this message (within its mailbox).
-        * **flags** - An array containing the flags currently set on this message.
-        * **date** - A string containing the internal server date for the message (always represented in GMT?)
-        * **headers** - An object containing the headers of the message, **if headers were requested when calling fetch().** Note: Duplicate headers are dealt with by storing the duplicated values in an array keyed on the header name (e.g. { to: ['foo@bar.com', 'bar@baz.com'] }).
-        * **structure** - An array containing the structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
+        * **seqno** - <_integer_> - This message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
+        * **uid** - <_integer_> - An ID that uniquely identifies this message within its mailbox.
+        * **flags** - <_array_> - A list of flags currently set on this message.
+        * **date** - <_string_> - The internal server date for the message (always represented in GMT?)
+        * **headers** - <_object_> - The headers of the message (header => values), **if headers were requested when calling fetch().** Note: Header values are always arrays for consistency.
+        * **structure** - <_array_> - The structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
     * Events:
         * **data**(<_Buffer_>chunk) - Emitted for each message body chunk if a message body is being fetched
         * **end**() - Emitted when the fetch is complete for this message and its properties
