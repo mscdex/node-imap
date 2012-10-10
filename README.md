@@ -199,7 +199,8 @@ node-imap exposes one object: **ImapConnection**.
     * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - <_object_> Contains various message counts for this mailbox:
         * **total** - <_integer_> - Total number of messages in this mailbox.
-        * **new** - <_integer_> - Number of new (unread) messages in this mailbox.
+        * **new** - <_integer_> - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
+        * **unseen** - <_integer_> - Number of messages in this mailbox not having the Seen flag (marked as not having been read).
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
         * **seqno** - <_integer_> - This message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
