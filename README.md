@@ -195,7 +195,7 @@ node-imap exposes one object: **ImapConnection**.
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - <_string_> - The name of this mailbox.
     * **readOnly** - <_boolean_> - True if this mailbox was opened in read-only mode.
-    * **validity** - <_string_> - A number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
+    * **validity** - <_integer_> - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened. It is possible for this to change during a session, in which case a 'uidvalidity' event will be emitted on the ImapConnection instance.
     * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - <_object_> Contains various message counts for this mailbox:
         * **total** - <_integer_> - Total number of messages in this mailbox.
@@ -203,7 +203,7 @@ node-imap exposes one object: **ImapConnection**.
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
         * **seqno** - <_integer_> - This message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
-        * **uid** - <_integer_> - An ID that uniquely identifies this message within its mailbox.
+        * **uid** - <_integer_> - A 32-bit ID that uniquely identifies this message within its mailbox.
         * **flags** - <_array_> - A list of flags currently set on this message.
         * **date** - <_string_> - The internal server date for the message (always represented in GMT?)
         * **headers** - <_object_> - The headers of the message (header => values), **if headers were requested when calling fetch().** Note: Header values are always arrays for consistency.
@@ -325,6 +325,8 @@ ImapConnection Events
 * **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity.
 
 * **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available ImapMessage properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
+
+* **uidvalidity**(<_integer_>uidvalidity) - Fires when the UID validity value has changed for the currently open mailbox. Any UIDs previously stored for this mailbox are now invalidated.
 
 * **close**(<_boolean_>hadError) - Fires when the connection is completely closed.
 
