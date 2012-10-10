@@ -194,6 +194,7 @@ node-imap exposes one object: **ImapConnection**.
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - <_string_> - The name of this mailbox.
+    * **readOnly** - <_boolean_> - True if this mailbox was opened in read-only mode.
     * **validity** - <_string_> - A number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
     * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - <_object_> Contains various message counts for this mailbox:
