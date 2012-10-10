@@ -639,19 +639,19 @@ Extensions Supported
 
       * **sort**(<_array_>sortCriteria, <_array_>searchCriteria, <_function_>callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart exists for this function. The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria. Valid sortCriteria are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
 
-        * ARRIVAL - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
+        * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
 
-        * CC - The mailbox of the **first** "cc" address.
+        * 'CC' - The mailbox of the **first** "cc" address.
 
-        * DATE - Message sent date and time.
+        * 'DATE' - Message sent date and time.
 
-        * FROM - The mailbox of the **first** "from" address.
+        * 'FROM' - The mailbox of the **first** "from" address.
 
-        * SIZE - Size of the message in octets.
+        * 'SIZE' - Size of the message in octets.
 
-        * SUBJECT - Base subject text.
+        * 'SUBJECT' - Base subject text.
 
-        * TO - The mailbox of the **first** "to" address.
+        * 'TO' - The mailbox of the **first** "to" address.
 
 
 TODO
