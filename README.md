@@ -193,28 +193,28 @@ node-imap exposes one object: **ImapConnection**.
 #### Data types
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
-    * **name** - <_string_> - The name of this mailbox.
-    * **readOnly** - <_boolean_> - True if this mailbox was opened in read-only mode.
-    * **uidvalidity** - <_integer_> - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened. It is possible for this to change during a session, in which case a 'uidvalidity' event will be emitted on the ImapConnection instance.
-    * **uidnext** - <_integer_> - The uid that will be assigned to the next message that arrives at this mailbox.
-    * **permFlags** - <_array_> - A list of flags that can be permanently added/removed to/from messages in this mailbox.
-    * **messages** - <_object_> Contains various message counts for this mailbox:
-        * **total** - <_integer_> - Total number of messages in this mailbox.
-        * **new** - <_integer_> - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
-        * **unseen** - <_integer_> - **(Only available with status() calls)** Number of messages in this mailbox not having the Seen flag (marked as not having been read).
+    * **name** - < _string_ > - The name of this mailbox.
+    * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode.
+    * **uidvalidity** - < _integer_ > - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened. It is possible for this to change during a session, in which case a 'uidvalidity' event will be emitted on the ImapConnection instance.
+    * **uidnext** - < _integer_ > - The uid that will be assigned to the next message that arrives at this mailbox.
+    * **permFlags** - < _array_ > - A list of flags that can be permanently added/removed to/from messages in this mailbox.
+    * **messages** - < _object_ > Contains various message counts for this mailbox:
+        * **total** - < _integer_ > - Total number of messages in this mailbox.
+        * **new** - < _integer_ > - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
+        * **unseen** - < _integer_ > - **(Only available with status() calls)** Number of messages in this mailbox not having the Seen flag (marked as not having been read).
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Properties:
-        * **seqno** - <_integer_> - This message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
-        * **uid** - <_integer_> - A 32-bit ID that uniquely identifies this message within its mailbox.
-        * **flags** - <_array_> - A list of flags currently set on this message.
-        * **date** - <_string_> - The internal server date for the message (always represented in GMT?)
-        * **headers** - <_object_> - The headers of the message (header => values), **if headers were requested when calling fetch().** Note: Header values are always arrays for consistency.
-        * **structure** - <_array_> - The structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
+        * **seqno** - < _integer_ > - This message's sequence number. This number changes when messages with smaller sequence numbers are deleted for example (see the ImapConnection's 'deleted' event). This value is **always** available immediately.
+        * **uid** - < _integer_ > - A 32-bit ID that uniquely identifies this message within its mailbox.
+        * **flags** - < _array_ > - A list of flags currently set on this message.
+        * **date** - < _string_ > - The internal server date for the message (always represented in GMT?)
+        * **headers** - < _object_ > - The headers of the message (header => values), **if headers were requested when calling fetch().** Note: Header values are always arrays for consistency.
+        * **structure** - < _array_ > - The structure of the message, **if the structure was requested when calling fetch().** See below for an explanation of the format of this property.
     * Events:
-        * **data**(<_Buffer_>chunk) - Emitted for each message body chunk if a message body is being fetched
+        * **data**(< _Buffer_ >chunk) - Emitted for each message body chunk if a message body is being fetched
         * **end**() - Emitted when the fetch is complete for this message and its properties
 * _ImapFetch_ is an object that emits these events:
-    * **message**(<_ImapMessage_>msg) - Emitted for each message resulting from a fetch request
+    * **message**(< _ImapMessage_ >msg) - Emitted for each message resulting from a fetch request
     * **end**() - Emitted when the fetch request is complete
 
 A message structure with multiple parts might look something like the following:
@@ -320,37 +320,37 @@ Additional custom flags may be provided by the server. If available, these will 
 ImapConnection Events
 ---------------------
 
-* **alert**(<_string_>alertMsg) - Fires when the server issues an alert (e.g. "the server is going down for maintenance").
+* **alert**(< _string_ >alertMsg) - Fires when the server issues an alert (e.g. "the server is going down for maintenance").
 
-* **mail**(<_integer_>numNewMsgs) - Fires when new mail arrives in the currently open mailbox.
+* **mail**(< _integer_ >numNewMsgs) - Fires when new mail arrives in the currently open mailbox.
 
-* **deleted**(<_integer_>seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity.
+* **deleted**(< _integer_ >seqno) - Fires when a message is deleted from another IMAP connection's session. The callback's argument is the *sequence number* (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep the continuity.
 
-* **msgupdate**(<_ImapMessage_>msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available ImapMessage properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
+* **msgupdate**(< _ImapMessage_ >msg) - Fires when a message's flags have changed, generally from another IMAP connection's session. With that in mind, the only available ImapMessage properties in this case will almost always only be 'seqno' and 'flags' (no 'data' or 'end' events will be emitted on the object).
 
-* **uidvalidity**(<_integer_>uidvalidity) - Fires when the UID validity value has changed for the currently open mailbox. Any UIDs previously stored for this mailbox are now invalidated.
+* **uidvalidity**(< _integer_ >uidvalidity) - Fires when the UID validity value has changed for the currently open mailbox. Any UIDs previously stored for this mailbox are now invalidated.
 
-* **close**(<_boolean_>hadError) - Fires when the connection is completely closed.
+* **close**(< _boolean_ >hadError) - Fires when the connection is completely closed.
 
 * **end**() - Fires when the connection is ended.
 
-* **error**(<_Error_>err) - Fires when an exception/error occurs.
+* **error**(< _Error_ >err) - Fires when an exception/error occurs.
 
 
 ImapConnection Properties
 -------------------------
 
-* **capabilities** - <_array_> - Contains the IMAP capabilities of the server.
+* **capabilities** - < _array_ > - Contains the IMAP capabilities of the server.
 
-* **delimiter** - <_string_> - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
+* **delimiter** - < _string_ > - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
 
-* **namespaces** - <_object_> - Contains information about each namespace type (if supported by the server) with the following properties:
+* **namespaces** - < _object_ > - Contains information about each namespace type (if supported by the server) with the following properties:
 
-   * **personal** - <_array_> - Mailboxes that belong to the logged in user
+   * **personal** - < _array_ > - Mailboxes that belong to the logged in user
 
-   * **other** - <_array_> - Mailboxes that belong to other users that the logged in user has access to
+   * **other** - < _array_ > - Mailboxes that belong to other users that the logged in user has access to
 
-   * **shared** - <_array_> - Mailboxes that are accessible by any logged in user
+   * **shared** - < _array_ > - Mailboxes that are accessible by any logged in user
    
    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
 
@@ -374,43 +374,43 @@ ImapConnection Functions
 
 **Note:** Message UID ranges are not guaranteed to be contiguous.
 
-* **(constructor)**([<_object_>config]) - _ImapConnection_ - Creates and returns a new instance of _ImapConnection_ using the specified configuration object. Valid config properties are:
+* **(constructor)**([< _object_ >config]) - _ImapConnection_ - Creates and returns a new instance of _ImapConnection_ using the specified configuration object. Valid config properties are:
 
-    * **username** - <_string_> - Username for plain-text authentication.
+    * **username** - < _string_ > - Username for plain-text authentication.
 
-    * **password** - <_string_> - Password for plain-text authentication.
+    * **password** - < _string_ > - Password for plain-text authentication.
 
-    * **xoauth** - <_string_> - OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it (See Andris Reinman's [xoauth.js](https://github.com/andris9/inbox/blob/master/lib/xoauth.js) module to help generate this string).
+    * **xoauth** - < _string_ > - OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it (See Andris Reinman's [xoauth.js](https://github.com/andris9/inbox/blob/master/lib/xoauth.js) module to help generate this string).
 
-    * **xoauth2** - <_string_> - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
+    * **xoauth2** - < _string_ > - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
 
-    * **host** - <_string_> - Hostname or IP address of the IMAP server. **Default:** "localhost"
+    * **host** - < _string_ > - Hostname or IP address of the IMAP server. **Default:** "localhost"
 
-    * **port** - <_integer_> - Port number of the IMAP server. **Default:** 143
+    * **port** - < _integer_ > - Port number of the IMAP server. **Default:** 143
 
-    * **secure** - <_boolean_> - Use SSL/TLS? **Default:** false
+    * **secure** - < _boolean_ > - Use SSL/TLS? **Default:** false
 
-    * **connTimeout** - <_integer_> - Number of milliseconds to wait for a connection to be established. **Default:** 10000
+    * **connTimeout** - < _integer_ > - Number of milliseconds to wait for a connection to be established. **Default:** 10000
 
-    * **debug** - <_function_> - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
+    * **debug** - < _function_ > - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
 
-* **connect**(<_function_>callback) - _(void)_ - Attempts to connect and log into the IMAP server. The callback has one parameter: the error (falsey if none).
+* **connect**(< _function_ >callback) - _(void)_ - Attempts to connect and log into the IMAP server. The callback has one parameter: the error (falsey if none).
 
-* **logout**(<_function_>callback) - _(void)_ - Closes the connection to the server.
+* **logout**(< _function_ >callback) - _(void)_ - Closes the connection to the server.
 
-* **openBox**(<_string_>mailboxName[, <_boolean_>openReadOnly=false], <_function_>callback) - _(void)_ - Opens a specific mailbox that exists on the server. mailboxName should include any necessary prefix/path. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the newly opened mailbox.
+* **openBox**(< _string_ >mailboxName[, < _boolean_ >openReadOnly=false], < _function_ >callback) - _(void)_ - Opens a specific mailbox that exists on the server. mailboxName should include any necessary prefix/path. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the newly opened mailbox.
 
-* **closeBox**(<_function_>callback) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Additionally, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The callback has one parameter: the error (falsey if none).
+* **closeBox**(< _function_ >callback) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Additionally, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. The callback has one parameter: the error (falsey if none).
 
-* **addBox**(<_string_>mailboxName, <_function_>callback) - _(void)_ - Creates a new mailbox on the server. mailboxName should include any necessary prefix/path. The callback has one parameter: the error (falsey if none).
+* **addBox**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Creates a new mailbox on the server. mailboxName should include any necessary prefix/path. The callback has one parameter: the error (falsey if none).
 
-* **delBox**(<_string_>mailboxName, <_function_>callback) - _(void)_ - Removes a specific mailbox that exists on the server. mailboxName should including any necessary prefix/path. The callback has one parameter: the error (falsey if none).
+* **delBox**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Removes a specific mailbox that exists on the server. mailboxName should including any necessary prefix/path. The callback has one parameter: the error (falsey if none).
 
-* **renameBox**(<_string_>oldMailboxName, <_string_>newMailboxName, <_function_>callback) - _(void)_ - Renames a specific mailbox that exists on the server. Both oldMailboxName and newMailboxName should include any necessary prefix/path. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the newly renamed mailbox. **Note:** Renaming the 'INBOX' mailbox will instead cause all messages in 'INBOX' to be moved to the new mailbox.
+* **renameBox**(< _string_ >oldMailboxName, < _string_ >newMailboxName, < _function_ >callback) - _(void)_ - Renames a specific mailbox that exists on the server. Both oldMailboxName and newMailboxName should include any necessary prefix/path. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the newly renamed mailbox. **Note:** Renaming the 'INBOX' mailbox will instead cause all messages in 'INBOX' to be moved to the new mailbox.
 
-* **status**(<_string_>mailboxName, <_function_>callback) - _(void)_ - Fetches information about a mailbox other than the one currently open. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the specific mailbox. **Note:** There is no guarantee that this will be a fast operation on the server. Also, do *not* call this on the currently open mailbox.
+* **status**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Fetches information about a mailbox other than the one currently open. The callback has two parameters: the error (falsey if none), and the _Box_ object containing information about the specific mailbox. **Note:** There is no guarantee that this will be a fast operation on the server. Also, do *not* call this on the currently open mailbox.
 
-* **getBoxes**([<_string_>nsPrefix,] <_function_>callback) - _(void)_ - Obtains the full list of mailboxes. If nsPrefix is not specified, the main personal namespace is used. The callback has two parameters: the error (falsey if none), and an object with the following format (with example values):
+* **getBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of mailboxes. If nsPrefix is not specified, the main personal namespace is used. The callback has two parameters: the error (falsey if none), and an object with the following format (with example values):
 
 ```javascript
   { INBOX: // mailbox name
@@ -473,21 +473,21 @@ ImapConnection Functions
   }
 ```
 
-* **removeDeleted**(<_function_>callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the currently open mailbox. The callback has one parameter: the error (falsey if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
+* **removeDeleted**(< _function_ >callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the currently open mailbox. The callback has one parameter: the error (falsey if none). **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
-* **append**(<_mixed_>msgData, [<_object_>options,] <_function_>callback) - _(void)_ - Appends a message to selected mailbox. msgData is a string or Buffer containing an RFC-822 compatible MIME message. Valid options are:
+* **append**(< _mixed_ >msgData, [< _object_ >options,] < _function_ >callback) - _(void)_ - Appends a message to selected mailbox. msgData is a string or Buffer containing an RFC-822 compatible MIME message. Valid options are:
 
-    * **mailbox** - <_string_> - The name of the mailbox to append the message to. **Default:** the currently open mailbox
+    * **mailbox** - < _string_ > - The name of the mailbox to append the message to. **Default:** the currently open mailbox
 
-    * **flags** - <_mixed_> - A single flag (e.g. 'Seen') or an array of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
+    * **flags** - < _mixed_ > - A single flag (e.g. 'Seen') or an array of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
 
-    * **date** - <_date_> - What to use for message arrival date/time. **Default:** (current date/time)
+    * **date** - < _date_ > - What to use for message arrival date/time. **Default:** (current date/time)
     
   The callback has one parameter: the error (falsey if none).
 
 **All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of UIDs, conn.seq.fetch() fetches by sequence number(s) instead of UIDs, etc):**
 
-* **search**(<_array_>criteria, <_function_>callback) - _(void)_ - Searches the currently open mailbox for messages using given criteria. criteria is a list describing what you want to find. For criteria types that require arguments, use an array instead of just the string criteria type name (e.g. ['FROM', 'foo@bar.com']). Prefix criteria types with an "!" to negate.
+* **search**(< _array_ >criteria, < _function_ >callback) - _(void)_ - Searches the currently open mailbox for messages using given criteria. criteria is a list describing what you want to find. For criteria types that require arguments, use an array instead of just the string criteria type name (e.g. ['FROM', 'foo@bar.com']). Prefix criteria types with an "!" to negate.
 
     * The following message flags are valid types that do not have arguments:
 
@@ -579,29 +579,29 @@ ImapConnection Functions
     
   The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria.
 
-* **fetch**(<_mixed_>source, <_object_>options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. Note: currently you can only fetch headers AND a body when `body` is set to true (partID and byte ranges not supported yet when also requesting headers). Valid options are:
+* **fetch**(< _mixed_ >source, < _object_ >options) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. Note: currently you can only fetch headers AND a body when `body` is set to true (partID and byte ranges not supported yet when also requesting headers). Valid options are:
 
-    * **markSeen** - <_boolean_> - Mark message(s) as read when fetched. **Default:** false
+    * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
 
-    * **request** - <_object_> - What to fetch. Valid options are:
+    * **request** - < _object_ > - What to fetch. Valid options are:
 
-        * **struct** - <_boolean_> - Fetch the message structure. **Default:** true
+        * **struct** - < _boolean_ > - Fetch the message structure. **Default:** true
 
-        * **headers** - <_mixed_> - Boolean true fetches all message headers and an array of header names retrieves only those headers. **Default:** true
+        * **headers** - < _mixed_ > - Boolean true fetches all message headers and an array of header names retrieves only those headers. **Default:** true
 
-        * **body** - <_mixed_> - Boolean true fetches the entire raw message body. A string containing a valid partID (see _FetchResult_'s structure property) fetches the entire body of that particular part. The string 'full' fetches the entire (unparsed) email message, including the headers. An array can be given to specify a byte range of the content, where the first value is boolean true or a partID and the second value is the byte range. For example, to fetch the first 500 bytes: '0-500'. **Default:** false
+        * **body** - < _mixed_ > - Boolean true fetches the entire raw message body. A string containing a valid partID (see _FetchResult_'s structure property) fetches the entire body of that particular part. The string 'full' fetches the entire (unparsed) email message, including the headers. An array can be given to specify a byte range of the content, where the first value is boolean true or a partID and the second value is the byte range. For example, to fetch the first 500 bytes: '0-500'. **Default:** false
 
-* **copy**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none).
+* **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none).
 
-* **move**(<_mixed_>source, <_string_>mailboxName, <_function_>callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none). **Note:** The message(s) in the destination mailbox will have a new message UID.
+* **move**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. The callback has one parameter: the error (falsey if none). **Note:** The message(s) in the destination mailbox will have a new message UID.
 
-* **addFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Adds flag(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
+* **addFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
 
-* **delFlags**(<_mixed_>source, <_mixed_>flags, <_function_>callback) - _(void)_ - Removes flag(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
+* **delFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. flags is either a single flag or an array of flags. The callback has one parameter: the error (falsey if none).
 
-* **addKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Adds keyword(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
+* **addKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
 
-* **delKeywords**(<_mixed_>source, <_mixed_>keywords, <_function_>callback) - _(void)_ - Removes keyword(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
+* **delKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. keywords is either a single keyword or an array of keywords. The callback has one parameter: the error (falsey if none).
 
 
 Extensions Supported
@@ -625,11 +625,11 @@ Extensions Supported
 
     * Additional ImapConnection functions
 
-        * **setLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Replaces labels(s) of message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+        * **setLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Replaces labels(s) of message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
 
-        * **addLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Adds labels(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+        * **addLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Adds labels(s) to message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
 
-        * **delLabels**(<_mixed_>source, <_mixed_>labels, <_function_>callback) - _(void)_ - Removes labels(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
+        * **delLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes labels(s) from message(s). source can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an array of message UIDs and/or message UID ranges. labels is either a single label or an array of labels. The callback has one parameter: the error (falsey if none).
 
 * **SORT**
 
@@ -637,7 +637,7 @@ Extensions Supported
 
     * Additional ImapConnection functions
 
-      * **sort**(<_array_>sortCriteria, <_array_>searchCriteria, <_function_>callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart exists for this function. The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria. Valid sortCriteria are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
+      * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart exists for this function. The callback has two parameters: the error (falsey if none), and an array containing the message UIDs matching the search criteria. Valid sortCriteria are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
 
         * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
 
