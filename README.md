@@ -194,6 +194,7 @@ node-imap exposes one object: **ImapConnection**.
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - < _string_ > - The name of this mailbox.
+    * **displayName** - < _string_ > - The UTF-7-decoded name of this mailbox.
     * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode.
     * **uidvalidity** - < _integer_ > - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened. It is possible for this to change during a session, in which case a 'uidvalidity' event will be emitted on the ImapConnection instance.
     * **uidnext** - < _integer_ > - The uid that will be assigned to the next message that arrives at this mailbox.
@@ -416,6 +417,7 @@ ImapConnection Functions
   { INBOX: // mailbox name
      { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
                    // be opened
+     , displayName: 'INBOX' // the UTF-7-decoded version of the mailbox name
      , delimiter: '/' // hierarchy delimiter for accessing this mailbox's direct children.
      , children: null // an object containing another structure similar in format to this top level,
                       // otherwise null if no children
