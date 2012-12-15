@@ -623,7 +623,7 @@ Extensions Supported
 
         * X-GM-LABELS: string value which allows you to search for specific messages that have the given label applied
 
-    * fetch() will automatically retrieve the thread id, unique message id, and labels with the message properties being 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively
+    * fetch() will automatically retrieve the thread id, unique message id, and labels (named 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively) and stored on the _ImapMessage_ object itself
 
     * Additional ImapConnection functions
 
