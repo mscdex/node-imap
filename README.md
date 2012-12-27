@@ -4,7 +4,7 @@ Description
 node-imap is an IMAP module for [node.js](http://nodejs.org/) that provides an asynchronous interface for communicating with an IMAP mail server.
 
 This module does not perform any magic such as auto-decoding of messages/attachments or parsing of email addresses (node-imap leaves all mail header values as-is).
-If you are in need of this kind of extra functionality, check out andris9's [mimelib](https://github.com/andris9/mimelib) module. Also check out his [mailparser](http://github.com/andris9/mailparser) module, which comes in handy after you fetch() a 'full' raw email message with this module.
+If you are in need of this kind of extra functionality, check out andris9's [mimelib](https://github.com/andris9/mimelib) module. Also check out his [mailparser](http://github.com/andris9/mailparser) module, which comes in handy after you fetch() a raw email message with this module.
 
 
 Requirements
@@ -25,11 +25,10 @@ Example
 * This example fetches the 'date', 'from', 'to', 'subject' message headers and the message structure of all unread messages in the Inbox since May 20, 2010:
 
 ```javascript
-  var util = require('util'),
-      ImapConnection = require('imap').ImapConnection;
+  var Imap = require('imap');
       
-  var imap = new ImapConnection({
-        username: 'mygmailname@gmail.com',
+  var imap = new Imap({
+        user: 'mygmailname@gmail.com',
         password: 'mygmailpassword',
         host: 'imap.gmail.com',
         port: 993,
@@ -48,7 +47,7 @@ Example
   function openInbox(cb) {
     imap.connect(function(err) {
       if (err) die(err);
-      imap.openBox('INBOX', false, cb);
+      imap.openBox('INBOX', true, cb);
     });
   }
 
@@ -56,22 +55,25 @@ Example
     if (err) die(err);
     imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
       if (err) die(err);
-      var fetch = imap.fetch(results, {
-        request: {
-          headers: ['from', 'to', 'subject', 'date']
+      imap.fetch(results,
+        { headers: ['from', 'to', 'subject', 'date'],
+          cb: function(fetch) {
+            fetch.on('message', function(msg) {
+              console.log('Saw message no. ' + msg.seqno);
+              msg.on('headers', function(hdrs) {
+                console.log('Headers for no. ' + msg.seqno + ': ' + show(hdrs));
+              });
+              msg.on('end', function() {
+                console.log('Finished message no. ' + msg.seqno);
+              });
+            });
+          }
+        }, function(err) {
+          if (err) throw err;
+          console.log('Done fetching all messages!');
+          imap.logout();
         }
-      });
-      fetch.on('message', function(msg) {
-        console.log('Got a message with sequence number ' + msg.seqno);
-        msg.on('end', function() {
-          // msg.headers is now an object containing the requested headers ...
-          console.log('Finished message. Headers ' + show(msg.headers));
-        });
-      });
-      fetch.on('end', function() {
-        console.log('Done fetching all messages!');
-        imap.logout();
-      });
+      );
     });
   });
 ```
