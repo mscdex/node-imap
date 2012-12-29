@@ -150,42 +150,6 @@ Example
   });
 ```
 
-* Here is a modified version of the first example that retrieves and writes entire raw messages to files (no parsed headers):
-
-```javascript
-  // using the functions and variables already defined in the first example ...
-
-  var fs = require('fs'), fileStream;
-
-  openInbox(function(err, mailbox) {
-    if (err) die(err);
-    imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
-      if (err) die(err);
-      var fetch = imap.fetch(results, {
-        request: {
-          headers: false,
-          body: 'full'
-        }
-      });
-      fetch.on('message', function(msg) {
-        console.log('Saw message no. ' + msg.seqno);
-        fileStream = fs.createWriteStream('msg-' + msg.seqno + '-raw.txt');
-        msg.on('data', function(chunk) {
-          fileStream.write(chunk);
-        });
-        msg.on('end', function() {
-          fileStream.end();
-          console.log('Finished message no. ' + msg.seqno);
-        });
-      });
-      fetch.on('end', function() {
-        console.log('Done fetching all messages!');
-        imap.logout();
-      });
-    });
-  });
-```
-
 
 API
 ===
