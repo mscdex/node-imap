@@ -188,62 +188,62 @@ node-imap exposes one object: **ImapConnection**.
 A message structure with multiple parts might look something like the following:
 
 ```javascript
-  [ { type: 'mixed'
-    , params: { boundary: '000e0cd294e80dc84c0475bf339d' }
-    , disposition: null
-    , language: null
-    , location: null
-    }
-  , [ { type: 'alternative'
-      , params: { boundary: '000e0cd294e80dc83c0475bf339b' }
-      , disposition: null
-      , language: null
-      }
-    , [ { partID: '1.1'
-        , type: 'text'
-        , subtype: 'plain'
-        , params: { charset: 'ISO-8859-1' }
-        , id: null
-        , description: null
-        , encoding: '7BIT'
-        , size: 935
-        , lines: 46
-        , md5: null
-        , disposition: null
-        , language: null
+  [ { type: 'mixed',
+      params: { boundary: '000e0cd294e80dc84c0475bf339d' },
+      disposition: null,
+      language: null,
+      location: null
+    },
+    [ { type: 'alternative',
+        params: { boundary: '000e0cd294e80dc83c0475bf339b' },
+        disposition: null,
+        language: null
+      },
+      [ { partID: '1.1',
+          type: 'text',
+          subtype: 'plain',
+          params: { charset: 'ISO-8859-1' },
+          id: null,
+          description: null,
+          encoding: '7BIT',
+          size: 935,
+          lines: 46,
+          md5: null,
+          disposition: null,
+          language: null
+        }
+      ],
+      [ { partID: '1.2',
+          type: 'text',
+          subtype: 'html',
+          params: { charset: 'ISO-8859-1' },
+          id: null,
+          description: null,
+          encoding: 'QUOTED-PRINTABLE',
+          size: 1962,
+          lines: 33,
+          md5: null,
+          disposition: null,
+          language: null
         }
       ]
-    , [ { partID: '1.2'
-        , type: 'text'
-        , subtype: 'html'
-        , params: { charset: 'ISO-8859-1' }
-        , id: null
-        , description: null
-        , encoding: 'QUOTED-PRINTABLE'
-        , size: 1962
-        , lines: 33
-        , md5: null
-        , disposition: null
-        , language: null
-        }
-      ]
-    ]
-  , [ { partID: '2'
-      , type: 'application'
-      , subtype: 'octet-stream'
-      , params: { name: 'somefile' }
-      , id: null
-      , description: null
-      , encoding: 'BASE64'
-      , size: 98
-      , lines: null
-      , md5: null
-      , disposition:
-         { type: 'attachment'
-         , params: { filename: 'somefile' }
-         }
-      , language: null
-      , location: null
+    ],
+    [ { partID: '2',
+        type: 'application',
+        subtype: 'octet-stream',
+        params: { name: 'somefile' },
+        id: null,
+        description: null,
+        encoding: 'BASE64',
+        size: 98,
+        lines: null,
+        md5: null,
+        disposition:
+         { type: 'attachment',
+           params: { filename: 'somefile' }
+         },
+        language: null,
+        location: null
       }
     ]
   ]
@@ -255,18 +255,18 @@ Each message part is identified by a partID which is used when you want to fetch
 The structure of a message with only one part will simply look something like this:
 
 ```javascript
-  [ { partID: '1'
-      , type: 'text'
-      , subtype: 'plain'
-      , params: { charset: 'ISO-8859-1' }
-      , id: null
-      , description: null
-      , encoding: '7BIT'
-      , size: 935
-      , lines: 46
-      , md5: null
-      , disposition: null
-      , language: null
+  [ { partID: '1',
+      type: 'text',
+      subtype: 'plain',
+      params: { charset: 'ISO-8859-1' },
+      id: null,
+      description: null,
+      encoding: '7BIT',
+      size: 935,
+      lines: 46,
+      md5: null,
+      disposition: null,
+      language: null
     }
   ]
 ```
@@ -323,15 +323,15 @@ ImapConnection Properties
    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
 
 ```javascript
-  { prefix: '' // A string containing the prefix to use to access mailboxes in this namespace
-  , delimiter: '/' // A string containing the hierarchy delimiter for this namespace, or boolean false
-              //  for a flat namespace with no hierarchy
-  , extensions: [ // An array of namespace extensions supported by this namespace, or null if none
+  { prefix: '', // A string containing the prefix to use to access mailboxes in this namespace
+    delimiter: '/', // A string containing the hierarchy delimiter for this namespace, or boolean false
+                    //  for a flat namespace with no hierarchy
+    extensions: [ // An array of namespace extensions supported by this namespace, or null if none
                   // are specified
-        { name: 'X-FOO-BAR' // A string indicating the extension name
-        , params: [ 'BAZ' ] // An array of strings containing the parameters for this extension,
-                            // or null if none are specified
-        }
+      { name: 'X-FOO-BAR', // A string indicating the extension name
+        params: [ 'BAZ' ] // An array of strings containing the parameters for this extension,
+                          // or null if none are specified
+      }
     ]
   }
 ```
@@ -382,62 +382,62 @@ ImapConnection Functions
 
 ```javascript
   { INBOX: // mailbox name
-     { attribs: [] // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
-                   // be opened
-     , displayName: 'INBOX' // the UTF-7-decoded version of the mailbox name
-     , delimiter: '/' // hierarchy delimiter for accessing this mailbox's direct children.
-     , children: null // an object containing another structure similar in format to this top level,
+     { attribs: [], // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
+                    // be opened
+       displayName: 'INBOX', // UTF-7-decoded version of the mailbox name
+       delimiter: '/', // hierarchy delimiter for accessing this mailbox's direct children.
+       children: null, // an object containing another structure similar in format to this top level,
                       // otherwise null if no children
-     , parent: null // pointer to parent mailbox, null if at the top level
-     }
-  , Work:
-     { attribs: []
-     , delimiter: '/'
-     , children: null
-     , parent: null
-     }
-  , '[Gmail]':
-     { attribs: [ 'NOSELECT' ]
-     , delimiter: '/'
-     , children:
+       parent: null // pointer to parent mailbox, null if at the top level
+     },
+    Work:
+     { attribs: [],
+       delimiter: '/',
+       children: null,
+       parent: null
+     },
+    '[Gmail]':
+     { attribs: [ 'NOSELECT' ],
+       delimiter: '/',
+       children:
         { 'All Mail':
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
+           },
+          Drafts:
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
+           },
+          'Sent Mail':
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
+           },
+          Spam:
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
+           },
+          Starred:
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
+           },
+          Trash:
+           { attribs: [],
+             delimiter: '/',
+             children: null,
+             parent: [Circular]
            }
-        , Drafts:
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
-           }
-        , 'Sent Mail':
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
-           }
-        , Spam:
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
-           }
-        , Starred:
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
-           }
-        , Trash:
-           { attribs: []
-           , delimiter: '/'
-           , children: null
-           , parent: [Circular]
-           }
-        }
-     , parent: null
+        },
+       parent: null
      }
   }
 ```
@@ -552,35 +552,35 @@ ImapConnection Functions
 
 Valid `options` are:
 
-    * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
+  * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
 
-    * **struct** - < _boolean_ > - Fetch the message structure. **Default:** true
+  * **struct** - < _boolean_ > - Fetch the message structure. **Default:** true
 
-    * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
+  * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
 
-`request` is an _object_ or an _array_ of _object_s with the following valid properties:
+`request` is an _object_ or an _array_ of _object_ with the following valid properties:
 
-    * **id** - < _mixed_ > - _integer_ or _string_ referencing a message part to use when retrieving headers and/or a body. **Default:** (root part/entire message)
+  * **id** - < _mixed_ > - _integer_ or _string_ referencing a message part to use when retrieving headers and/or a body. **Default:** (root part/entire message)
 
-    * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
+  * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
 
-        * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers.
+      * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers.
 
-        * **parse** - < _boolean_ > - Parse headers? **Default:** true
+      * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
-    * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude or an _object_ of the form (**Default:** (no headers)):
+  * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude or an _object_ of the form (**Default:** (no headers)):
 
-        * **fields** - < _mixed_ > - An _array_ of specific headers to exclude.
+      * **fields** - < _mixed_ > - An _array_ of specific headers to exclude.
 
-        * **parse** - < _boolean_ > - Parse headers? **Default:** true
+      * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
-    * **body** - < _mixed_ > - _boolean_ true to fetch the body, or an _object_ with the following valid properties:
+  * **body** - < _mixed_ > - _boolean_ true to fetch the body, or an _object_ with the following valid properties:
 
-        * **start** - < _integer_ > - Start retrieving the body at this byte number.
+      * **start** - < _integer_ > - Start retrieving the body at this byte number.
 
-        * **length** - < _integer_ > - How many bytes to retrieve.
+      * **length** - < _integer_ > - How many bytes to retrieve.
 
-    * **cb** - < _function_ > - A callback that is passed an _ImapFetch_ object.
+  * **cb** - < _function_ > - A callback that is passed an _ImapFetch_ object.
 
 `callback` has one parameter: < _Error_ >err. This is executed when all message retrievals are complete.
 
