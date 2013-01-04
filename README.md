@@ -564,13 +564,13 @@ Valid `options` are:
 
   * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
 
-      * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers.
+      * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers. **Default:** (all headers)
 
       * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
   * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude or an _object_ of the form (**Default:** (no headers)):
 
-      * **fields** - < _mixed_ > - An _array_ of specific headers to exclude.
+      * **fields** - < _mixed_ > - An _array_ of specific headers to exclude. **Default:** (all headers)
 
       * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
