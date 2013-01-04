@@ -562,13 +562,13 @@ Valid `options` are:
 
   * **id** - < _mixed_ > - _integer_ or _string_ referencing a message part to use when retrieving headers and/or a body. **Default:** (root part/entire message)
 
-  * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
+  * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, a _string_ containing a single header to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
 
       * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers. **Default:** (all headers)
 
       * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
-  * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude or an _object_ of the form (**Default:** (no headers)):
+  * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude, a _string_ containing a single header to exclude, or an _object_ of the form (**Default:** (no headers)):
 
       * **fields** - < _mixed_ > - An _array_ of specific headers to exclude. **Default:** (all headers)
 
