@@ -574,11 +574,7 @@ Valid `options` are:
 
       * **parse** - < _boolean_ > - Parse headers? **Default:** true
 
-  * **body** - < _mixed_ > - _boolean_ true to fetch the body, or an _object_ with the following valid properties:
-
-      * **start** - < _integer_ > - Start retrieving the body at this byte number.
-
-      * **length** - < _integer_ > - How many bytes to retrieve.
+  * **body** - < _boolean_ > - _boolean_ true to fetch the body
 
   * **cb** - < _function_ > - A callback that is passed an _ImapFetch_ object.
 
