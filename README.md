@@ -86,7 +86,7 @@ Example
   openInbox(function(err, mailbox) {
     if (err) die(err);
     imap.seq.fetch(mailbox.messages.total + ':*', { struct: false },
-      { headers: ['from'],
+      { headers: 'from',
         body: true,
         cb: function(fetch) {
           fetch.on('message', function(msg) {
