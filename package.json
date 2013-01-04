@@ -1,5 +1,5 @@
 { "name": "imap",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
   "main": "./lib/imap",
