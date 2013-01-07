@@ -554,7 +554,7 @@ Valid `options` are:
 
   * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
 
-  * **struct** - < _boolean_ > - Fetch the message structure. **Default:** true
+  * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
 
   * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
 
