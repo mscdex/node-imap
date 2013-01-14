@@ -272,7 +272,7 @@ The structure of a message with only one part will simply look something like th
 
 Therefore, an easy way to check for a multipart message is to check if the structure length is >1.
 
-Lastly, here are the system flags defined by the IMAP spec (that may be added/removed to/from messages):
+Lastly, here are the system flags defined by RFC3501 that may be added/removed:
 
 * Seen - Message has been read
 * Answered - Message has been answered
