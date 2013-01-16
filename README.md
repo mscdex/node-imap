@@ -1,10 +1,10 @@
 Description
 ===========
 
-node-imap is an IMAP module for [node.js](http://nodejs.org/) that provides an asynchronous interface for communicating with an IMAP mail server.
+node-imap is an IMAP client module for [node.js](http://nodejs.org/).
 
 This module does not perform any magic such as auto-decoding of messages/attachments or parsing of email addresses (node-imap leaves all mail header values as-is).
-If you are in need of this kind of extra functionality, check out andris9's [mimelib](https://github.com/andris9/mimelib) module. Also check out his [mailparser](http://github.com/andris9/mailparser) module, which comes in handy after you fetch() a raw email message with this module.
+If you are in need of this kind of extra functionality, check out andris9's [mimelib](https://github.com/andris9/mimelib) module. Also check out his [mailparser](http://github.com/andris9/mailparser) module, which comes in handy after you fetch() a raw email message with this module and wish to parse it manually.
 
 
 Requirements
@@ -307,17 +307,21 @@ ImapConnection Events
 ImapConnection Properties
 -------------------------
 
-* **capabilities** - < _array_ > - Contains the IMAP capabilities of the server.
+* **connected** - _boolean_ - Are we connected?
 
-* **delimiter** - < _string_ > - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
+* **authenticated** - _boolean_ - Are we authenticated?
 
-* **namespaces** - < _object_ > - Contains information about each namespace type (if supported by the server) with the following properties:
+* **capabilities** - _array_ - Contains the IMAP capabilities of the server.
 
-   * **personal** - < _array_ > - Mailboxes that belong to the logged in user.
+* **delimiter** - _string_ - The (top-level) mailbox hierarchy delimiter. If the server does not support mailbox hierarchies and only a flat list, this value will be `false`.
 
-   * **other** - < _array_ > - Mailboxes that belong to other users that the logged in user has access to.
+* **namespaces** - _object_ - Contains information about each namespace type (if supported by the server) with the following properties:
 
-   * **shared** - < _array_ > - Mailboxes that are accessible by any logged in user.
+   * **personal** - _array_ - Mailboxes that belong to the logged in user.
+
+   * **other** - _array_ - Mailboxes that belong to other users that the logged in user has access to.
+
+   * **shared** - _array_ - Mailboxes that are accessible by any logged in user.
    
    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
 
