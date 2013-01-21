@@ -25,85 +25,47 @@ Example
 * Fetch the 'date', 'from', 'to', 'subject' message headers and the message structure of all unread messages in the Inbox since May 20, 2010:
 
 ```javascript
-  var Imap = require('imap');
-      
-  var imap = new Imap({
-        user: 'mygmailname@gmail.com',
-        password: 'mygmailpassword',
-        host: 'imap.gmail.com',
-        port: 993,
-        secure: true
-      });
-
-  function show(obj) {
-    return util.inspect(obj, false, Infinity);
-  }
-
-  function die(err) {
-    console.log('Uh oh: ' + err);
-    process.exit(1);
-  }
-
-  function openInbox(cb) {
-    imap.connect(function(err) {
-      if (err) die(err);
-      imap.openBox('INBOX', true, cb);
+var Imap = require('imap'),
+    inspect = require('util').inspect;
+    
+var imap = new Imap({
+      user: 'mygmailname@gmail.com',
+      password: 'mygmailpassword',
+      host: 'imap.gmail.com',
+      port: 993,
+      secure: true
     });
-  }
 
-  openInbox(function(err, mailbox) {
+function show(obj) {
+  return inspect(obj, false, Infinity);
+}
+
+function die(err) {
+  console.log('Uh oh: ' + err);
+  process.exit(1);
+}
+
+function openInbox(cb) {
+  imap.connect(function(err) {
     if (err) die(err);
-    imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
-      if (err) die(err);
-      imap.fetch(results,
-        { headers: ['from', 'to', 'subject', 'date'],
-          cb: function(fetch) {
-            fetch.on('message', function(msg) {
-              console.log('Saw message no. ' + msg.seqno);
-              msg.on('headers', function(hdrs) {
-                console.log('Headers for no. ' + msg.seqno + ': ' + show(hdrs));
-              });
-              msg.on('end', function() {
-                console.log('Finished message no. ' + msg.seqno);
-              });
-            });
-          }
-        }, function(err) {
-          if (err) throw err;
-          console.log('Done fetching all messages!');
-          imap.logout();
-        }
-      );
-    });
+    imap.openBox('INBOX', true, cb);
   });
-```
+}
 
-* Retrieve the 'from' header and buffer the entire body of the newest message:
-
-```javascript
-  // using the functions and variables already defined in the first example ...
-
-  openInbox(function(err, mailbox) {
+openInbox(function(err, mailbox) {
+  if (err) die(err);
+  imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
     if (err) die(err);
-    imap.seq.fetch(mailbox.messages.total + ':*', { struct: false },
-      { headers: 'from',
-        body: true,
+    imap.fetch(results,
+      { headers: ['from', 'to', 'subject', 'date'],
         cb: function(fetch) {
           fetch.on('message', function(msg) {
             console.log('Saw message no. ' + msg.seqno);
-            var body = '';
             msg.on('headers', function(hdrs) {
               console.log('Headers for no. ' + msg.seqno + ': ' + show(hdrs));
             });
-            msg.on('data', function(chunk) {
-              body += chunk.toString('utf8');
-            });
             msg.on('end', function() {
               console.log('Finished message no. ' + msg.seqno);
-              console.log('UID: ' + msg.uid);
-              console.log('Flags: ' + msg.flags);
-              console.log('Date: ' + msg.date);
-              console.log('Body: ' + show(body));
             });
           });
         }
@@ -114,40 +76,79 @@ Example
       }
     );
   });
+});
+```
+
+* Retrieve the 'from' header and buffer the entire body of the newest message:
+
+```javascript
+// using the functions and variables already defined in the first example ...
+
+openInbox(function(err, mailbox) {
+  if (err) die(err);
+  imap.seq.fetch(mailbox.messages.total + ':*', { struct: false },
+    { headers: 'from',
+      body: true,
+      cb: function(fetch) {
+        fetch.on('message', function(msg) {
+          console.log('Saw message no. ' + msg.seqno);
+          var body = '';
+          msg.on('headers', function(hdrs) {
+            console.log('Headers for no. ' + msg.seqno + ': ' + show(hdrs));
+          });
+          msg.on('data', function(chunk) {
+            body += chunk.toString('utf8');
+          });
+          msg.on('end', function() {
+            console.log('Finished message no. ' + msg.seqno);
+            console.log('UID: ' + msg.uid);
+            console.log('Flags: ' + msg.flags);
+            console.log('Date: ' + msg.date);
+            console.log('Body: ' + show(body));
+          });
+        });
+      }
+    }, function(err) {
+      if (err) throw err;
+      console.log('Done fetching all messages!');
+      imap.logout();
+    }
+  );
+});
 ```
 
 * Save raw unread emails since May 20, 2010 to files:
 
 ```javascript
-  // using the functions and variables already defined in the first example ...
+// using the functions and variables already defined in the first example ...
 
-  var fs = require('fs'), fileStream;
+var fs = require('fs'), fileStream;
 
-  openInbox(function(err, mailbox) {
+openInbox(function(err, mailbox) {
+  if (err) die(err);
+  imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
     if (err) die(err);
-    imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
-      if (err) die(err);
-      imap.fetch(results,
-        { headers: { parse: false },
-          body: true,
-          cb: function(fetch) {
-            fetch.on('message', function(msg) {
-              console.log('Got a message with sequence number ' + msg.seqno);
-              fileStream = fs.createWriteStream('msg-' + msg.seqno + '-body.txt');
-              msg.on('data', function(chunk) {
-                fileStream.write(chunk);
-              });
-              msg.on('end', function() {
-                fileStream.end();
-                console.log('Finished message no. ' + msg.seqno);
-              });
+    imap.fetch(results,
+      { headers: { parse: false },
+        body: true,
+        cb: function(fetch) {
+          fetch.on('message', function(msg) {
+            console.log('Got a message with sequence number ' + msg.seqno);
+            fileStream = fs.createWriteStream('msg-' + msg.seqno + '-body.txt');
+            msg.on('data', function(chunk) {
+              fileStream.write(chunk);
             });
-          }
-        }, function(err) {
+            msg.on('end', function() {
+              fileStream.end();
+              console.log('Finished message no. ' + msg.seqno);
+            });
+          });
         }
-      );
-    });
+      }, function(err) {
+      }
+    );
   });
+});
 ```
 
 
