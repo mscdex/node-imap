@@ -3,7 +3,7 @@
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
   "main": "./lib/imap",
-  "engines": { "node" : ">=0.4.0" },
+  "engines": { "node" : ">=0.8.0" },
   "dependencies": {
     "utf7": "1.0.0"
   },

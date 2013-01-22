@@ -10,7 +10,7 @@ If you are in need of this kind of extra functionality, check out andris9's [mim
 Requirements
 ============
 
-* [node.js](http://nodejs.org/) -- v0.4.0 or newer
+* [node.js](http://nodejs.org/) -- v0.8.0 or newer
 * An IMAP server -- tested with gmail
 
 
