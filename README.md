@@ -155,7 +155,7 @@ openInbox(function(err, mailbox) {
 API
 ===
 
-node-imap exposes one object: **ImapConnection**.
+require('imap') returns one object: **ImapConnection**.
 
 
 #### Data types
