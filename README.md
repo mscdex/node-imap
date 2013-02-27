@@ -553,47 +553,47 @@ ImapConnection Functions
 
 * **fetch**(< _mixed_ >source, [< _object_ >options, ] < _mixed_ >request, < _function_ >callback) - _(void)_ - Fetches message(s) in the currently open mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges.
 
-Valid `options` properties are:
+    Valid `options` properties are:
+    
+      * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
+    
+      * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
+    
+      * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
 
-  * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
-
-  * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
-
-  * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
-
-`request` is an _object_ or an _array_ of _object_ with the following valid properties:
-
-  * **id** - < _mixed_ > - _integer_ or _string_ referencing a message part to use when retrieving headers and/or a body. **Default:** (root part/entire message)
-
-  * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, a _string_ containing a single header to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
-
-      * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers. **Default:** (all headers)
-
-      * **parse** - < _boolean_ > - Parse headers? **Default:** true
-
-  * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude, a _string_ containing a single header to exclude, or an _object_ of the form (**Default:** (no headers)):
-
-      * **fields** - < _mixed_ > - An _array_ of specific headers to exclude. **Default:** (all headers)
-
-      * **parse** - < _boolean_ > - Parse headers? **Default:** true
-
-  * **body** - < _boolean_ > - _boolean_ true to fetch the body
-
-  * **cb** - < _function_ > - A callback that is passed an _ImapFetch_ object.
-
-`callback` has 1 parameter: < _Error_ >err. This is executed when all message retrievals are complete.
-
-* **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err.
-
-* **move**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err. **Note:** The message(s) in the destination mailbox will have a new message UID.
-
-* **addFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
-
-* **delFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
-
-* **addKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
-
-* **delKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+    `request` is an _object_ or an _array_ of _object_ with the following valid properties:
+    
+      * **id** - < _mixed_ > - _integer_ or _string_ referencing a message part to use when retrieving headers and/or a body. **Default:** (root part/entire message)
+    
+      * **headers** - < _mixed_ > - An _array_ of specific headers to retrieve, a _string_ containing a single header to retrieve, _boolean_ true to fetch all headers, or an _object_ of the form (**Default:** (no headers)):
+    
+          * **fields** - < _mixed_ > - An _array_ of specific headers to retrieve or _boolean_ true to fetch all headers. **Default:** (all headers)
+    
+          * **parse** - < _boolean_ > - Parse headers? **Default:** true
+    
+      * **headersNot** - < _mixed_ > - An _array_ of specific headers to exclude, a _string_ containing a single header to exclude, or an _object_ of the form (**Default:** (no headers)):
+    
+          * **fields** - < _mixed_ > - An _array_ of specific headers to exclude. **Default:** (all headers)
+    
+          * **parse** - < _boolean_ > - Parse headers? **Default:** true
+    
+      * **body** - < _boolean_ > - _boolean_ true to fetch the body
+    
+      * **cb** - < _function_ > - A callback that is passed an _ImapFetch_ object.
+    
+    `callback` has 1 parameter: < _Error_ >err. This is executed when all message retrievals are complete.
+    
+    * **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err.
+    
+    * **move**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err. **Note:** The message(s) in the destination mailbox will have a new message UID.
+    
+    * **addFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+    
+    * **delFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+    
+    * **addKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+    
+    * **delKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
 
 Extensions Supported
