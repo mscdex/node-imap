@@ -5,7 +5,7 @@ var assert = require('assert');
 var ImapConnection = require('../lib/imap').ImapConnection;
 
 var imap = new ImapConnection({
-    xoauthSettings: {
+    xoauthGmail: {
         user: "mike@example.com",
         requestorId: "mike@example.com",
         consumerKey: 'some key',

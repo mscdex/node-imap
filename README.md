@@ -356,14 +356,15 @@ ImapConnection Functions
 
     * **xoauth2** - < _string_ > - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
 
-    * **xoauthSettings** - < _object_ > - provide values to generate an xoauth token
+    * **xoauthGmail** - < _object_ > - provide values to generate a valid Gmail xoauth token. Will be ignored if xoauth is provided.
+
     ````javascript
     // example for 2-legged authentication (the only one tested so far)
-    xoauthSettings: {
+    xoauthGmail: {
         user: "mike@example.com",
         requestorId: "mike@example.com",
-        consumerKey: 'some key',
-        consumerSecret: 'some more secret key'
+        consumerKey: "some key",
+        consumerSecret: "some secret"
     }
 
     ````
