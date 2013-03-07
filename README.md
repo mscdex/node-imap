@@ -356,6 +356,18 @@ ImapConnection Functions
 
     * **xoauth2** - < _string_ > - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
 
+    * **xoauthSettings** - < _object_ > - provide values to generate an xoauth token
+    ````javascript
+    // example for 2-legged authentication (the only one tested so far)
+    xoauthSettings: {
+        user: "mike@example.com",
+        requestorId: "mike@example.com",
+        consumerKey: 'some key',
+        consumerSecret: 'some more secret key'
+    }
+
+    ````
+
     * **host** - < _string_ > - Hostname or IP address of the IMAP server. **Default:** "localhost"
 
     * **port** - < _integer_ > - Port number of the IMAP server. **Default:** 143
