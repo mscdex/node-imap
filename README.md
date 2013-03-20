@@ -455,7 +455,7 @@ ImapConnection Functions
 
     * **date** - < _date_ > - What to use for message arrival date/time. **Default:** (current date/time)
     
-  `callback` has 1 parameter: < _Error_ >err.
+  `callback` has 2 parameter: < _Error_ >err, < _integer_ >appenduid.  appenduid is undefined if not returned by the server.
 
 **All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of UIDs, conn.seq.fetch() fetches by sequence number(s) instead of UIDs, etc):**
 
