@@ -5,7 +5,8 @@
   "main": "./lib/imap",
   "engines": { "node" : ">=0.6.0" },
   "dependencies": {
-    "utf7": "1.0.0"
+    "utf7": "1.0.0",
+    "imap-message-stream": "0.0.2"
   },
   "keywords": [ "imap", "mail", "email", "reader", "client" ],
   "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/node-imap/raw/master/LICENSE" } ],
