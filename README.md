@@ -189,6 +189,7 @@ API
         * **total** - < _integer_ > - Total number of messages in this mailbox.
         * **new** - < _integer_ > - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
         * **unseen** - < _integer_ > - **(Only available with status() calls)** Number of messages in this mailbox not having the Seen flag (marked as not having been read).
+
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Events:
         * **body**(< _ReadableStream_ >stream, < _object_ >info) - Emitted for each requested body. Example `info` properties:
@@ -201,6 +202,7 @@ API
             * **struct** - < _array_ > - The message's body structure **(only set if requested with fetch())**. See below for an explanation of the format of this property.
             * **size** - < _integer_ > - The RFC822 message size **(only set if requested with fetch())**.
         * **end**() - Emitted when all attributes and bodies have been parsed.
+
 * _ImapFetch_ is an object representing a fetch() request. It consists of:
     * Events:
         * **message**(< _ImapMessage_ >msg, < _integer_ >seqno) - Emitted for each message resulting from a fetch request. `seqno` is the message's sequence number.
@@ -338,9 +340,7 @@ Connection Properties
 * **namespaces** - _object_ - Contains information about each namespace type (if supported by the server) with the following properties:
 
    * **personal** - _array_ - Mailboxes that belong to the logged in user.
-
    * **other** - _array_ - Mailboxes that belong to other users that the logged in user has access to.
-
    * **shared** - _array_ - Mailboxes that are accessible by any logged in user.
    
    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
@@ -374,25 +374,15 @@ Connection Instance Methods
 * **(constructor)**([< _object_ >config]) - _Connection_ - Creates and returns a new instance of _Connection_ using the specified configuration object. Valid config properties are:
 
     * **user** - < _string_ > - Username for plain-text authentication.
-
     * **password** - < _string_ > - Password for plain-text authentication.
-
     * **xoauth** - < _string_ > - OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it (See Andris Reinman's [xoauth.js](https://github.com/andris9/inbox/blob/master/lib/xoauth.js) module to help generate this string).
-
     * **xoauth2** - < _string_ > - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
-
     * **host** - < _string_ > - Hostname or IP address of the IMAP server. **Default:** "localhost"
-
     * **port** - < _integer_ > - Port number of the IMAP server. **Default:** 143
-
     * **secure** - < _boolean_ > - Use SSL/TLS? **Default:** false
-
     * **secureOptions** - < _object_ > - Options object to pass to tls.connect() **Default:** (none)
-
     * **connTimeout** - < _integer_ > - Number of milliseconds to wait for a connection to be established. **Default:** 10000
-
     * **keepalive** - < _boolean_ > - Enable the keepalive mechnanism. **Default:** true
-
     * **debug** - < _function_ > - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
 
 * **connect**() - _(void)_ - Attempts to connect and authenticate with the IMAP server.
@@ -499,71 +489,44 @@ Connection Instance Methods
     * The following message flags are valid types that do not have arguments:
 
         * 'ALL' - All messages.
-
         * 'ANSWERED' - Messages with the Answered flag set.
-
         * 'DELETED' - Messages with the Deleted flag set.
-
         * 'DRAFT' - Messages with the Draft flag set.
-
         * 'FLAGGED' - Messages with the Flagged flag set.
-
         * 'NEW' - Messages that have the Recent flag set but not the Seen flag.
-
         * 'SEEN' - Messages that have the Seen flag set.
-
         * 'RECENT' - Messages that have the Recent flag set.
-
         * 'OLD' - Messages that do not have the Recent flag set. This is functionally equivalent to "!RECENT" (as opposed to "!NEW").
-
         * 'UNANSWERED' - Messages that do not have the Answered flag set.
-
         * 'UNDELETED' - Messages that do not have the Deleted flag set.
-
         * 'UNDRAFT' - Messages that do not have the Draft flag set.
-
         * 'UNFLAGGED' - Messages that do not have the Flagged flag set.
-
         * 'UNSEEN' - Messages that do not have the Seen flag set.
 
     * The following are valid types that require string value(s):
 
         * 'BCC' - Messages that contain the specified string in the BCC field.
-
         * 'CC' - Messages that contain the specified string in the CC field.
-
         * 'FROM' - Messages that contain the specified string in the FROM field.
-
         * 'SUBJECT' - Messages that contain the specified string in the SUBJECT field.
-
         * 'TO' - Messages that contain the specified string in the TO field.
-
         * 'BODY' - Messages that contain the specified string in the message body.
-
         * 'TEXT' - Messages that contain the specified string in the header OR the message body.
-
         * 'KEYWORD' - Messages with the specified keyword set.
-
         * 'HEADER' - **Requires two string values, with the first being the header name and the second being the value to search for.** If this second string is empty, all messages that contain the given header name will be returned.
 
     * The following are valid types that require a string parseable by JavaScript's Date object OR a Date instance:
 
         * 'BEFORE' - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
-
         * 'ON' - Messages whose internal date (disregarding time and timezone) is within the specified date.
-
         * 'SINCE' - Messages whose internal date (disregarding time and timezone) is within or later than the specified date.
-
         * 'SENTBEFORE' - Messages whose Date header (disregarding time and timezone) is earlier than the specified date.
-
         * 'SENTON' - Messages whose Date header (disregarding time and timezone) is within the specified date.
-
         * 'SENTSINCE' - Messages whose Date header (disregarding time and timezone) is within or later than the specified date.
 
     * The following are valid types that require one Integer value:
 
         * 'LARGER' - Messages with a size larger than the specified number of bytes.
-
         * 'SMALLER' - Messages with a size smaller than the specified number of bytes.
 
     * The following are valid criterion that require one or more Integer values:
@@ -577,11 +540,8 @@ Connection Instance Methods
   `criteria` examples:
 
     * Unread messages since April 20, 2010: [ 'UNSEEN', ['SINCE', 'April 20, 2010'] ]
-
     * Messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ]
-
     * All messages that have 'node-imap' in the subject header: [ ['HEADER', 'SUBJECT', 'node-imap'] ]
-
     * All messages that _do not_ have 'node-imap' in the subject header: [ ['!HEADER', 'SUBJECT', 'node-imap'] ]
     
   `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs.
@@ -591,19 +551,18 @@ Connection Instance Methods
     Valid `options` properties are:
     
       * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
-    
       * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
-    
       * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
-
       * **bodies** - < _mixed_ > - A string or Array of strings containing body part section to fetch. **Default:** (none) Example sections:
-
           * 'HEADER' - The message header
           * 'HEADER.FIELDS(TO FROM SUBJECT)' - Specific header fields only
           * 'HEADER.FIELDS.NOT(TO FROM SUBJECT)' - Header fields only that do not match the fields given
           * 'TEXT' - The message body
           * '' - The entire message (header + body)
           * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
+
+          Note: You can also prefix `bodies` strings with part ids for multipart messages (e.g. '1.TEXT', '1.2.TEXT', '2.MIME', etc)
+          Note 2: 'HEADER*' sections are only valid for parts whose content type is 'message/rfc822', including the root part (no preceding part ids).
 
 * **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err.
 
@@ -630,16 +589,13 @@ Extensions Supported
     * search() criteria extensions
 
         * X-GM-RAW: string value which allows you to use Gmail's web interface search syntax, such as: "has:attachment in:unread"
-
         * X-GM-THRID: allows you to search for a specific conversation/thread id which is associated with groups of messages
-
         * X-GM-MSGID: allows you to search for a specific message given its account-wide unique id
-
         * X-GM-LABELS: string value which allows you to search for specific messages that have the given label applied
 
     * fetch() will automatically retrieve the thread id, unique message id, and labels (named 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively)
 
-    * Additional Connection functions
+    * Additional Connection instance methods (seqno-based counterparts exist):
 
         * **setLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Replaces labels of message(s) with `labels`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
@@ -647,45 +603,65 @@ Extensions Supported
 
         * **delLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes `labels` from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
-* **SORT**
+* **Sort**
 
     * Server capability: SORT
 
-    * Additional Connection functions
+    * Additional Connection instance methods (seqno-based counterpart exists):
 
       * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
 
         * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
-
         * 'CC' - The mailbox of the **first** "cc" address.
-
         * 'DATE' - Message sent date and time.
-
         * 'FROM' - The mailbox of the **first** "from" address.
-
         * 'SIZE' - Size of the message in octets.
-
         * 'SUBJECT' - Base subject text.
-
         * 'TO' - The mailbox of the **first** "to" address.
 
-* **ESEARCH**
+* **Extended Search**
 
     * Server capability: ESEARCH
 
-    * Additional Connection functions
+    * Additional Connection instance methods (seqno-based counterpart exists):
 
       * **esearch**(< _array_ >criteria, < _array_ >options, < _function_ >callback) - _(void)_ - A variant of search() that can return metadata about results. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` has possible keys: 'all', 'min', 'max', 'count'. Valid `options`:
 
-        * 'ALL' - Retrieves sequence numbers or UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
-
-        * 'MIN' - Retrieves the lowest sequence number or UID that satisfies the criteria.
-
-        * 'MAX' - Retrieves the highest sequence number or UID that satisfies the criteria.
-
+        * 'ALL' - Retrieves UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
+        * 'MIN' - Retrieves the lowest UID that satisfies the criteria.
+        * 'MAX' - Retrieves the highest UID that satisfies the criteria.
         * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
 
-        Note: specifying no `options` or [] is the same as ['ALL']
+        Note: specifying no `options` or [] for `options` is the same as ['ALL']
+
+* **Quota**
+
+    * Server capability: QUOTA
+
+    * Additional Connection instance methods:
+
+      * **setQuota**(< _string_ >quotaRoot, < _object_ >quotas, < _function_ >callback) - _(void)_ - Sets the resource limits for `quotaRoot` using the limits in `quotas`. `callback` has 2 parameters: < _Error_ >err, < _object_ >limits. `limits` has the same format as `limits` passed to getQuota()'s callback. Example `quotas` properties (taken from RFC2087):
+
+        * storage - Sum of messages' (RFC822) size, in kilobytes (integer).
+        * message - Number of messages (integer).
+
+      * **getQuota**(< _string_ >quotaRoot, < _function_ >callback) - _(void)_ - Gets the resource usage and limits for `quotaRoot`. `callback` has 2 parameters: < _Error_ >err, < _object_ >limits. `limits` is keyed on the resource name, where the values are objects with the following properties:
+
+        * usage - < _integer_ > - Resource usage.
+        * limit - < _integer_ > - Resource limit.
+
+      * **getQuotaRoot**(< _string_ >mailbox, < _function_ >callback) - _(void)_ - Gets the list of quota roots for `mailbox` and the resource usage and limits for each. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` is keyed on the quota root name, where the values are objects structured like `limits` given by getQuota(). Example `info`:
+
+        ```
+        { '': {
+            storage: { usage: 20480, limit: 102400 }
+          },
+          foo: {
+            storage: { usage: 1024, limit: 4096 },
+            message: { usage: 14, limit: 9001 }
+          }
+        }
+        ```
 
 
 TODO

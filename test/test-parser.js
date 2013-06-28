@@ -360,7 +360,7 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'Untagged FETCH (flags, date, size, envelope, body[structure])'
   },
-  // EXTENSIONS ----------------------------------------------------------------
+  // EXTENSIONS ================================================================
   { source: ['* ESEARCH (TAG "A285") UID MIN 7 MAX 3800', CRLF],
     expected: [ { type: 'esearch',
                   num: undefined,
@@ -387,6 +387,32 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
                 }
               ],
     what: 'ESearch ALL list'
+  },
+  { source: ['* QUOTA "" (STORAGE 10 512)', CRLF],
+    expected: [ { type: 'quota',
+                  num: undefined,
+                  textCode: undefined,
+                  text: {
+                    root: '',
+                    resources: {
+                      storage: { usage: 10, limit: 512 }
+                    }
+                  }
+                }
+              ],
+    what: 'Quota'
+  },
+  { source: ['* QUOTAROOT INBOX ""', CRLF],
+    expected: [ { type: 'quotaroot',
+                  num: undefined,
+                  textCode: undefined,
+                  text: {
+                    roots: [ '' ],
+                    mailbox: 'INBOX'
+                  }
+                }
+              ],
+    what: 'QuotaRoot'
   },
 ].forEach(function(v) {
   var ss = new require('stream').Readable(), p, result = [];
