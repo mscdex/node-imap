@@ -1,12 +1,16 @@
 { "name": "imap",
-  "version": "0.7.12",
+  "version": "0.8.0",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
-  "main": "./lib/imap",
-  "engines": { "node" : ">=0.6.0" },
+  "main": "./lib/Connection",
   "dependencies": {
-    "utf7": "1.0.0"
+    "utf7": "1.0.0",
+    "readable-stream": "1.0.2"
   },
+  "scripts": {
+    "test": "node test/test.js"
+  },
+  "engines": { "node": ">=0.8.0" },
   "keywords": [ "imap", "mail", "email", "reader", "client" ],
   "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/node-imap/raw/master/LICENSE" } ],
   "repository": { "type": "git", "url": "http://github.com/mscdex/node-imap.git" }
