@@ -669,6 +669,24 @@ Extensions Supported
 
         * 'TO' - The mailbox of the **first** "to" address.
 
+* **ESEARCH**
+
+    * Server capability: ESEARCH
+
+    * Additional Connection functions
+
+      * **esearch**(< _array_ >criteria, < _array_ >options, < _function_ >callback) - _(void)_ - A variant of search() that can return metadata about results. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` has possible keys: 'all', 'min', 'max', 'count'. Valid `options`:
+
+        * 'ALL' - Retrieves sequence numbers or UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
+
+        * 'MIN' - Retrieves the lowest sequence number or UID that satisfies the criteria.
+
+        * 'MAX' - Retrieves the highest sequence number or UID that satisfies the criteria.
+
+        * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
+
+        Note: specifying no `options` or [] is the same as ['ALL']
+
 
 TODO
 ----
@@ -676,7 +694,6 @@ TODO
 Several things not yet implemented in no particular order:
 
 * Support STARTTLS
-* Support AUTH=CRAM-MD5/AUTH=CRAM_MD5 authentication
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)

@@ -360,6 +360,34 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'Untagged FETCH (flags, date, size, envelope, body[structure])'
   },
+  // EXTENSIONS ----------------------------------------------------------------
+  { source: ['* ESEARCH (TAG "A285") UID MIN 7 MAX 3800', CRLF],
+    expected: [ { type: 'esearch',
+                  num: undefined,
+                  textCode: undefined,
+                  text: { min: 7, max: 3800 }
+                }
+              ],
+    what: 'ESearch UID, 2 items'
+  },
+  { source: ['* ESEARCH (TAG "A284") MIN 4', CRLF],
+    expected: [ { type: 'esearch',
+                  num: undefined,
+                  textCode: undefined,
+                  text: { min: 4 }
+                }
+              ],
+    what: 'ESearch 1 item'
+  },
+  { source: ['* ESEARCH (TAG "A283") ALL 2,10:11', CRLF],
+    expected: [ { type: 'esearch',
+                  num: undefined,
+                  textCode: undefined,
+                  text: { all: [ '2', '10:11' ] }
+                }
+              ],
+    what: 'ESearch ALL list'
+  },
 ].forEach(function(v) {
   var ss = new require('stream').Readable(), p, result = [];
   ss._read = function(){};
