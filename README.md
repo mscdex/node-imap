@@ -70,10 +70,10 @@ imap.once('ready', function() {
         console.log(prefix + 'Finished');
       });
     });
-    f.on('error', function(err) {
+    f.once('error', function(err) {
       console.log('Fetch error: ' + err);
     });
-    f.on('end', function() {
+    f.once('end', function() {
       console.log('Done fetching all messages!');
       imap.end();
     });
@@ -126,10 +126,10 @@ openInbox(function(err, box) {
       console.log(prefix + 'Finished');
     });
   });
-  f.on('error', function(err) {
+  f.once('error', function(err) {
     console.log('Fetch error: ' + err);
   });
-  f.on('end', function() {
+  f.once('end', function() {
     console.log('Done fetching all messages!');
     imap.end();
   });
@@ -162,10 +162,10 @@ openInbox(function(err, box) {
         console.log(prefix + 'Finished');
       });
     });
-    f.on('error', function(err) {
+    f.once('error', function(err) {
       console.log('Fetch error: ' + err);
     });
-    f.on('end', function() {
+    f.once('end', function() {
       console.log('Done fetching all messages!');
       imap.end();
     });
