@@ -25,42 +25,32 @@ Installation
 Example
 =======
 
-* Fetch the 'date', 'from', 'to', 'subject' message headers and the message structure of all unread messages in the Inbox since May 20, 2010:
+* Fetch the 'date', 'from', 'to', 'subject' message headers and the message structure of the first 3 messages in the Inbox:
 
 ```javascript
 var Imap = require('imap'),
     inspect = require('util').inspect;
     
 var imap = new Imap({
-      user: 'mygmailname@gmail.com',
-      password: 'mygmailpassword',
-      host: 'imap.gmail.com',
-      port: 993,
-      secure: true,
-      secureOptions: { rejectUnauthorized: false }
-    });
-
-imap.once('ready', function() {
-
-});
-
-imap.once('error', function(err) {
-  console.log(err);
-});
-
-imap.once('end', function() {
-  console.log('Connection ended');
+  user: 'mygmailname@gmail.com',
+  password: 'mygmailpassword',
+  host: 'imap.gmail.com',
+  port: 993,
+  secure: true,
+  secureOptions: { rejectUnauthorized: false }
 });
 
 function openInbox(cb) {
   imap.openBox('INBOX', true, cb);
 }
 
-openInbox(function(err, box) {
-  if (err) throw err;
-  imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
+imap.once('ready', function() {
+  openInbox(function(err, box) {
     if (err) throw err;
-    var f = imap.fetch(results, { bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)' });
+    var f = imap.fetch('1:3', {
+      bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
+      struct: true
+    });
     f.on('message', function(msg, seqno) {
       console.log('Message #%d', seqno);
       var prefix = '(#' + seqno + ') ';
@@ -89,6 +79,16 @@ openInbox(function(err, box) {
     });
   });
 });
+
+imap.once('error', function(err) {
+  console.log(err);
+});
+
+imap.once('end', function() {
+  console.log('Connection ended');
+});
+
+imap.connect();
 ```
 
 * Retrieve the 'from' header and buffer the entire body of the newest message:
@@ -98,43 +98,40 @@ openInbox(function(err, box) {
 
 openInbox(function(err, box) {
   if (err) throw err;
-  imap.search([ 'UNSEEN', ['SINCE', 'May 20, 2010'] ], function(err, results) {
-    if (err) throw err;
-    var f = imap.fetch(results, { bodies: ['HEADER.FIELDS (FROM)','TEXT'] });
-    f.on('message', function(msg, seqno) {
-      console.log('Message #%d', seqno);
-      var prefix = '(#' + seqno + ') ';
-      msg.on('body', function(stream, info) {
+  var f = imap.seq.fetch(box.messages.total + ':*', { bodies: ['HEADER.FIELDS (FROM)','TEXT'] });
+  f.on('message', function(msg, seqno) {
+    console.log('Message #%d', seqno);
+    var prefix = '(#' + seqno + ') ';
+    msg.on('body', function(stream, info) {
+      if (info.which === 'TEXT')
+        console.log(prefix + 'Body [%s] found, %d total bytes', inspect(info.which), info.size);
+      var buffer = '', count = 0;
+      stream.on('data', function(chunk) {
+        count += chunk.length;
+        buffer += chunk.toString('utf8');
         if (info.which === 'TEXT')
-          console.log(prefix + 'Body [%s] found, %d total bytes', inspect(info.which), info.size);
-        var buffer = '', count = 0;
-        stream.on('data', function(chunk) {
-          count += chunk.length;
-          buffer += chunk.toString('utf8');
-          if (info.which === 'TEXT')
-            console.log(prefix + 'Body [%s] (%d/%d)', inspect(info.which), count, info.size);
-        });
-        stream.once('end', function() {
-          if (info.which !== 'TEXT')
-            console.log(prefix + 'Parsed header: %s', inspect(Imap.parseHeader(buffer)));
-          else
-            console.log(prefix + 'Body [%s] Finished', inspect(info.which));
-        });
+          console.log(prefix + 'Body [%s] (%d/%d)', inspect(info.which), count, info.size);
       });
-      msg.once('attributes', function(attrs) {
-        console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
-      });
-      msg.once('end', function() {
-        console.log(prefix + 'Finished');
+      stream.once('end', function() {
+        if (info.which !== 'TEXT')
+          console.log(prefix + 'Parsed header: %s', inspect(Imap.parseHeader(buffer)));
+        else
+          console.log(prefix + 'Body [%s] Finished', inspect(info.which));
       });
     });
-    f.on('error', function(err) {
-      console.log('Fetch error: ' + err);
+    msg.once('attributes', function(attrs) {
+      console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
     });
-    f.on('end', function() {
-      console.log('Done fetching all messages!');
-      imap.end();
+    msg.once('end', function() {
+      console.log(prefix + 'Finished');
     });
+  });
+  f.on('error', function(err) {
+    console.log('Fetch error: ' + err);
+  });
+  f.on('end', function() {
+    console.log('Done fetching all messages!');
+    imap.end();
   });
 });
 ```
