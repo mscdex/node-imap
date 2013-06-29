@@ -391,7 +391,7 @@ Connection Instance Methods
 
 * **openBox**(< _string_ >mailboxName[, < _boolean_ >openReadOnly=false], < _function_ >callback) - _(void)_ - Opens a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox.
 
-* **closeBox**(< _function_ >callback) - _(void)_ - Closes the currently open mailbox. **Any messages marked as Deleted in the mailbox will be removed if the mailbox was NOT opened in read-only mode.** Additionally, logging out or opening another mailbox without closing the current one first will NOT cause deleted messages to be removed. `callback` has 1 parameter: < _Error_ >err.
+* **closeBox**([< _boolean_ >autoExpunge=true, ]< _function_ >callback) - _(void)_ - Closes the currently open mailbox. If `autoExpunge` is true, any messages marked as Deleted in the currently open mailbox will be removed if the mailbox was NOT opened in read-only mode. If `autoExpunge` is false, you disconnect, or you open another mailbox, messages marked as Deleted will **NOT** be removed from the currently open mailbox. `callback` has 1 parameter: < _Error_ >err.
 
 * **addBox**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Creates a new mailbox on the server. `mailboxName` should include any necessary prefix/path. `callback` has 1 parameter: < _Error_ >err.
 
