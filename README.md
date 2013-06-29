@@ -602,23 +602,29 @@ Extensions Supported
 
         * **delLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes `labels` from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
-* **Sort**
+* **RFC5256**
 
     * Server capability: SORT
 
-    * Additional Connection instance methods (seqno-based counterpart exists):
+        * Additional Connection instance methods (seqno-based counterpart exists):
 
-      * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
+          * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
 
-          * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
-          * 'CC' - The mailbox of the **first** "cc" address.
-          * 'DATE' - Message sent date and time.
-          * 'FROM' - The mailbox of the **first** "from" address.
-          * 'SIZE' - Size of the message in octets.
-          * 'SUBJECT' - Base subject text.
-          * 'TO' - The mailbox of the **first** "to" address.
+              * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
+              * 'CC' - The mailbox of the **first** "cc" address.
+              * 'DATE' - Message sent date and time.
+              * 'FROM' - The mailbox of the **first** "from" address.
+              * 'SIZE' - Size of the message in octets.
+              * 'SUBJECT' - Base subject text.
+              * 'TO' - The mailbox of the **first** "to" address.
 
-* **Extended Search**
+    * Server capability: THREAD=REFERENCES, THREAD=ORDEREDSUBJECT
+
+        * Additional Connection instance methods (seqno-based counterpart exists):
+
+          * **thread**(< _string_ >algorithm, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a regular search with `searchCriteria` and groups the resulting search results using the given `algorithm` (e.g. 'references', 'orderedsubject'). `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. `UIDs` is a nested array.
+
+* **RFC4731**
 
     * Server capability: ESEARCH
 
@@ -633,7 +639,7 @@ Extensions Supported
 
           **Note:** specifying no `options` or [] for `options` is the same as ['ALL']
 
-* **Quota**
+* **RFC2087**
 
     * Server capability: QUOTA
 
@@ -673,4 +679,3 @@ Several things not yet implemented in no particular order:
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
-  * THREAD (via THREAD=ORDEREDSUBJECT and/or THREAD=REFERENCES extension(s) -- http://tools.ietf.org/html/rfc5256)
