@@ -22,15 +22,15 @@ Installation
 
     npm install imap
 
-Example
-=======
+Examples
+========
 
 * Fetch the 'date', 'from', 'to', 'subject' message headers and the message structure of the first 3 messages in the Inbox:
 
 ```javascript
 var Imap = require('imap'),
     inspect = require('util').inspect;
-    
+
 var imap = new Imap({
   user: 'mygmailname@gmail.com',
   password: 'mygmailpassword',
@@ -195,7 +195,7 @@ API
         * **body**(< _ReadableStream_ >stream, < _object_ >info) - Emitted for each requested body. Example `info` properties:
             * **which** - < _string_ > - The specifier for this body (e.g. 'TEXT', 'HEADER.FIELDS (TO FROM SUBJECT)', etc).
             * **size** - < _integer_ > - The size of this body in bytes.
-        * **attributes**(< _object_ >attrs) - Emitted when all message attributes have been collected. Example properties:
+        * **attributes**(< _object_ >attrs) - Emitted when all message attributes have been collected. Example `attrs` properties:
             * **uid** - < _integer_ > - A 32-bit ID that uniquely identifies this message within its mailbox.
             * **flags** - < _array_ > - A list of flags currently set on this message.
             * **date** - < _string_ > - The internal server date for the message (always represented in GMT?)
@@ -212,87 +212,87 @@ API
 A message structure with multiple parts might look something like the following:
 
 ```javascript
-  [ { type: 'mixed',
-      params: { boundary: '000e0cd294e80dc84c0475bf339d' },
+[ { type: 'mixed',
+    params: { boundary: '000e0cd294e80dc84c0475bf339d' },
+    disposition: null,
+    language: null,
+    location: null
+  },
+  [ { type: 'alternative',
+      params: { boundary: '000e0cd294e80dc83c0475bf339b' },
       disposition: null,
-      language: null,
-      location: null
+      language: null
     },
-    [ { type: 'alternative',
-        params: { boundary: '000e0cd294e80dc83c0475bf339b' },
-        disposition: null,
-        language: null
-      },
-      [ { partID: '1.1',
-          type: 'text',
-          subtype: 'plain',
-          params: { charset: 'ISO-8859-1' },
-          id: null,
-          description: null,
-          encoding: '7BIT',
-          size: 935,
-          lines: 46,
-          md5: null,
-          disposition: null,
-          language: null
-        }
-      ],
-      [ { partID: '1.2',
-          type: 'text',
-          subtype: 'html',
-          params: { charset: 'ISO-8859-1' },
-          id: null,
-          description: null,
-          encoding: 'QUOTED-PRINTABLE',
-          size: 1962,
-          lines: 33,
-          md5: null,
-          disposition: null,
-          language: null
-        }
-      ]
-    ],
-    [ { partID: '2',
-        type: 'application',
-        subtype: 'octet-stream',
-        params: { name: 'somefile' },
+    [ { partID: '1.1',
+        type: 'text',
+        subtype: 'plain',
+        params: { charset: 'ISO-8859-1' },
         id: null,
         description: null,
-        encoding: 'BASE64',
-        size: 98,
-        lines: null,
+        encoding: '7BIT',
+        size: 935,
+        lines: 46,
         md5: null,
-        disposition:
-         { type: 'attachment',
-           params: { filename: 'somefile' }
-         },
-        language: null,
-        location: null
+        disposition: null,
+        language: null
+      }
+    ],
+    [ { partID: '1.2',
+        type: 'text',
+        subtype: 'html',
+        params: { charset: 'ISO-8859-1' },
+        id: null,
+        description: null,
+        encoding: 'QUOTED-PRINTABLE',
+        size: 1962,
+        lines: 33,
+        md5: null,
+        disposition: null,
+        language: null
       }
     ]
+  ],
+  [ { partID: '2',
+      type: 'application',
+      subtype: 'octet-stream',
+      params: { name: 'somefile' },
+      id: null,
+      description: null,
+      encoding: 'BASE64',
+      size: 98,
+      lines: null,
+      md5: null,
+      disposition:
+       { type: 'attachment',
+         params: { filename: 'somefile' }
+       },
+      language: null,
+      location: null
+    }
   ]
+]
 ```
 
 The above structure describes a message having both an attachment and two forms of the message body (plain text and HTML).
-Each message part is identified by a partID which is used when you want to fetch the content of that part (**see fetch()**).
+Each message part is identified by a partID which is used when you want to fetch the content of that part (see fetch()).
 
 The structure of a message with only one part will simply look something like this:
 
 ```javascript
-  [ { partID: '1',
-      type: 'text',
-      subtype: 'plain',
-      params: { charset: 'ISO-8859-1' },
-      id: null,
-      description: null,
-      encoding: '7BIT',
-      size: 935,
-      lines: 46,
-      md5: null,
-      disposition: null,
-      language: null
-    }
-  ]
+[ { partID: '1',
+    type: 'text',
+    subtype: 'plain',
+    params: { charset: 'ISO-8859-1' },
+    id: null,
+    description: null,
+    encoding: '7BIT',
+    size: 935,
+    lines: 46,
+    md5: null,
+    disposition: null,
+    language: null
+  }
+]
 ```
 
 Therefore, an easy way to check for a multipart message is to check if the structure length is >1.
@@ -339,31 +339,31 @@ Connection Properties
 
 * **namespaces** - _object_ - Contains information about each namespace type (if supported by the server) with the following properties:
 
-   * **personal** - _array_ - Mailboxes that belong to the logged in user.
-   * **other** - _array_ - Mailboxes that belong to other users that the logged in user has access to.
-   * **shared** - _array_ - Mailboxes that are accessible by any logged in user.
-   
-   There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
+    * **personal** - _array_ - Mailboxes that belong to the logged in user.
+    * **other** - _array_ - Mailboxes that belong to other users that the logged in user has access to.
+    * **shared** - _array_ - Mailboxes that are accessible by any logged in user.
 
-```javascript
-  { prefix: '', // A string containing the prefix to use to access mailboxes in this namespace
-    delimiter: '/', // A string containing the hierarchy delimiter for this namespace, or boolean false
-                    //  for a flat namespace with no hierarchy
-    extensions: [ // An array of namespace extensions supported by this namespace, or null if none
-                  // are specified
-      { name: 'X-FOO-BAR', // A string indicating the extension name
-        params: [ 'BAZ' ] // An array of strings containing the parameters for this extension,
-                          // or null if none are specified
-      }
-    ]
-  }
-```
+    There should always be at least one entry (although the IMAP spec allows for more, it doesn't seem to be very common) in the personal namespace list, with a blank namespace prefix. Each property's array contains objects of the following format (with example values):
+
+    ```javascript
+    { prefix: '', // A string containing the prefix to use to access mailboxes in this namespace
+      delimiter: '/', // A string containing the hierarchy delimiter for this namespace, or boolean false
+                      //  for a flat namespace with no hierarchy
+      extensions: [ // An array of namespace extensions supported by this namespace, or null if none
+                    // are specified
+        { name: 'X-FOO-BAR', // A string indicating the extension name
+          params: [ 'BAZ' ] // An array of strings containing the parameters for this extension,
+                            // or null if none are specified
+        }
+      ]
+    }
+    ```
 
 
 Connection Static Methods
 -------------------------
 
-* **parseHeader**(< _string_ >rawHeader) - _object_ - Attempts to parse the raw header into an object keyed on header fields and the values are Arrays of values.
+* **parseHeader**(< _string_ >rawHeader) - _object_ - Parses a raw header and returns an object keyed on header fields and the values are Arrays of header field values.
 
 
 Connection Instance Methods
@@ -403,83 +403,81 @@ Connection Instance Methods
 
 * **getBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the following format (with example values):
 
-```javascript
-  { INBOX: // mailbox name
-     { attribs: [], // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
-                    // be opened
-       delimiter: '/', // hierarchy delimiter for accessing this mailbox's direct children.
-       children: null, // an object containing another structure similar in format to this top level,
-                      // otherwise null if no children
-       parent: null // pointer to parent mailbox, null if at the top level
-     },
-    Work:
-     { attribs: [],
-       delimiter: '/',
-       children: null,
-       parent: null
-     },
-    '[Gmail]':
-     { attribs: [ 'NOSELECT' ],
-       delimiter: '/',
-       children:
-        { 'All Mail':
-           { attribs: [ 'All' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          Drafts:
-           { attribs: [ 'Drafts' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          Important:
-           { attribs: [ 'Important' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          'Sent Mail':
-           { attribs: [ 'Sent' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          Spam:
-           { attribs: [ 'Junk' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          Starred:
-           { attribs: [ 'Flagged' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           },
-          Trash:
-           { attribs: [ 'Trash' ],
-             delimiter: '/',
-             children: null,
-             parent: [Circular]
-           }
-        },
-       parent: null
-     }
-  }
-```
+    ```javascript
+    { INBOX: // mailbox name
+       { attribs: [], // mailbox attributes. An attribute of 'NOSELECT' indicates the mailbox cannot
+                      // be opened
+         delimiter: '/', // hierarchy delimiter for accessing this mailbox's direct children.
+         children: null, // an object containing another structure similar in format to this top level,
+                        // otherwise null if no children
+         parent: null // pointer to parent mailbox, null if at the top level
+       },
+      Work:
+       { attribs: [],
+         delimiter: '/',
+         children: null,
+         parent: null
+       },
+      '[Gmail]':
+       { attribs: [ 'NOSELECT' ],
+         delimiter: '/',
+         children:
+          { 'All Mail':
+             { attribs: [ 'All' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            Drafts:
+             { attribs: [ 'Drafts' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            Important:
+             { attribs: [ 'Important' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            'Sent Mail':
+             { attribs: [ 'Sent' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            Spam:
+             { attribs: [ 'Junk' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            Starred:
+             { attribs: [ 'Flagged' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             },
+            Trash:
+             { attribs: [ 'Trash' ],
+               delimiter: '/',
+               children: null,
+               parent: [Circular]
+             }
+          },
+         parent: null
+       }
+    }
+    ```
 
 * **removeDeleted**(< _function_ >callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the currently open mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
 * **append**(< _mixed_ >msgData, [< _object_ >options,] < _function_ >callback) - _(void)_ - Appends a message to selected mailbox. `msgData` is a string or Buffer containing an RFC-822 compatible MIME message. Valid `options` properties are:
 
     * **mailbox** - < _string_ > - The name of the mailbox to append the message to. **Default:** the currently open mailbox
-
     * **flags** - < _mixed_ > - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
-
     * **date** - < _date_ > - What to use for message arrival date/time. **Default:** (current date/time)
-    
+
   `callback` has 1 parameter: < _Error_ >err.
 
 **All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of UIDs, conn.seq.fetch() fetches by sequence number(s) instead of UIDs, etc):**
@@ -543,17 +541,18 @@ Connection Instance Methods
     * Messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ]
     * All messages that have 'node-imap' in the subject header: [ ['HEADER', 'SUBJECT', 'node-imap'] ]
     * All messages that _do not_ have 'node-imap' in the subject header: [ ['!HEADER', 'SUBJECT', 'node-imap'] ]
-    
+
   `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs.
 
 * **fetch**(< _mixed_ >source, [< _object_ >options]) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges.
 
     Valid `options` properties are:
-    
+
       * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
       * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
       * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
-      * **bodies** - < _mixed_ > - A string or Array of strings containing body part section to fetch. **Default:** (none) Example sections:
+      * **bodies** - < _mixed_ > - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
+
           * 'HEADER' - The message header
           * 'HEADER.FIELDS(TO FROM SUBJECT)' - Specific header fields only
           * 'HEADER.FIELDS.NOT(TO FROM SUBJECT)' - Header fields only that do not match the fields given
@@ -561,8 +560,8 @@ Connection Instance Methods
           * '' - The entire message (header + body)
           * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
 
-          Note: You can also prefix `bodies` strings with part ids for multipart messages (e.g. '1.TEXT', '1.2.TEXT', '2.MIME', etc)
-          Note 2: 'HEADER*' sections are only valid for parts whose content type is 'message/rfc822', including the root part (no preceding part ids).
+          **Note:** You can also prefix `bodies` strings with part ids for multipart messages (e.g. '1.TEXT', '1.2.TEXT', '2.MIME', etc)
+          **Note 2:** 'HEADER*' sections are only valid for parts whose content type is 'message/rfc822', including the root part.
 
 * **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err.
 
@@ -611,13 +610,13 @@ Extensions Supported
 
       * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
 
-        * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
-        * 'CC' - The mailbox of the **first** "cc" address.
-        * 'DATE' - Message sent date and time.
-        * 'FROM' - The mailbox of the **first** "from" address.
-        * 'SIZE' - Size of the message in octets.
-        * 'SUBJECT' - Base subject text.
-        * 'TO' - The mailbox of the **first** "to" address.
+          * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
+          * 'CC' - The mailbox of the **first** "cc" address.
+          * 'DATE' - Message sent date and time.
+          * 'FROM' - The mailbox of the **first** "from" address.
+          * 'SIZE' - Size of the message in octets.
+          * 'SUBJECT' - Base subject text.
+          * 'TO' - The mailbox of the **first** "to" address.
 
 * **Extended Search**
 
@@ -627,12 +626,12 @@ Extensions Supported
 
       * **esearch**(< _array_ >criteria, < _array_ >options, < _function_ >callback) - _(void)_ - A variant of search() that can return metadata about results. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` has possible keys: 'all', 'min', 'max', 'count'. Valid `options`:
 
-        * 'ALL' - Retrieves UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
-        * 'MIN' - Retrieves the lowest UID that satisfies the criteria.
-        * 'MAX' - Retrieves the highest UID that satisfies the criteria.
-        * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
+          * 'ALL' - Retrieves UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
+          * 'MIN' - Retrieves the lowest UID that satisfies the criteria.
+          * 'MAX' - Retrieves the highest UID that satisfies the criteria.
+          * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
 
-        Note: specifying no `options` or [] for `options` is the same as ['ALL']
+          **Note:** specifying no `options` or [] for `options` is the same as ['ALL']
 
 * **Quota**
 
@@ -642,26 +641,27 @@ Extensions Supported
 
       * **setQuota**(< _string_ >quotaRoot, < _object_ >quotas, < _function_ >callback) - _(void)_ - Sets the resource limits for `quotaRoot` using the limits in `quotas`. `callback` has 2 parameters: < _Error_ >err, < _object_ >limits. `limits` has the same format as `limits` passed to getQuota()'s callback. Example `quotas` properties (taken from RFC2087):
 
-        * storage - Sum of messages' (RFC822) size, in kilobytes (integer).
-        * message - Number of messages (integer).
+          * storage - Sum of messages' (RFC822) size, in kilobytes (integer).
+          * message - Number of messages (integer).
 
       * **getQuota**(< _string_ >quotaRoot, < _function_ >callback) - _(void)_ - Gets the resource usage and limits for `quotaRoot`. `callback` has 2 parameters: < _Error_ >err, < _object_ >limits. `limits` is keyed on the resource name, where the values are objects with the following properties:
 
-        * usage - < _integer_ > - Resource usage.
-        * limit - < _integer_ > - Resource limit.
+          * usage - < _integer_ > - Resource usage.
+          * limit - < _integer_ > - Resource limit.
 
       * **getQuotaRoot**(< _string_ >mailbox, < _function_ >callback) - _(void)_ - Gets the list of quota roots for `mailbox` and the resource usage and limits for each. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` is keyed on the quota root name, where the values are objects structured like `limits` given by getQuota(). Example `info`:
 
-        ```
-        { '': {
-            storage: { usage: 20480, limit: 102400 }
-          },
-          foo: {
-            storage: { usage: 1024, limit: 4096 },
-            message: { usage: 14, limit: 9001 }
-          }
-        }
-        ```
+          ```javascript
+            {
+              '': {
+                storage: { usage: 20480, limit: 102400 }
+              },
+              foo: {
+                storage: { usage: 1024, limit: 4096 },
+                message: { usage: 14, limit: 9001 }
+              }
+            }
+          ```
 
 
 TODO
