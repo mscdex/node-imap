@@ -673,5 +673,4 @@ Several things not yet implemented in no particular order:
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
-  * UNSELECT (via UNSELECT extension -- http://tools.ietf.org/html/rfc3691)
   * THREAD (via THREAD=ORDEREDSUBJECT and/or THREAD=REFERENCES extension(s) -- http://tools.ietf.org/html/rfc5256)
