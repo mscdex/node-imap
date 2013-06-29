@@ -471,7 +471,7 @@ Connection Instance Methods
     }
     ```
 
-* **removeDeleted**(< _function_ >callback) - _(void)_ - Permanently removes (EXPUNGEs) all messages flagged as Deleted in the currently open mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
+* **expunge**(< _function_ >callback) - _(void)_ - Permanently removes all messages flagged as Deleted in the currently open mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
 * **append**(< _mixed_ >msgData, [< _object_ >options,] < _function_ >callback) - _(void)_ - Appends a message to selected mailbox. `msgData` is a string or Buffer containing an RFC-822 compatible MIME message. Valid `options` properties are:
 
