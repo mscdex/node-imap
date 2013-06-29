@@ -36,8 +36,8 @@ var imap = new Imap({
   password: 'mygmailpassword',
   host: 'imap.gmail.com',
   port: 993,
-  secure: true,
-  secureOptions: { rejectUnauthorized: false }
+  tls: true,
+  tlsOptions: { rejectUnauthorized: false }
 });
 
 function openInbox(cb) {
@@ -379,8 +379,9 @@ Connection Instance Methods
     * **xoauth2** - < _string_ > - OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
     * **host** - < _string_ > - Hostname or IP address of the IMAP server. **Default:** "localhost"
     * **port** - < _integer_ > - Port number of the IMAP server. **Default:** 143
-    * **secure** - < _boolean_ > - Use SSL/TLS? **Default:** false
-    * **secureOptions** - < _object_ > - Options object to pass to tls.connect() **Default:** (none)
+    * **tls** - < _boolean_ > - Perform implicit TLS connection? **Default:** false
+    * **tlsOptions** - < _object_ > - Options object to pass to tls.connect() **Default:** (none)
+    * **autotls** - < _string_ > - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
     * **connTimeout** - < _integer_ > - Number of milliseconds to wait for a connection to be established. **Default:** 10000
     * **keepalive** - < _boolean_ > - Enable the keepalive mechnanism. **Default:** true
     * **debug** - < _function_ > - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
@@ -675,8 +676,8 @@ TODO
 
 Several things not yet implemented in no particular order:
 
-* Support STARTTLS
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- RFC5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- RFC5819)
   * CONDSTORE (RFC4551)
+  * QRESYNC (RFC5162)
