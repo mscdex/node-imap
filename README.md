@@ -677,5 +677,6 @@ Several things not yet implemented in no particular order:
 
 * Support STARTTLS
 * Support additional IMAP commands/extensions:
-  * NOTIFY (via NOTIFY extension -- http://tools.ietf.org/html/rfc5465)
-  * STATUS addition to LIST (via LIST-STATUS extension -- http://tools.ietf.org/html/rfc5819)
+  * NOTIFY (via NOTIFY extension -- RFC5465)
+  * STATUS addition to LIST (via LIST-STATUS extension -- RFC5819)
+  * CONDSTORE (RFC4551)
