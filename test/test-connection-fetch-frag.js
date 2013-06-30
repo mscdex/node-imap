@@ -41,7 +41,7 @@ var srv = net.createServer(function(sock) {
     if (buf.indexOf(CRLF) > -1) {
       lines = buf.split(CRLF);
       buf = lines.pop();
-      lines.forEach(function(l) {
+      lines.forEach(function() {
         sock.write(RESPONSES.shift());
       });
     }
@@ -56,7 +56,7 @@ srv.listen(0, '127.0.0.1', function() {
     port: port
   });
   imap.on('ready', function() {
-    imap.openBox('INBOX', true, function(err, box) {
+    imap.openBox('INBOX', true, function() {
       var f = imap.seq.fetch(1);
       f.on('message', function(m) {
         m.once('attributes', function(attrs) {
