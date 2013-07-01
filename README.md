@@ -363,7 +363,7 @@ Connection Properties
 Connection Static Methods
 -------------------------
 
-* **parseHeader**(< _string_ >rawHeader) - _object_ - Parses a raw header and returns an object keyed on header fields and the values are Arrays of header field values.
+* **parseHeader**(< _string_ >rawHeader[, < _boolean_ >disableAutoDecode]) - _object_ - Parses a raw header and returns an object keyed on header fields and the values are Arrays of header field values. Set `disableAutoDecode` to true to disable automatic decoding of MIME encoded-words that may exist in header field values.
 
 
 Connection Instance Methods
