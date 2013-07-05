@@ -184,6 +184,7 @@ API
     * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode. **(Only available with openBox() calls)**
     * **uidvalidity** - < _integer_ > - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
     * **uidnext** - < _integer_ > - The uid that will be assigned to the next message that arrives at this mailbox.
+    * **flags** - < _array_ > - A list of system-defined flags applicable for this mailbox. Flags in this list but *not* in `permFlags` may be stored for the current session only. Additional server implementation-specific flags may also be available.
     * **permFlags** - < _array_ > - A list of flags that can be permanently added/removed to/from messages in this mailbox.
     * **messages** - < _object_ > Contains various message counts for this mailbox:
         * **total** - < _integer_ > - Total number of messages in this mailbox.
