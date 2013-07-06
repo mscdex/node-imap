@@ -53,7 +53,8 @@ srv.listen(0, '127.0.0.1', function() {
     user: 'foo',
     password: 'bar',
     host: '127.0.0.1',
-    port: port
+    port: port,
+    keepalive: false
   });
   imap.on('ready', function() {
     imap.openBox('INBOX', true, function() {
