@@ -14,7 +14,7 @@ Requirements
   * NOTE: node v0.8.x users are supported via the readable-stream module which
           may not be up-to-date (compared to node v0.10 streams2 implementation)
 
-* An IMAP server -- tested with gmail
+* An IMAP server to connect to -- tested with gmail
 
 
 Installation
