@@ -574,9 +574,13 @@ Connection Instance Methods
 
 * **delFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
 
+* **setFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+
 * **addKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
 * **delKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
+* **setKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
 * **serverSupports**(< _string_ >capability) - _boolean_ - Checks if the server supports the specified capability.
 
