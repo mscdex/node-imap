@@ -179,6 +179,8 @@ API
 
 #### Data types
 
+* _MessageSource_ can be a single message identifier, a message identifier range (e.g. `'2504:2507'` or `'*'` or `'2504:*'`), an _array_ of message identifiers, or an _array_ of message identifier ranges.
+
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - < _string_ > - The name of this mailbox.
     * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode. **(Only available with openBox() calls)**
@@ -551,7 +553,7 @@ Connection Instance Methods
 
   `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs.
 
-* **fetch**(< _mixed_ >source, [< _object_ >options]) - _ImapFetch_ - Fetches message(s) in the currently open mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges.
+* **fetch**(< _MessageSource_ >source, [< _object_ >options]) - _ImapFetch_ - Fetches message(s) in the currently open mailbox.
 
     Valid `options` properties are:
 
@@ -571,21 +573,21 @@ Connection Instance Methods
           **Note:** You can also prefix `bodies` strings with part ids for multipart messages (e.g. '1.TEXT', '1.2.TEXT', '2.MIME', etc)
           **Note 2:** 'HEADER*' sections are only valid for parts whose content type is 'message/rfc822', including the root part.
 
-* **copy**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err.
+* **copy**(< _MessageSource_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `callback` has 1 parameter: < _Error_ >err.
 
-* **move**(< _mixed_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `callback` has 1 parameter: < _Error_ >err. **Note:** The message(s) in the destination mailbox will have a new message UID.
+* **move**(< _MessageSource_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Moves message(s) in the currently open mailbox to another mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** The message(s) in the destination mailbox will have a new message UID.
 
-* **addFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+* **addFlags**(< _MessageSource_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s). `callback` has 1 parameter: < _Error_ >err.
 
-* **delFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+* **delFlags**(< _MessageSource_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s). `callback` has 1 parameter: < _Error_ >err.
 
-* **setFlags**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+* **setFlags**(< _MessageSource_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s). `callback` has 1 parameter: < _Error_ >err.
 
-* **addKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+* **addKeywords**(< _MessageSource_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s). `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
-* **delKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+* **delKeywords**(< _MessageSource_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s). `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
-* **setKeywords**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+* **setKeywords**(< _MessageSource_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s). `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
 * **serverSupports**(< _string_ >capability) - _boolean_ - Checks if the server supports the specified capability.
 
@@ -608,11 +610,11 @@ Extensions Supported
 
     * Additional Connection instance methods (seqno-based counterparts exist):
 
-        * **setLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Replaces labels of message(s) with `labels`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
+        * **setLabels**(< _MessageSource_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Replaces labels of message(s) with `labels`. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
-        * **addLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Adds `labels` to message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
+        * **addLabels**(< _MessageSource_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Adds `labels` to message(s). `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
-        * **delLabels**(< _mixed_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes `labels` from message(s). `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
+        * **delLabels**(< _MessageSource_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes `labels` from message(s). `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
 * **RFC5256**
 
@@ -705,17 +707,18 @@ Extensions Supported
 
     * Additional Connection instance methods (seqno-based counterparts exist):
 
-        * **addFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+        * **addFlagsSince**(< _MessageSource_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s) that have not changed since `modseq`. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
 
-        * **delFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+        * **delFlagsSince**(< _MessageSource_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s) that have not changed since `modseq`. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
 
-        * **setFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+        * **setFlagsSince**(< _MessageSource_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s) that have not changed since `modseq`. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
 
-        * **addKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+        * **addKeywordsSince**(< _MessageSource_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s) that have not changed since `modseq`. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
-        * **delKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+        * **delKeywordsSince**(< _MessageSource_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s) that have not changed since `modseq`. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
-        * **setKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+        * **setKeywordsSince**(< _MessageSource_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s) that have not changed since `modseq`. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
 
 
 TODO
