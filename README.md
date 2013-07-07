@@ -182,6 +182,7 @@ API
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
     * **name** - < _string_ > - The name of this mailbox.
     * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode. **(Only available with openBox() calls)**
+    * **newKeywords** - < _boolean_ > - True if new keywords can be added to messages in this mailbox.
     * **uidvalidity** - < _integer_ > - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
     * **uidnext** - < _integer_ > - The uid that will be assigned to the next message that arrives at this mailbox.
     * **flags** - < _array_ > - A list of system-defined flags applicable for this mailbox. Flags in this list but *not* in `permFlags` may be stored for the current session only. Additional server implementation-specific flags may also be available.
