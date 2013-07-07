@@ -325,6 +325,8 @@ Connection Events
 
 * **deleted**(< _integer_ >seqno) - Emitted when a message is deleted from another IMAP connection's session. `seqno` is the sequence number (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep correct continuity.
 
+* **update**(< _integer_ >seqno, < _object_ >info) - Emitted when message metadata (e.g. flags) changes externally.
+
 * **error**(< _Error_ >err) - Emitted when an error occurs. The 'source' property will be set to indicate where the error originated from.
 
 * **close**(< _boolean_ >hadError) - Emitted when the connection has completely closed.
