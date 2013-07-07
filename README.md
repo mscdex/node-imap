@@ -398,7 +398,7 @@ Connection Instance Methods
 
 * **end**() - _(void)_ - Closes the connection to the server.
 
-* **openBox**(< _string_ >mailboxName[, < _boolean_ >openReadOnly=false], < _function_ >callback) - _(void)_ - Opens a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox.
+* **openBox**(< _string_ >mailboxName[, < _boolean_ >openReadOnly=false[, < _object_ >modifiers]], < _function_ >callback) - _(void)_ - Opens a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `modifiers` is used by IMAP extensions. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox.
 
 * **closeBox**([< _boolean_ >autoExpunge=true, ]< _function_ >callback) - _(void)_ - Closes the currently open mailbox. If `autoExpunge` is true, any messages marked as Deleted in the currently open mailbox will be removed if the mailbox was NOT opened in read-only mode. If `autoExpunge` is false, you disconnect, or you open another mailbox, messages marked as Deleted will **NOT** be removed from the currently open mailbox. `callback` has 1 parameter: < _Error_ >err.
 
