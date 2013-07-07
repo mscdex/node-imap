@@ -301,11 +301,11 @@ Therefore, an easy way to check for a multipart message is to check if the struc
 
 Lastly, here are the system flags defined by RFC3501 that may be added/removed:
 
-* Seen - Message has been read
-* Answered - Message has been answered
-* Flagged - Message is "flagged" for urgent/special attention
-* Deleted - Message is "deleted" for removal
-* Draft - Message has not completed composition (marked as a draft).
+* \Seen - Message has been read
+* \Answered - Message has been answered
+* \Flagged - Message is "flagged" for urgent/special attention
+* \Deleted - Message is marked for removal
+* \Draft - Message has not completed composition (marked as a draft).
 
 It should be noted however that the IMAP server can limit which flags can be permanently modified for any given message. If in doubt, check the mailbox's **permFlags** first.
 Additional custom flags may be provided by the server. If available, these will also be listed in the mailbox's **permFlags**.
@@ -422,47 +422,47 @@ Connection Instance Methods
          parent: null
        },
       '[Gmail]':
-       { attribs: [ 'NOSELECT' ],
+       { attribs: [ '\\NOSELECT' ],
          delimiter: '/',
          children:
           { 'All Mail':
-             { attribs: [ 'All' ],
+             { attribs: [ '\\All' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             Drafts:
-             { attribs: [ 'Drafts' ],
+             { attribs: [ '\\Drafts' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             Important:
-             { attribs: [ 'Important' ],
+             { attribs: [ '\\Important' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             'Sent Mail':
-             { attribs: [ 'Sent' ],
+             { attribs: [ '\\Sent' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             Spam:
-             { attribs: [ 'Junk' ],
+             { attribs: [ '\\Junk' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             Starred:
-             { attribs: [ 'Flagged' ],
+             { attribs: [ '\\Flagged' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
              },
             Trash:
-             { attribs: [ 'Trash' ],
+             { attribs: [ '\\Trash' ],
                delimiter: '/',
                children: null,
                parent: [Circular]
