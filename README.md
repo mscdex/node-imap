@@ -323,7 +323,7 @@ Connection Events
 
 * **mail**(< _integer_ >numNewMsgs) - Emitted when new mail arrives in the currently open mailbox.
 
-* **deleted**(< _integer_ >seqno) - Emitted when a message is deleted from another IMAP connection's session. `seqno` is the sequence number (instead of the unique UID) of the message that was deleted. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep correct continuity.
+* **expunge**(< _integer_ >seqno) - Emitted when a message was expunged externally. `seqno` is the sequence number (instead of the unique UID) of the message that was expunged. If you are caching sequence numbers, all sequence numbers higher than this value **MUST** be decremented by 1 in order to stay synchronized with the server and to keep correct continuity.
 
 * **update**(< _integer_ >seqno, < _object_ >info) - Emitted when message metadata (e.g. flags) changes externally.
 
