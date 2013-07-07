@@ -558,6 +558,7 @@ Connection Instance Methods
       * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
       * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
       * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
+      * **modifiers** - < _object_ > - Fetch modifiers defined by IMAP extensions. **Default:** (none)
       * **bodies** - < _mixed_ > - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
 
           * 'HEADER' - The message header
@@ -596,12 +597,12 @@ Extensions Supported
 
     * Server capability: X-GM-EXT-1
 
-    * search() criteria extensions
+    * search() criteria extensions:
 
-        * X-GM-RAW: string value which allows you to use Gmail's web interface search syntax, such as: "has:attachment in:unread"
-        * X-GM-THRID: allows you to search for a specific conversation/thread id which is associated with groups of messages
-        * X-GM-MSGID: allows you to search for a specific message given its account-wide unique id
-        * X-GM-LABELS: string value which allows you to search for specific messages that have the given label applied
+        * **X-GM-RAW** - < _string_ > - Gmail's custom search syntax. Example: 'has:attachment in:unread'
+        * **X-GM-THRID** - < _string_ > - Conversation/thread id
+        * **X-GM-MSGID** - < _string_ > - Account-wide unique id
+        * **X-GM-LABELS** - < _string_ > - Gmail label
 
     * fetch() will automatically retrieve the thread id, unique message id, and labels (named 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively)
 
@@ -680,6 +681,42 @@ Extensions Supported
             }
           ```
 
+* **RFC4551**
+
+    * Server capability: CONDSTORE
+
+    * Connection event 'update' info may contain the additional property:
+
+        * **modseq** - < _string_ > - The new modification sequence value for the message.
+
+    * search() criteria extensions:
+
+        * **MODSEQ** - < _string_ > - Modification sequence value. If this criteria is used, the callback parameters are then: < _Error_ >err, < _array_ >UIDs, < _string_ >modseq. The `modseq` callback parameter is the highest modification sequence value of all the messages identified in the search results.
+
+    * fetch() will automatically retrieve the modification sequence value (named 'modseq') for each message.
+
+    * fetch() modifier:
+
+        * **CHANGEDSINCE** - < _string_ > - Only fetch messages that have changed since the specified modification sequence.
+
+    * The _Box_ type can now have the following property when using openBox() or status():
+
+        * **highestmodseq** - < _string_ > - The highest modification sequence value of all messages in the mailbox.
+
+    * Additional Connection instance methods (seqno-based counterparts exist):
+
+        * **addFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _string_ >modseq, < _function_ >callback) - _(void)_ - Adds flag(s) to message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+
+        * **delFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Removes flag(s) from message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+
+        * **setFlagsSince**(< _mixed_ >source, < _mixed_ >flags, < _function_ >callback) - _(void)_ - Sets the flag(s) for message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `flags` is either a single flag or an _array_ of flags. `callback` has 1 parameter: < _Error_ >err.
+
+        * **addKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Adds keyword(s) to message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
+        * **delKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
+        * **setKeywordsSince**(< _mixed_ >source, < _mixed_ >keywords, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s) that have not changed since `modseq`. `source` can be a message UID, a message UID range (e.g. '2504:2507' or '\*' or '2504:\*'), or an _array_ of message UIDs and/or message UID ranges. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
 
 TODO
 ----
@@ -689,5 +726,4 @@ Several things not yet implemented in no particular order:
 * Support additional IMAP commands/extensions:
   * NOTIFY (via NOTIFY extension -- RFC5465)
   * STATUS addition to LIST (via LIST-STATUS extension -- RFC5819)
-  * CONDSTORE (RFC4551)
   * QRESYNC (RFC5162)
