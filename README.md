@@ -699,7 +699,7 @@ Extensions Supported
 
     * fetch() modifier:
 
-        * **CHANGEDSINCE** - < _string_ > - Only fetch messages that have changed since the specified modification sequence.
+        * **changedsince** - < _string_ > - Only fetch messages that have changed since the specified modification sequence.
 
     * The _Box_ type can now have the following property when using openBox() or status():
 
