@@ -182,29 +182,29 @@ API
 * _MessageSource_ can be a single message identifier, a message identifier range (e.g. `'2504:2507'` or `'*'` or `'2504:*'`), an _array_ of message identifiers, or an _array_ of message identifier ranges.
 
 * _Box_ is an object representing the currently open mailbox, and has the following properties:
-    * **name** - < _string_ > - The name of this mailbox.
-    * **readOnly** - < _boolean_ > - True if this mailbox was opened in read-only mode. **(Only available with openBox() calls)**
-    * **newKeywords** - < _boolean_ > - True if new keywords can be added to messages in this mailbox.
-    * **uidvalidity** - < _integer_ > - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
-    * **uidnext** - < _integer_ > - The uid that will be assigned to the next message that arrives at this mailbox.
-    * **flags** - < _array_ > - A list of system-defined flags applicable for this mailbox. Flags in this list but *not* in `permFlags` may be stored for the current session only. Additional server implementation-specific flags may also be available.
-    * **permFlags** - < _array_ > - A list of flags that can be permanently added/removed to/from messages in this mailbox.
-    * **messages** - < _object_ > Contains various message counts for this mailbox:
-        * **total** - < _integer_ > - Total number of messages in this mailbox.
-        * **new** - < _integer_ > - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
-        * **unseen** - < _integer_ > - **(Only available with status() calls)** Number of messages in this mailbox not having the Seen flag (marked as not having been read).
+    * **name** - _string_ - The name of this mailbox.
+    * **readOnly** - _boolean_ - True if this mailbox was opened in read-only mode. **(Only available with openBox() calls)**
+    * **newKeywords** - _boolean_ - True if new keywords can be added to messages in this mailbox.
+    * **uidvalidity** - _integer_ - A 32-bit number that can be used to determine if UIDs in this mailbox have changed since the last time this mailbox was opened.
+    * **uidnext** - _integer_ - The uid that will be assigned to the next message that arrives at this mailbox.
+    * **flags** - _array_ - A list of system-defined flags applicable for this mailbox. Flags in this list but *not* in `permFlags` may be stored for the current session only. Additional server implementation-specific flags may also be available.
+    * **permFlags** - _array_ - A list of flags that can be permanently added/removed to/from messages in this mailbox.
+    * **messages** - _object_ - Contains various message counts for this mailbox:
+        * **total** - _integer_ - Total number of messages in this mailbox.
+        * **new** - _integer_ - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
+        * **unseen** - _integer_ - **(Only available with status() calls)** Number of messages in this mailbox not having the Seen flag (marked as not having been read).
 
 * _ImapMessage_ is an object representing an email message. It consists of:
     * Events:
         * **body**(< _ReadableStream_ >stream, < _object_ >info) - Emitted for each requested body. Example `info` properties:
-            * **which** - < _string_ > - The specifier for this body (e.g. 'TEXT', 'HEADER.FIELDS (TO FROM SUBJECT)', etc).
-            * **size** - < _integer_ > - The size of this body in bytes.
+            * **which** - _string_ - The specifier for this body (e.g. 'TEXT', 'HEADER.FIELDS (TO FROM SUBJECT)', etc).
+            * **size** - _integer_ - The size of this body in bytes.
         * **attributes**(< _object_ >attrs) - Emitted when all message attributes have been collected. Example `attrs` properties:
-            * **uid** - < _integer_ > - A 32-bit ID that uniquely identifies this message within its mailbox.
-            * **flags** - < _array_ > - A list of flags currently set on this message.
-            * **date** - < _string_ > - The internal server date for the message.
-            * **struct** - < _array_ > - The message's body structure **(only set if requested with fetch())**. See below for an explanation of the format of this property.
-            * **size** - < _integer_ > - The RFC822 message size **(only set if requested with fetch())**.
+            * **uid** - _integer_ - A 32-bit ID that uniquely identifies this message within its mailbox.
+            * **flags** - _array_ - A list of flags currently set on this message.
+            * **date** - _string_ - The internal server date for the message.
+            * **struct** - _array_ - The message's body structure **(only set if requested with fetch())**. See below for an explanation of the format of this property.
+            * **size** - _integer_ - The RFC822 message size **(only set if requested with fetch())**.
         * **end**() - Emitted when all attributes and bodies have been parsed.
 
 * _ImapFetch_ is an object representing a fetch() request. It consists of:
@@ -381,18 +381,18 @@ Connection Instance Methods
 
 * **(constructor)**([< _object_ >config]) - _Connection_ - Creates and returns a new instance of _Connection_ using the specified configuration object. Valid config properties are:
 
-    * **user** - < _string_ > - Username for plain-text authentication.
-    * **password** - < _string_ > - Password for plain-text authentication.
-    * **xoauth** - < _string_ > - Base64-encoded OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it (See Andris Reinman's [xoauth.js](https://github.com/andris9/inbox/blob/master/lib/xoauth.js) module to help generate this string).
-    * **xoauth2** - < _string_ > - Base64-encoded OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
-    * **host** - < _string_ > - Hostname or IP address of the IMAP server. **Default:** "localhost"
-    * **port** - < _integer_ > - Port number of the IMAP server. **Default:** 143
-    * **tls** - < _boolean_ > - Perform implicit TLS connection? **Default:** false
-    * **tlsOptions** - < _object_ > - Options object to pass to tls.connect() **Default:** (none)
-    * **autotls** - < _string_ > - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
-    * **connTimeout** - < _integer_ > - Number of milliseconds to wait for a connection to be established. **Default:** 10000
-    * **keepalive** - < _boolean_ > - Enable the keepalive mechanism. **Default:** true
-    * **debug** - < _function_ > - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
+    * **user** - _string_ - Username for plain-text authentication.
+    * **password** - _string_ - Password for plain-text authentication.
+    * **xoauth** - _string_ - Base64-encoded OAuth token for [OAuth authentication](https://sites.google.com/site/oauthgoog/Home/oauthimap) for servers that support it (See Andris Reinman's [xoauth.js](https://github.com/andris9/inbox/blob/master/lib/xoauth.js) module to help generate this string).
+    * **xoauth2** - _string_ - Base64-encoded OAuth2 token for [The SASL XOAUTH2 Mechanism](https://developers.google.com/google-apps/gmail/xoauth2_protocol#the_sasl_xoauth2_mechanism) for servers that support it (See Andris Reinman's [xoauth2](https://github.com/andris9/xoauth2) module to help generate this string).
+    * **host** - _string_ - Hostname or IP address of the IMAP server. **Default:** "localhost"
+    * **port** - _integer_ - Port number of the IMAP server. **Default:** 143
+    * **tls** - _boolean_ - Perform implicit TLS connection? **Default:** false
+    * **tlsOptions** - _object_ - Options object to pass to tls.connect() **Default:** (none)
+    * **autotls** - _string_ - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
+    * **connTimeout** - _integer_ - Number of milliseconds to wait for a connection to be established. **Default:** 10000
+    * **keepalive** - _boolean_ - Enable the keepalive mechanism. **Default:** true
+    * **debug** - _function_ - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
 
 * **connect**() - _(void)_ - Attempts to connect and authenticate with the IMAP server.
 
@@ -483,9 +483,9 @@ Connection Instance Methods
 
 * **append**(< _mixed_ >msgData, [< _object_ >options,] < _function_ >callback) - _(void)_ - Appends a message to selected mailbox. `msgData` is a string or Buffer containing an RFC-822 compatible MIME message. Valid `options` properties are:
 
-    * **mailbox** - < _string_ > - The name of the mailbox to append the message to. **Default:** the currently open mailbox
-    * **flags** - < _mixed_ > - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
-    * **date** - < _date_ > - What to use for message arrival date/time. **Default:** (current date/time)
+    * **mailbox** - _string_ - The name of the mailbox to append the message to. **Default:** the currently open mailbox
+    * **flags** - _mixed_ - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
+    * **date** - _date_ - What to use for message arrival date/time. **Default:** (current date/time)
 
   `callback` has 1 parameter: < _Error_ >err.
 
@@ -557,11 +557,11 @@ Connection Instance Methods
 
     Valid `options` properties are:
 
-      * **markSeen** - < _boolean_ > - Mark message(s) as read when fetched. **Default:** false
-      * **struct** - < _boolean_ > - Fetch the message structure. **Default:** false
-      * **size** - < _boolean_ > - Fetch the RFC822 size. **Default:** false
-      * **modifiers** - < _object_ > - Fetch modifiers defined by IMAP extensions. **Default:** (none)
-      * **bodies** - < _mixed_ > - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
+      * **markSeen** - _boolean_ - Mark message(s) as read when fetched. **Default:** false
+      * **struct** - _boolean_ - Fetch the message structure. **Default:** false
+      * **size** - _boolean_ - Fetch the RFC822 size. **Default:** false
+      * **modifiers** - _object_ - Fetch modifiers defined by IMAP extensions. **Default:** (none)
+      * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
 
           * 'HEADER' - The message header
           * 'HEADER.FIELDS(TO FROM SUBJECT)' - Specific header fields only
@@ -601,10 +601,10 @@ Extensions Supported
 
     * search() criteria extensions:
 
-        * **X-GM-RAW** - < _string_ > - Gmail's custom search syntax. Example: 'has:attachment in:unread'
-        * **X-GM-THRID** - < _string_ > - Conversation/thread id
-        * **X-GM-MSGID** - < _string_ > - Account-wide unique id
-        * **X-GM-LABELS** - < _string_ > - Gmail label
+        * **X-GM-RAW** - _string_ - Gmail's custom search syntax. Example: 'has:attachment in:unread'
+        * **X-GM-THRID** - _string_ - Conversation/thread id
+        * **X-GM-MSGID** - _string_ - Account-wide unique id
+        * **X-GM-LABELS** - _string_ - Gmail label
 
     * fetch() will automatically retrieve the thread id, unique message id, and labels (named 'x-gm-thrid', 'x-gm-msgid', 'x-gm-labels' respectively)
 
@@ -666,8 +666,8 @@ Extensions Supported
 
       * **getQuota**(< _string_ >quotaRoot, < _function_ >callback) - _(void)_ - Gets the resource usage and limits for `quotaRoot`. `callback` has 2 parameters: < _Error_ >err, < _object_ >limits. `limits` is keyed on the resource name, where the values are objects with the following properties:
 
-          * usage - < _integer_ > - Resource usage.
-          * limit - < _integer_ > - Resource limit.
+          * usage - _integer_ - Resource usage.
+          * limit - _integer_ - Resource limit.
 
       * **getQuotaRoot**(< _string_ >mailbox, < _function_ >callback) - _(void)_ - Gets the list of quota roots for `mailbox` and the resource usage and limits for each. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` is keyed on the quota root name, where the values are objects structured like `limits` given by getQuota(). Example `info`:
 
@@ -689,21 +689,21 @@ Extensions Supported
 
     * Connection event 'update' info may contain the additional property:
 
-        * **modseq** - < _string_ > - The new modification sequence value for the message.
+        * **modseq** - _string_ - The new modification sequence value for the message.
 
     * search() criteria extensions:
 
-        * **MODSEQ** - < _string_ > - Modification sequence value. If this criteria is used, the callback parameters are then: < _Error_ >err, < _array_ >UIDs, < _string_ >modseq. The `modseq` callback parameter is the highest modification sequence value of all the messages identified in the search results.
+        * **MODSEQ** - _string_ - Modification sequence value. If this criteria is used, the callback parameters are then: < _Error_ >err, < _array_ >UIDs, < _string_ >modseq. The `modseq` callback parameter is the highest modification sequence value of all the messages identified in the search results.
 
     * fetch() will automatically retrieve the modification sequence value (named 'modseq') for each message.
 
     * fetch() modifier:
 
-        * **changedsince** - < _string_ > - Only fetch messages that have changed since the specified modification sequence.
+        * **changedsince** - _string_ - Only fetch messages that have changed since the specified modification sequence.
 
     * The _Box_ type can now have the following property when using openBox() or status():
 
-        * **highestmodseq** - < _string_ > - The highest modification sequence value of all messages in the mailbox.
+        * **highestmodseq** - _string_ - The highest modification sequence value of all messages in the mailbox.
 
     * Additional Connection instance methods (seqno-based counterparts exist):
 
