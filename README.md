@@ -408,6 +408,10 @@ Connection Instance Methods
 
 * **renameBox**(< _string_ >oldMailboxName, < _string_ >newMailboxName, < _function_ >callback) - _(void)_ - Renames a specific mailbox that exists on the server. Both `oldMailboxName` and `newMailboxName` should include any necessary prefix/path. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox. **Note:** Renaming the 'INBOX' mailbox will instead cause all messages in 'INBOX' to be moved to the new mailbox.
 
+* **subscribeBox**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Subscribes to a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `callback` has 1 parameter: < _Error_ >err.
+
+* **unsubscribeBox**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Unsubscribes from a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `callback` has 1 parameter: < _Error_ >err.
+
 * **status**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Fetches information about a mailbox other than the one currently open. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox. **Note:** There is no guarantee that this will be a fast operation on the server. Also, do **not** call this on the currently open mailbox.
 
 * **getBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the following format (with example values):
@@ -478,6 +482,8 @@ Connection Instance Methods
        }
     }
     ```
+
+* **getSubscribedBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of subscribed mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the same format as getBoxes above.
 
 * **expunge**(< _function_ >callback) - _(void)_ - Permanently removes all messages flagged as Deleted in the currently open mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
