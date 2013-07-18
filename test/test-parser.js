@@ -34,6 +34,13 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'Continuation with text code'
   },
+  { source: ['+', CRLF],
+    expected: [ { textCode: undefined,
+                  text: undefined
+                }
+              ],
+    what: 'Continuation (broken -- RFC violation) sent by AOL IMAP'
+  },
   { source: ['* NAMESPACE ',
              '(("" "/")) ',
              '(("~" "/")) ',
