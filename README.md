@@ -392,7 +392,7 @@ Connection Instance Methods
     * **autotls** - _string_ - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
     * **connTimeout** - _integer_ - Number of milliseconds to wait for a connection to be established. **Default:** 10000
     * **keepalive** - _boolean_ - Enable the keepalive mechanism. **Default:** true
-    * **debug** - _function_ - If set, the function will be called with one argument, a string containing some debug info **Default:** <no debug output>
+    * **debug** - _function_ - If set, the function will be called with one argument, a string containing some debug info **Default:** (no debug output)
 
 * **connect**() - _(void)_ - Attempts to connect and authenticate with the IMAP server.
 
