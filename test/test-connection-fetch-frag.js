@@ -7,16 +7,20 @@ var CRLF = '\r\n';
 
 var RESPONSES = [
   ['* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA CHILDREN',
-   'A0 OK Thats all she wrote!', ''
+   'A0 OK Thats all she wrote!',
+   ''
   ].join(CRLF),
   ['* CAPABILITY IMAP4rev1 UNSELECT IDLE NAMESPACE QUOTA CHILDREN UIDPLUS MOVE',
-   'A1 OK authenticated (Success)', ''
+   'A1 OK authenticated (Success)',
+   ''
   ].join(CRLF),
   ['* NAMESPACE (("" "/")) NIL NIL',
-   'A2 OK Success', ''
+   'A2 OK Success',
+   ''
   ].join(CRLF),
   ['* LIST (\\Noselect) "/" "/"',
-   'A3 OK Success', ''
+   'A3 OK Success',
+   ''
   ].join(CRLF),
   ['* FLAGS (\\Answered \\Flagged \\Draft \\Deleted \\Seen)',
    '* OK [PERMANENTFLAGS ()] Flags permitted.',
@@ -24,12 +28,18 @@ var RESPONSES = [
    '* 685 EXISTS',
    '* 0 RECENT',
    '* OK [UIDNEXT 4422] Predicted next UID.',
-   'A4 OK [READ-ONLY] INBOX selected. (Success)', ''
-   ].join(CRLF),
+   'A4 OK [READ-ONLY] INBOX selected. (Success)',
+   ''
+  ].join(CRLF),
   ['* 1 FETCH (UID 1)',
    '* 1 FETCH (INTERNALDATE "05-Sep-2004 00:38:03 +0000")',
    '* 1 FETCH (FLAGS (\\Seen))',
-   'A5 OK Success', ''
+   'A5 OK Success',
+   ''
+  ].join(CRLF),
+  ['* BYE LOGOUT Requested',
+   'A6 OK good day (Success)',
+   ''
   ].join(CRLF)
 ];
 
