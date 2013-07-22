@@ -396,7 +396,9 @@ Connection Instance Methods
 
 * **connect**() - _(void)_ - Attempts to connect and authenticate with the IMAP server.
 
-* **end**() - _(void)_ - Closes the connection to the server.
+* **end**() - _(void)_ - Closes the connection to the server after all requests in the queue have been sent.
+
+* **destroy**() - _(void)_ - Immediately destroys the connection to the server.
 
 * **openBox**(< _string_ >mailboxName[, < _boolean_ >openReadOnly=false[, < _object_ >modifiers]], < _function_ >callback) - _(void)_ - Opens a specific mailbox that exists on the server. `mailboxName` should include any necessary prefix/path. `modifiers` is used by IMAP extensions. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox.
 
