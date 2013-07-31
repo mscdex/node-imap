@@ -38,6 +38,15 @@ var CRLF = '\r\n';
     expected: { subject: [ '测试题目与中国信 long subjects are not OK 12 345678901234567890123456789012345678901234567890123456789012345678901234567890' ] },
     what: 'Folded header value (one adjacent, one non-adjacent MIME encoded-words)'
   },
+  // header with body
+  { source: ['Subject: test subject', CRLF,
+             'X-Another-Header: test', CRLF,
+             CRLF,
+             'This is body: Not a header', CRLF],
+    expected: { subject: [ 'test subject' ], 'x-another-header': [ 'test' ] },
+    what: 'Header with the body'
+  },
+
 ].forEach(function(v) {
   var result;
 
