@@ -6,7 +6,7 @@
   "dependencies": {
     "utf7": "1.0.0",
     "iconv-lite": "0.2.11",
-    "readable-stream": "1.0.2"
+    "readable-stream": "1.0.15"
   },
   "scripts": {
     "test": "node test/test.js"
