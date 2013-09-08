@@ -283,387 +283,469 @@ function getEncoding(label) {
  *      heading: string}>} */
 var encodings = [
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'unicode-1-1-utf-8',
-          'utf-8',
-          'utf8'
+        "labels": [
+          "unicode-1-1-utf-8",
+          "utf-8",
+          "utf8"
         ],
-        'name': 'utf-8'
+        "name": "utf-8"
       }
     ],
-    'heading': 'The Encoding'
+    "heading": "The Encoding"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'cp864',
-          'ibm864'
+        "labels": [
+          "864",
+          "cp864",
+          "csibm864",
+          "ibm864"
         ],
-        'name': 'ibm864'
+        "name": "ibm864"
       },
       {
-        'labels': [
-          'cp866',
-          'ibm866'
+        "labels": [
+          "866",
+          "cp866",
+          "csibm866",
+          "ibm866"
         ],
-        'name': 'ibm866'
+        "name": "ibm866"
       },
       {
-        'labels': [
-          'csisolatin2',
-          'iso-8859-2',
-          'iso-ir-101',
-          'iso8859-2',
-          'iso_8859-2',
-          'l2',
-          'latin2'
+        "labels": [
+          "csisolatin2",
+          "iso-8859-2",
+          "iso-ir-101",
+          "iso8859-2",
+          "iso88592",
+          "iso_8859-2",
+          "iso_8859-2:1987",
+          "l2",
+          "latin2"
         ],
-        'name': 'iso-8859-2'
+        "name": "iso-8859-2"
       },
       {
-        'labels': [
-          'csisolatin3',
-          'iso-8859-3',
-          'iso_8859-3',
-          'iso-ir-109',
-          'l3',
-          'latin3'
+        "labels": [
+          "csisolatin3",
+          "iso-8859-3",
+          "iso-ir-109",
+          "iso8859-3",
+          "iso88593",
+          "iso_8859-3",
+          "iso_8859-3:1988",
+          "l3",
+          "latin3"
         ],
-        'name': 'iso-8859-3'
+        "name": "iso-8859-3"
       },
       {
-        'labels': [
-          'csisolatin4',
-          'iso-8859-4',
-          'iso_8859-4',
-          'iso-ir-110',
-          'l4',
-          'latin4'
+        "labels": [
+          "csisolatin4",
+          "iso-8859-4",
+          "iso-ir-110",
+          "iso8859-4",
+          "iso88594",
+          "iso_8859-4",
+          "iso_8859-4:1988",
+          "l4",
+          "latin4"
         ],
-        'name': 'iso-8859-4'
+        "name": "iso-8859-4"
       },
       {
-        'labels': [
-          'csisolatincyrillic',
-          'cyrillic',
-          'iso-8859-5',
-          'iso_8859-5',
-          'iso-ir-144'
+        "labels": [
+          "csisolatincyrillic",
+          "cyrillic",
+          "iso-8859-5",
+          "iso-ir-144",
+          "iso8859-5",
+          "iso88595",
+          "iso_8859-5",
+          "iso_8859-5:1988"
         ],
-        'name': 'iso-8859-5'
+        "name": "iso-8859-5"
       },
       {
-        'labels': [
-          'arabic',
-          'csisolatinarabic',
-          'ecma-114',
-          'iso-8859-6',
-          'iso_8859-6',
-          'iso-ir-127'
+        "labels": [
+          "arabic",
+          "asmo-708",
+          "csiso88596e",
+          "csiso88596i",
+          "csisolatinarabic",
+          "ecma-114",
+          "iso-8859-6",
+          "iso-8859-6-e",
+          "iso-8859-6-i",
+          "iso-ir-127",
+          "iso8859-6",
+          "iso88596",
+          "iso_8859-6",
+          "iso_8859-6:1987"
         ],
-        'name': 'iso-8859-6'
+        "name": "iso-8859-6"
       },
       {
-        'labels': [
-          'csisolatingreek',
-          'ecma-118',
-          'elot_928',
-          'greek',
-          'greek8',
-          'iso-8859-7',
-          'iso_8859-7',
-          'iso-ir-126'
+        "labels": [
+          "csisolatingreek",
+          "ecma-118",
+          "elot_928",
+          "greek",
+          "greek8",
+          "iso-8859-7",
+          "iso-ir-126",
+          "iso8859-7",
+          "iso88597",
+          "iso_8859-7",
+          "iso_8859-7:1987",
+          "sun_eu_greek"
         ],
-        'name': 'iso-8859-7'
+        "name": "iso-8859-7"
       },
       {
-        'labels': [
-          'csisolatinhebrew',
-          'hebrew',
-          'iso-8859-8',
-          'iso-8859-8-i',
-          'iso-ir-138',
-          'iso_8859-8',
-          'visual'
+        "labels": [
+          "csiso88598e",
+          "csisolatinhebrew",
+          "hebrew",
+          "iso-8859-8",
+          "iso-8859-8-e",
+          "iso-ir-138",
+          "iso8859-8",
+          "iso88598",
+          "iso_8859-8",
+          "iso_8859-8:1988",
+          "visual"
         ],
-        'name': 'iso-8859-8'
+        "name": "iso-8859-8"
       },
       {
-        'labels': [
-          'csisolatin6',
-          'iso-8859-10',
-          'iso-ir-157',
-          'iso8859-10',
-          'l6',
-          'latin6'
+        "labels": [
+          "csiso88598i",
+          "iso-8859-8-i",
+          "logical"
         ],
-        'name': 'iso-8859-10'
+        "name": "iso-8859-8-i"
       },
       {
-        'labels': [
-          'iso-8859-13'
+        "labels": [
+          "csisolatin6",
+          "iso-8859-10",
+          "iso-ir-157",
+          "iso8859-10",
+          "iso885910",
+          "l6",
+          "latin6"
         ],
-        'name': 'iso-8859-13'
+        "name": "iso-8859-10"
       },
       {
-        'labels': [
-          'iso-8859-14',
-          'iso8859-14'
+        "labels": [
+          "iso-8859-13",
+          "iso8859-13",
+          "iso885913"
         ],
-        'name': 'iso-8859-14'
+        "name": "iso-8859-13"
       },
       {
-        'labels': [
-          'iso-8859-15',
-          'iso_8859-15'
+        "labels": [
+          "iso-8859-14",
+          "iso8859-14",
+          "iso885914"
         ],
-        'name': 'iso-8859-15'
+        "name": "iso-8859-14"
       },
       {
-        'labels': [
-          'iso-8859-16'
+        "labels": [
+          "csisolatin9",
+          "iso-8859-15",
+          "iso8859-15",
+          "iso885915",
+          "iso_8859-15",
+          "l9"
         ],
-        'name': 'iso-8859-16'
+        "name": "iso-8859-15"
       },
       {
-        'labels': [
-          'koi8-r',
-          'koi8_r'
+        "labels": [
+          "iso-8859-16"
         ],
-        'name': 'koi8-r'
+        "name": "iso-8859-16"
       },
       {
-        'labels': [
-          'koi8-u'
+        "labels": [
+          "cskoi8r",
+          "koi",
+          "koi8",
+          "koi8-r",
+          "koi8_r"
         ],
-        'name': 'koi8-u'
+        "name": "koi8-r"
       },
       {
-        'labels': [
-          'csmacintosh',
-          'mac',
-          'macintosh',
-          'x-mac-roman'
+        "labels": [
+          "koi8-u"
         ],
-        'name': 'macintosh'
+        "name": "koi8-u"
       },
       {
-        'labels': [
-          'iso-8859-11',
-          'tis-620',
-          'windows-874'
+        "labels": [
+          "csmacintosh",
+          "mac",
+          "macintosh",
+          "x-mac-roman"
         ],
-        'name': 'windows-874'
+        "name": "macintosh"
       },
       {
-        'labels': [
-          'windows-1250',
-          'x-cp1250'
+        "labels": [
+          "dos-874",
+          "iso-8859-11",
+          "iso8859-11",
+          "iso885911",
+          "tis-620",
+          "windows-874"
         ],
-        'name': 'windows-1250'
+        "name": "windows-874"
       },
       {
-        'labels': [
-          'windows-1251',
-          'x-cp1251'
+        "labels": [
+          "cp1250",
+          "windows-1250",
+          "x-cp1250"
         ],
-        'name': 'windows-1251'
+        "name": "windows-1250"
       },
       {
-        'labels': [
-          'ascii',
-          'ansi_x3.4-1968',
-          'csisolatin1',
-          'iso-8859-1',
-          'iso8859-1',
-          'iso_8859-1',
-          'l1',
-          'latin1',
-          'us-ascii',
-          'windows-1252'
+        "labels": [
+          "cp1251",
+          "windows-1251",
+          "x-cp1251"
         ],
-        'name': 'windows-1252'
+        "name": "windows-1251"
       },
       {
-        'labels': [
-          'cp1253',
-          'windows-1253'
+        "labels": [
+          "ansi_x3.4-1968",
+          "ascii",
+          "cp1252",
+          "cp819",
+          "csisolatin1",
+          "ibm819",
+          "iso-8859-1",
+          "iso-ir-100",
+          "iso8859-1",
+          "iso88591",
+          "iso_8859-1",
+          "iso_8859-1:1987",
+          "l1",
+          "latin1",
+          "us-ascii",
+          "windows-1252",
+          "x-cp1252"
         ],
-        'name': 'windows-1253'
+        "name": "windows-1252"
       },
       {
-        'labels': [
-          'csisolatin5',
-          'iso-8859-9',
-          'iso-ir-148',
-          'l5',
-          'latin5',
-          'windows-1254'
+        "labels": [
+          "cp1253",
+          "windows-1253",
+          "x-cp1253"
         ],
-        'name': 'windows-1254'
+        "name": "windows-1253"
       },
       {
-        'labels': [
-          'cp1255',
-          'windows-1255'
+        "labels": [
+          "cp1254",
+          "csisolatin5",
+          "iso-8859-9",
+          "iso-ir-148",
+          "iso8859-9",
+          "iso88599",
+          "iso_8859-9",
+          "iso_8859-9:1989",
+          "l5",
+          "latin5",
+          "windows-1254",
+          "x-cp1254"
         ],
-        'name': 'windows-1255'
+        "name": "windows-1254"
       },
       {
-        'labels': [
-          'cp1256',
-          'windows-1256'
+        "labels": [
+          "cp1255",
+          "windows-1255",
+          "x-cp1255"
         ],
-        'name': 'windows-1256'
+        "name": "windows-1255"
       },
       {
-        'labels': [
-          'windows-1257'
+        "labels": [
+          "cp1256",
+          "windows-1256",
+          "x-cp1256"
         ],
-        'name': 'windows-1257'
+        "name": "windows-1256"
       },
       {
-        'labels': [
-          'cp1258',
-          'windows-1258'
+        "labels": [
+          "cp1257",
+          "windows-1257",
+          "x-cp1257"
         ],
-        'name': 'windows-1258'
+        "name": "windows-1257"
       },
       {
-        'labels': [
-          'x-mac-cyrillic',
-          'x-mac-ukrainian'
+        "labels": [
+          "cp1258",
+          "windows-1258",
+          "x-cp1258"
         ],
-        'name': 'x-mac-cyrillic'
+        "name": "windows-1258"
+      },
+      {
+        "labels": [
+          "x-mac-cyrillic",
+          "x-mac-ukrainian"
+        ],
+        "name": "x-mac-cyrillic"
       }
     ],
-    'heading': 'Legacy single-byte encodings'
+    "heading": "Legacy single-byte encodings"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'chinese',
-          'csgb2312',
-          'csiso58gb231280',
-          'gb2312',
-          'gbk',
-          'gb_2312',
-          'gb_2312-80',
-          'iso-ir-58',
-          'x-gbk'
+        "labels": [
+          "chinese",
+          "csgb2312",
+          "csiso58gb231280",
+          "gb2312",
+          "gb_2312",
+          "gb_2312-80",
+          "gbk",
+          "iso-ir-58",
+          "x-gbk"
         ],
-        'name': 'gbk'
+        "name": "gbk"
       },
       {
-        'labels': [
-          'gb18030'
+        "labels": [
+          "gb18030"
         ],
-        'name': 'gb18030'
+        "name": "gb18030"
       },
       {
-        'labels': [
-          'hz-gb-2312'
+        "labels": [
+          "hz-gb-2312"
         ],
-        'name': 'hz-gb-2312'
+        "name": "hz-gb-2312"
       }
     ],
-    'heading': 'Legacy multi-byte Chinese (simplified) encodings'
+    "heading": "Legacy multi-byte Chinese (simplified) encodings"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'big5',
-          'big5-hkscs',
-          'cn-big5',
-          'csbig5',
-          'x-x-big5'
+        "labels": [
+          "big5",
+          "big5-hkscs",
+          "cn-big5",
+          "csbig5",
+          "x-x-big5"
         ],
-        'name': 'big5'
+        "name": "big5"
       }
     ],
-    'heading': 'Legacy multi-byte Chinese (traditional) encodings'
+    "heading": "Legacy multi-byte Chinese (traditional) encodings"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'cseucpkdfmtjapanese',
-          'euc-jp',
-          'x-euc-jp'
+        "labels": [
+          "cseucpkdfmtjapanese",
+          "euc-jp",
+          "x-euc-jp"
         ],
-        'name': 'euc-jp'
+        "name": "euc-jp"
       },
       {
-        'labels': [
-          'csiso2022jp',
-          'iso-2022-jp'
+        "labels": [
+          "csiso2022jp",
+          "iso-2022-jp"
         ],
-        'name': 'iso-2022-jp'
+        "name": "iso-2022-jp"
       },
       {
-        'labels': [
-          'csshiftjis',
-          'ms_kanji',
-          'shift-jis',
-          'shift_jis',
-          'sjis',
-          'windows-31j',
-          'x-sjis'
+        "labels": [
+          "csshiftjis",
+          "ms_kanji",
+          "shift-jis",
+          "shift_jis",
+          "sjis",
+          "windows-31j",
+          "x-sjis"
         ],
-        'name': 'shift_jis'
+        "name": "shift_jis"
       }
     ],
-    'heading': 'Legacy multi-byte Japanese encodings'
+    "heading": "Legacy multi-byte Japanese encodings"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'cseuckr',
-          'csksc56011987',
-          'euc-kr',
-          'iso-ir-149',
-          'korean',
-          'ks_c_5601-1987',
-          'ks_c_5601-1989',
-          'ksc5601',
-          'ksc_5601',
-          'windows-949'
+        "labels": [
+          "cseuckr",
+          "csksc56011987",
+          "euc-kr",
+          "iso-ir-149",
+          "korean",
+          "ks_c_5601-1987",
+          "ks_c_5601-1989",
+          "ksc5601",
+          "ksc_5601",
+          "windows-949"
         ],
-        'name': 'euc-kr'
-      },
-      {
-        'labels': [
-          'csiso2022kr',
-          'iso-2022-kr'
-        ],
-        'name': 'iso-2022-kr'
+        "name": "euc-kr"
       }
     ],
-    'heading': 'Legacy multi-byte Korean encodings'
+    "heading": "Legacy multi-byte Korean encodings"
   },
   {
-    'encodings': [
+    "encodings": [
       {
-        'labels': [
-          'utf-16',
-          'utf-16le'
+        "labels": [
+          "csiso2022kr",
+          "iso-2022-kr",
+          "iso-2022-cn",
+          "iso-2022-cn-ext"
         ],
-        'name': 'utf-16'
+        "name": "replacement"
       },
       {
-        'labels': [
-          'utf-16be'
+        "labels": [
+          "utf-16be"
         ],
-        'name': 'utf-16be'
+        "name": "utf-16be"
+      },
+      {
+        "labels": [
+          "utf-16",
+          "utf-16le"
+        ],
+        "name": "utf-16le"
+      },
+      {
+        "labels": [
+          "x-user-defined"
+        ],
+        "name": "x-user-defined"
       }
     ],
-    'heading': 'Legacy utf-16 encodings'
+    "heading": "Legacy miscellaneous encodings"
   }
 ];
 
@@ -950,21 +1032,18 @@ function SingleByteEncoder(index, options) {
 }
 
 (function() {
-  ['ibm864', 'ibm866', 'iso-8859-2', 'iso-8859-3', 'iso-8859-4',
-   'iso-8859-5', 'iso-8859-6', 'iso-8859-7', 'iso-8859-8', 'iso-8859-10',
-   'iso-8859-13', 'iso-8859-14', 'iso-8859-15', 'iso-8859-16', 'koi8-r',
-   'koi8-u', 'macintosh', 'windows-874', 'windows-1250', 'windows-1251',
-   'windows-1252', 'windows-1253', 'windows-1254', 'windows-1255',
-   'windows-1256', 'windows-1257', 'windows-1258', 'x-mac-cyrillic'
-  ].forEach(function(name) {
-    var encoding = name_to_encoding[name];
-    var index = indexes[name];
-    encoding.getDecoder = function(options) {
-      return new SingleByteDecoder(index, options);
-    };
-    encoding.getEncoder = function(options) {
-      return new SingleByteEncoder(index, options);
-    };
+  encodings.forEach(function(category) {
+    if (category.heading !== 'Legacy single-byte encodings')
+      return;
+    category.encodings.forEach(function(encoding) {
+      var index = indexes[encoding.name];
+      encoding.getDecoder = function(options) {
+        return new SingleByteDecoder(index, options);
+      };
+      encoding.getEncoder = function(options) {
+        return new SingleByteEncoder(index, options);
+      };
+    });
   });
 }());
 
@@ -1956,207 +2035,6 @@ name_to_encoding['euc-kr'].getDecoder = function(options) {
   return new EUCKRDecoder(options);
 };
 
-// 12.2 iso-2022-kr
-
-/**
- * @constructor
- * @param {{fatal: boolean}} options
- */
-function ISO2022KRDecoder(options) {
-  var fatal = options.fatal;
-  /** @enum */
-  var state = {
-    ASCII: 0,
-    escape_start: 1,
-    escape_middle: 2,
-    escape_end: 3,
-    lead: 4,
-    trail: 5
-  };
-  var /** @type {number} */ iso2022kr_state = state.ASCII,
-      /** @type {number} */ iso2022kr_lead = 0x00;
-  /**
-   * @param {ByteInputStream} byte_pointer The byte stream to decode.
-   * @return {?number} The next code point decoded, or null if not enough
-   *     data exists in the input stream to decode a complete code point.
-   */
-  this.decode = function(byte_pointer) {
-    var bite = byte_pointer.get();
-    if (bite !== EOF_byte) {
-      byte_pointer.offset(1);
-    }
-    switch (iso2022kr_state) {
-      default:
-      case state.ASCII:
-        if (bite === 0x0E) {
-          iso2022kr_state = state.lead;
-          return null;
-        }
-        if (bite === 0x0F) {
-          return null;
-        }
-        if (bite === 0x1B) {
-          iso2022kr_state = state.escape_start;
-          return null;
-        }
-        if (inRange(bite, 0x00, 0x7F)) {
-          return bite;
-        }
-        if (bite === EOF_byte) {
-          return EOF_code_point;
-        }
-        return decoderError(fatal);
-      case state.escape_start:
-        if (bite === 0x24) {
-          iso2022kr_state = state.escape_middle;
-          return null;
-        }
-        if (bite !== EOF_byte) {
-          byte_pointer.offset(-1);
-        }
-        iso2022kr_state = state.ASCII;
-        return decoderError(fatal);
-      case state.escape_middle:
-        if (bite === 0x29) {
-          iso2022kr_state = state.escape_end;
-          return null;
-        }
-        if (bite === EOF_byte) {
-          byte_pointer.offset(-1);
-        } else {
-          byte_pointer.offset(-2);
-        }
-        iso2022kr_state = state.ASCII;
-        return decoderError(fatal);
-      case state.escape_end:
-        if (bite === 0x43) {
-          iso2022kr_state = state.ASCII;
-          return null;
-        }
-        if (bite === EOF_byte) {
-          byte_pointer.offset(-2);
-        } else {
-          byte_pointer.offset(-3);
-        }
-        iso2022kr_state = state.ASCII;
-        return decoderError(fatal);
-      case state.lead:
-        if (bite === 0x0A) {
-          iso2022kr_state = state.ASCII;
-          return decoderError(fatal, 0x000A);
-        }
-        if (bite === 0x0E) {
-          return null;
-        }
-        if (bite === 0x0F) {
-          iso2022kr_state = state.ASCII;
-          return null;
-        }
-        if (bite === EOF_byte) {
-          return EOF_code_point;
-        }
-        iso2022kr_lead = bite;
-        iso2022kr_state = state.trail;
-        return null;
-      case state.trail:
-        iso2022kr_state = state.lead;
-        if (bite === EOF_byte) {
-          return decoderError(fatal);
-        }
-        var code_point = null;
-        if (inRange(iso2022kr_lead, 0x21, 0x46) &&
-            inRange(bite, 0x21, 0x7E)) {
-          code_point = indexCodePointFor((26 + 26 + 126) *
-              (iso2022kr_lead - 1) +
-              26 + 26 + bite - 1,
-              indexes['euc-kr']);
-        } else if (inRange(iso2022kr_lead, 0x47, 0x7E) &&
-            inRange(bite, 0x21, 0x7E)) {
-          code_point = indexCodePointFor((26 + 26 + 126) * (0xC7 - 0x81) +
-              (iso2022kr_lead - 0x47) * 94 +
-              (bite - 0x21),
-              indexes['euc-kr']);
-        }
-        if (code_point !== null) {
-          return code_point;
-        }
-        return decoderError(fatal);
-    }
-  };
-}
-
-/**
- * @constructor
- * @param {{fatal: boolean}} options
- */
-function ISO2022KREncoder(options) {
-  var fatal = options.fatal;
-  /** @enum */
-  var state = {
-    ASCII: 0,
-    lead: 1
-  };
-  var /** @type {boolean} */ iso2022kr_initialization = false,
-      /** @type {number} */ iso2022kr_state = state.ASCII;
-  /**
-   * @param {ByteOutputStream} output_byte_stream Output byte stream.
-   * @param {CodePointInputStream} code_point_pointer Input stream.
-   * @return {number} The last byte emitted.
-   */
-  this.encode = function(output_byte_stream, code_point_pointer) {
-    var code_point = code_point_pointer.get();
-    if (code_point === EOF_code_point) {
-      return EOF_byte;
-    }
-    if (!iso2022kr_initialization) {
-      iso2022kr_initialization = true;
-      output_byte_stream.emit(0x1B, 0x24, 0x29, 0x43);
-    }
-    code_point_pointer.offset(1);
-    if (inRange(code_point, 0x0000, 0x007F) &&
-        iso2022kr_state !== state.ASCII) {
-      code_point_pointer.offset(-1);
-      iso2022kr_state = state.ASCII;
-      return output_byte_stream.emit(0x0F);
-    }
-    if (inRange(code_point, 0x0000, 0x007F)) {
-      return output_byte_stream.emit(code_point);
-    }
-    if (iso2022kr_state !== state.lead) {
-      code_point_pointer.offset(-1);
-      iso2022kr_state = state.lead;
-      return output_byte_stream.emit(0x0E);
-    }
-    var pointer = indexPointerFor(code_point, indexes['euc-kr']);
-    if (pointer === null) {
-      return encoderError(code_point);
-    }
-    var lead, trail;
-    if (pointer < (26 + 26 + 126) * (0xC7 - 0x81)) {
-      lead = div(pointer, (26 + 26 + 126)) + 1;
-      trail = pointer % (26 + 26 + 126) - 26 - 26 + 1;
-      if (!inRange(lead, 0x21, 0x46) || !inRange(trail, 0x21, 0x7E)) {
-        return encoderError(code_point);
-      }
-      return output_byte_stream.emit(lead, trail);
-    }
-    pointer = pointer - (26 + 26 + 126) * (0xC7 - 0x81);
-    lead = div(pointer, 94) + 0x47;
-    trail = pointer % 94 + 0x21;
-    if (!inRange(lead, 0x47, 0x7E) || !inRange(trail, 0x21, 0x7E)) {
-      return encoderError(code_point);
-    }
-    return output_byte_stream.emit(lead, trail);
-  };
-}
-
-name_to_encoding['iso-2022-kr'].getEncoder = function(options) {
-  return new ISO2022KREncoder(options);
-};
-name_to_encoding['iso-2022-kr'].getDecoder = function(options) {
-  return new ISO2022KRDecoder(options);
-};
-
 
 //
 // 13. Legacy utf-16 encodings
@@ -2260,10 +2138,10 @@ function UTF16Encoder(utf16_be, options) {
   };
 }
 
-name_to_encoding['utf-16'].getEncoder = function(options) {
+name_to_encoding['utf-16le'].getEncoder = function(options) {
   return new UTF16Encoder(false, options);
 };
-name_to_encoding['utf-16'].getDecoder = function(options) {
+name_to_encoding['utf-16le'].getDecoder = function(options) {
   return new UTF16Decoder(false, options);
 };
 
@@ -2284,7 +2162,7 @@ name_to_encoding['utf-16be'].getDecoder = function(options) {
 function detectEncoding(label, input_stream) {
   if (input_stream.match([0xFF, 0xFE])) {
     input_stream.offset(2);
-    return 'utf-16';
+    return 'utf-16le';
   }
   if (input_stream.match([0xFE, 0xFF])) {
     input_stream.offset(2);
@@ -2295,25 +2173,6 @@ function detectEncoding(label, input_stream) {
     return 'utf-8';
   }
   return label;
-}
-
-/**
- * @param {string} label The encoding label.
- * @param {ByteInputStream} input_stream The byte stream to test.
- */
-function consumeBOM(label, input_stream) {
-  if (input_stream.match([0xFF, 0xFE]) && label === 'utf-16') {
-    input_stream.offset(2);
-    return;
-  }
-  if (input_stream.match([0xFE, 0xFF]) && label == 'utf-16be') {
-    input_stream.offset(2);
-    return;
-  }
-  if (input_stream.match([0xEF, 0xBB, 0xBF]) && label == 'utf-8') {
-    input_stream.offset(3);
-    return;
-  }
 }
 
 //
@@ -2337,7 +2196,7 @@ function TextEncoder(opt_encoding, options) {
   /** @private */
   this._encoding = getEncoding(opt_encoding);
   if (this._encoding === null || (this._encoding.name !== 'utf-8' &&
-                                  this._encoding.name !== 'utf-16' &&
+                                  this._encoding.name !== 'utf-16le' &&
                                   this._encoding.name !== 'utf-16be'))
     throw new TypeError('Unknown encoding: ' + opt_encoding);
   /** @private @type {boolean} */
@@ -2438,16 +2297,11 @@ TextDecoder.prototype = {
 
     if (!this._streaming) {
       this._decoder = this._encoding.getDecoder(this._options);
+      this._BOMseen = false;
     }
     this._streaming = Boolean(options.stream);
 
     var input_stream = new ByteInputStream(buf);
-
-    if (!this._BOMseen) {
-      // TODO: Don't do this until sufficient bytes are present
-      this._BOMseen = true;
-      consumeBOM(this._encoding.name, input_stream);
-    }
 
     var output_stream = new CodePointOutputStream(), code_point;
     while (input_stream.get() !== EOF_byte) {
@@ -2466,10 +2320,21 @@ TextDecoder.prototype = {
                input_stream.get() != EOF_byte);
       this._decoder = null;
     }
-    return output_stream.string();
+
+    var result = output_stream.string();
+    if (!this._BOMseen && result.length) {
+      this._BOMseen = true;
+      if (UTFs.indexOf(this.encoding) !== -1 &&
+         result.charCodeAt(0) === 0xFEFF) {
+        result = result.substring(1);
+      }
+    }
+
+    return result;
   }
 };
 
+var UTFs = ['utf-8', 'utf-16le', 'utf-16be'];
 exports.TextEncoder = TextEncoder;
 exports.TextDecoder = TextDecoder;
 exports.encodingExists = getEncoding;
