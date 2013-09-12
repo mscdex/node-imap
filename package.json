@@ -5,7 +5,7 @@
   "main": "./lib/Connection",
   "dependencies": {
     "utf7": "1.0.0",
-    "readable-stream": "1.0.15"
+    "readable-stream": "1.1.7"
   },
   "scripts": {
     "test": "node test/test.js"
