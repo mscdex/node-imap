@@ -578,8 +578,8 @@ Connection Instance Methods
           * '' - The entire message (header + body)
           * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
 
-          **Note:** You can also prefix `bodies` strings with part ids for multipart messages (e.g. '1.TEXT', '1.2.TEXT', '2.MIME', etc)
-          **Note 2:** 'HEADER*' sections are only valid for parts whose content type is 'message/rfc822', including the root part.
+          **Note:** You can also prefix `bodies` strings (i.e. 'TEXT', 'HEADER', 'HEADER.FIELDS', and 'HEADER.FIELDS.NOT' for `message/rfc822` messages and 'MIME' for any kind of message) with part ids. For example: '1.TEXT', '1.2.HEADER', '2.MIME', etc.
+          **Note 2:** 'HEADER*' sections are only valid for parts whose content type is `message/rfc822`, including the root part (no part id).
 
 * **copy**(< _MessageSource_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `callback` has 1 parameter: < _Error_ >err.
 
