@@ -5,6 +5,8 @@ node-imap is an IMAP client module for [node.js](http://nodejs.org/).
 
 This module does not perform any magic such as auto-decoding of messages/attachments or parsing of email addresses (node-imap leaves all mail header values as-is).
 
+An upgrade guide from node-imap v0.7.x to v0.8.x can be found [here](https://github.com/mscdex/node-imap/wiki/API-changes-between-v0.7-and-v0.8).
+
 
 Requirements
 ============
