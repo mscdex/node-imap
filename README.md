@@ -574,8 +574,8 @@ Connection Instance Methods
       * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
 
           * 'HEADER' - The message header
-          * 'HEADER.FIELDS(TO FROM SUBJECT)' - Specific header fields only
-          * 'HEADER.FIELDS.NOT(TO FROM SUBJECT)' - Header fields only that do not match the fields given
+          * 'HEADER.FIELDS (TO FROM SUBJECT)' - Specific header fields only
+          * 'HEADER.FIELDS.NOT (TO FROM SUBJECT)' - Header fields only that do not match the fields given
           * 'TEXT' - The message body
           * '' - The entire message (header + body)
           * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
