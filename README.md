@@ -191,6 +191,7 @@ API
     * **uidnext** - _integer_ - The uid that will be assigned to the next message that arrives at this mailbox.
     * **flags** - _array_ - A list of system-defined flags applicable for this mailbox. Flags in this list but *not* in `permFlags` may be stored for the current session only. Additional server implementation-specific flags may also be available.
     * **permFlags** - _array_ - A list of flags that can be permanently added/removed to/from messages in this mailbox.
+    * **persistentUIDs** - _boolean_ - Whether or not this mailbox has persistent UIDs. This should almost always be true for modern mailboxes and should only be false for legacy mail stores where supporting persistent UIDs was not technically feasible.
     * **messages** - _object_ - Contains various message counts for this mailbox:
         * **total** - _integer_ - Total number of messages in this mailbox.
         * **new** - _integer_ - Number of messages in this mailbox having the Recent flag (this IMAP session is the first to see these messages).
