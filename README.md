@@ -626,43 +626,6 @@ Extensions Supported
 
         * **delLabels**(< _MessageSource_ >source, < _mixed_ >labels, < _function_ >callback) - _(void)_ - Removes `labels` from message(s). `labels` is either a single label or an _array_ of labels. `callback` has 1 parameter: < _Error_ >err.
 
-* **RFC5256**
-
-    * Server capability: SORT
-
-        * Additional Connection instance methods (seqno-based counterpart exists):
-
-          * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
-
-              * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
-              * 'CC' - The mailbox of the **first** "cc" address.
-              * 'DATE' - Message sent date and time.
-              * 'FROM' - The mailbox of the **first** "from" address.
-              * 'SIZE' - Size of the message in octets.
-              * 'SUBJECT' - Base subject text.
-              * 'TO' - The mailbox of the **first** "to" address.
-
-    * Server capability: THREAD=REFERENCES, THREAD=ORDEREDSUBJECT
-
-        * Additional Connection instance methods (seqno-based counterpart exists):
-
-          * **thread**(< _string_ >algorithm, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a regular search with `searchCriteria` and groups the resulting search results using the given `algorithm` (e.g. 'references', 'orderedsubject'). `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. `UIDs` is a nested array.
-
-* **RFC4731**
-
-    * Server capability: ESEARCH
-
-    * Additional Connection instance methods (seqno-based counterpart exists):
-
-      * **esearch**(< _array_ >criteria, < _array_ >options, < _function_ >callback) - _(void)_ - A variant of search() that can return metadata about results. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` has possible keys: 'all', 'min', 'max', 'count'. Valid `options`:
-
-          * 'ALL' - Retrieves UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
-          * 'MIN' - Retrieves the lowest UID that satisfies the criteria.
-          * 'MAX' - Retrieves the highest UID that satisfies the criteria.
-          * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
-
-          **Note:** specifying no `options` or [] for `options` is the same as ['ALL']
-
 * **RFC2087**
 
     * Server capability: QUOTA
@@ -692,6 +655,14 @@ Extensions Supported
               }
             }
           ```
+
+* **RFC4315**
+
+    * Server capability: UIDPLUS
+
+    * The callback passed to append() will receive an additional argument (the UID of the appended message): < _integer_ >appendedUID.
+
+    * The callback passed to append()/seq.append() will receive an additional argument (the UID(s) of the copied message(s) in the destination mailbox): < _mixed_ >newUIDs. `newUIDs` can be an integer if just one message was copied, or a string for multiple messages (e.g. '100:103' or '100,125,130' or '100,200:201').
 
 * **RFC4551**
 
@@ -728,6 +699,43 @@ Extensions Supported
         * **delKeywordsSince**(< _MessageSource_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Removes keyword(s) from message(s) that have not changed since `modseq`. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
 
         * **setKeywordsSince**(< _MessageSource_ >source, < _mixed_ >keywords, < _string_ >modseq, < _function_ >callback) - _(void)_ - Sets keyword(s) for message(s) that have not changed since `modseq`. `keywords` is either a single keyword or an _array_ of keywords. `callback` has 1 parameter: < _Error_ >err.
+
+* **RFC4731**
+
+    * Server capability: ESEARCH
+
+    * Additional Connection instance methods (seqno-based counterpart exists):
+
+      * **esearch**(< _array_ >criteria, < _array_ >options, < _function_ >callback) - _(void)_ - A variant of search() that can return metadata about results. `callback` has 2 parameters: < _Error_ >err, < _object_ >info. `info` has possible keys: 'all', 'min', 'max', 'count'. Valid `options`:
+
+          * 'ALL' - Retrieves UIDs in a compact form (e.g. [2, '10:11'] instead of search()'s [2, 10, 11]) that match the criteria.
+          * 'MIN' - Retrieves the lowest UID that satisfies the criteria.
+          * 'MAX' - Retrieves the highest UID that satisfies the criteria.
+          * 'COUNT' - Retrieves the number of messages that satisfy the criteria.
+
+          **Note:** specifying no `options` or [] for `options` is the same as ['ALL']
+
+* **RFC5256**
+
+    * Server capability: SORT
+
+        * Additional Connection instance methods (seqno-based counterpart exists):
+
+          * **sort**(< _array_ >sortCriteria, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a sorted search(). A seqno-based counterpart also exists for this function. `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. Valid `sortCriteria` are (reverse sorting of individual criteria is done by prefixing the criteria with '-'):
+
+              * 'ARRIVAL' - Internal date and time of the message.  This differs from the ON criteria in search(), which uses just the internal date.
+              * 'CC' - The mailbox of the **first** "cc" address.
+              * 'DATE' - Message sent date and time.
+              * 'FROM' - The mailbox of the **first** "from" address.
+              * 'SIZE' - Size of the message in octets.
+              * 'SUBJECT' - Base subject text.
+              * 'TO' - The mailbox of the **first** "to" address.
+
+    * Server capability: THREAD=REFERENCES, THREAD=ORDEREDSUBJECT
+
+        * Additional Connection instance methods (seqno-based counterpart exists):
+
+          * **thread**(< _string_ >algorithm, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a regular search with `searchCriteria` and groups the resulting search results using the given `algorithm` (e.g. 'references', 'orderedsubject'). `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. `UIDs` is a nested array.
 
 
 
