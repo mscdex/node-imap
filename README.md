@@ -570,6 +570,7 @@ Connection Instance Methods
 
       * **markSeen** - _boolean_ - Mark message(s) as read when fetched. **Default:** false
       * **struct** - _boolean_ - Fetch the message structure. **Default:** false
+      * **envelope** - _boolean_ - Fetch the message envelope. **Default:** false
       * **size** - _boolean_ - Fetch the RFC822 size. **Default:** false
       * **modifiers** - _object_ - Fetch modifiers defined by IMAP extensions. **Default:** (none)
       * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
