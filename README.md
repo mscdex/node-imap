@@ -205,7 +205,7 @@ API
         * **attributes**(< _object_ >attrs) - Emitted when all message attributes have been collected. Example `attrs` properties:
             * **uid** - _integer_ - A 32-bit ID that uniquely identifies this message within its mailbox.
             * **flags** - _array_ - A list of flags currently set on this message.
-            * **date** - _string_ - The internal server date for the message.
+            * **date** - _Date_ - The internal server date for the message.
             * **struct** - _array_ - The message's body structure **(only set if requested with fetch())**. See below for an explanation of the format of this property.
             * **size** - _integer_ - The RFC822 message size **(only set if requested with fetch())**.
         * **end**() - Emitted when all attributes and bodies have been parsed.
@@ -496,7 +496,7 @@ Connection Instance Methods
 
     * **mailbox** - _string_ - The name of the mailbox to append the message to. **Default:** the currently open mailbox
     * **flags** - _mixed_ - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
-    * **date** - _date_ - What to use for message arrival date/time. **Default:** (current date/time)
+    * **date** - _Date_ - What to use for message arrival date/time. **Default:** (current date/time)
 
   `callback` has 1 parameter: < _Error_ >err.
 
