@@ -419,7 +419,7 @@ Connection Instance Methods
 
 * **status**(< _string_ >mailboxName, < _function_ >callback) - _(void)_ - Fetches information about a mailbox other than the one currently open. `callback` has 2 parameters: < _Error_ >err, < _Box_ >mailbox. **Note:** There is no guarantee that this will be a fast operation on the server. Also, do **not** call this on the currently open mailbox.
 
-* **getBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the following format (with example values):
+* **getBoxes**([< _string_ >nsPrefix, ]< _function_ >callback) - _(void)_ - Obtains the full list of mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the following format (with example values):
 
     ```javascript
     { INBOX: // mailbox name
@@ -488,11 +488,11 @@ Connection Instance Methods
     }
     ```
 
-* **getSubscribedBoxes**([< _string_ >nsPrefix,] < _function_ >callback) - _(void)_ - Obtains the full list of subscribed mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the same format as getBoxes above.
+* **getSubscribedBoxes**([< _string_ >nsPrefix, ]< _function_ >callback) - _(void)_ - Obtains the full list of subscribed mailboxes. If `nsPrefix` is not specified, the main personal namespace is used. `callback` has 2 parameters: < _Error_ >err, < _object_ >boxes. `boxes` has the same format as getBoxes above.
 
 * **expunge**(< _function_ >callback) - _(void)_ - Permanently removes all messages flagged as Deleted in the currently open mailbox. `callback` has 1 parameter: < _Error_ >err. **Note:** At least on Gmail, performing this operation with any currently open mailbox that is not the Spam or Trash mailbox will merely archive any messages marked as Deleted (by moving them to the 'All Mail' mailbox).
 
-* **append**(< _mixed_ >msgData, [< _object_ >options,] < _function_ >callback) - _(void)_ - Appends a message to selected mailbox. `msgData` is a string or Buffer containing an RFC-822 compatible MIME message. Valid `options` properties are:
+* **append**(< _mixed_ >msgData, [< _object_ >options, ]< _function_ >callback) - _(void)_ - Appends a message to selected mailbox. `msgData` is a string or Buffer containing an RFC-822 compatible MIME message. Valid `options` properties are:
 
     * **mailbox** - _string_ - The name of the mailbox to append the message to. **Default:** the currently open mailbox
     * **flags** - _mixed_ - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
