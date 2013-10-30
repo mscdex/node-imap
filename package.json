@@ -1,11 +1,11 @@
 { "name": "imap",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
   "main": "./lib/Connection",
   "dependencies": {
     "utf7": "1.0.0",
-    "readable-stream": "1.1.7"
+    "readable-stream": "1.1.9"
   },
   "scripts": {
     "test": "node test/test.js"
