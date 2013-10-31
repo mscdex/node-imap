@@ -250,6 +250,34 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
     bodySHA1s: ['1f96faf50f6410f99237791f9e3b89454bf93fa7'],
     what: 'Untagged FETCH (body)'
   },
+  { source: ['* 12 FETCH (BODY[TEXT] "IMAP is terrible")', CRLF],
+    expected: [ { seqno: 12,
+                  which: 'TEXT',
+                  size: 16
+                },
+                { type: 'fetch',
+                  num: 12,
+                  textCode: undefined,
+                  text: {}
+                }
+              ],
+    bodySHA1s: ['bac8a1528c133787a6969a10a1ff453ebb9adfc8'],
+    what: 'Untagged FETCH (quoted body)'
+  },
+  { source: ['* 12 FETCH (BODY[TEXT] "\\"IMAP\\" is terrible :\\\\")', CRLF],
+    expected: [ { seqno: 12,
+                  which: 'TEXT',
+                  size: 21
+                },
+                { type: 'fetch',
+                  num: 12,
+                  textCode: undefined,
+                  text: {}
+                }
+              ],
+    bodySHA1s: ['7570c08150050a404603f63f60b65b42378d7d42'],
+    what: 'Untagged FETCH (quoted body with escaped chars)'
+  },
   { source: ['* 12 FETCH (INTERNALDATE {26}', CRLF,
              '17-Jul-1996 02:44:25 -0700)' + CRLF],
     expected: [ { type: 'fetch',

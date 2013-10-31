@@ -8,6 +8,10 @@ var assert = require('assert'),
     expected: [],
     what: 'Empty value'
   },
+  { source: '""',
+    expected: [''],
+    what: 'Empty quoted string'
+  },
   { source: 'FLAGS NIL RFC822.SIZE 44827',
     expected: ['FLAGS', null, 'RFC822.SIZE', 44827],
     what: 'Simple, two key-value pairs with nil'
@@ -28,9 +32,21 @@ var assert = require('assert'),
     expected: [['Foo'], ['Bar'], ['Baz']],
     what: 'Lists with varying spacing'
   },
-  { source: '""',
-    expected: [''],
-    what: 'Empty quoted string'
+  { source: '"\\"IMAP\\" is terrible :\\\\"',
+    expected: ['"IMAP" is terrible :\\'],
+    what: 'Quoted string with escaped chars'
+  },
+  { source: '"\\\\"IMAP\\" is terrible :\\\\"',
+    expected: ['\\"IMAP" is terrible :\\'],
+    what: 'Quoted string with escaped chars #2'
+  },
+  { source: '"Who does not think \\"IMAP\\" is terrible\\\\bad?"',
+    expected: ['Who does not think "IMAP" is terrible\\bad?'],
+    what: 'Quoted string with escaped chars #3'
+  },
+  { source: '"Who does not think \\\\"IMAP\\" is terrible\\\\bad?"',
+    expected: ['Who does not think \\"IMAP" is terrible\\bad?'],
+    what: 'Quoted string with escaped chars #4'
   },
 ].forEach(function(v) {
   var result;
