@@ -394,6 +394,7 @@ Connection Instance Methods
     * **tlsOptions** - _object_ - Options object to pass to tls.connect() **Default:** (none)
     * **autotls** - _string_ - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
     * **connTimeout** - _integer_ - Number of milliseconds to wait for a connection to be established. **Default:** 10000
+    * **authTimeout** - _integer_ - Number of milliseconds to wait to be authenticated after a connection has been established. **Default:** 5000
     * **keepalive** - _boolean_ - Enable the keepalive mechanism. **Default:** true
     * **debug** - _function_ - If set, the function will be called with one argument, a string containing some debug info **Default:** (no debug output)
 
