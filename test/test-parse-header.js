@@ -46,6 +46,12 @@ var CRLF = '\r\n';
     expected: { subject: [ '测试题目与中国信 long subjects are not OK 12 345678901234567890123456789012345678901234567890123456789012345678901234567890' ] },
     what: 'Folded header value (one adjacent, one non-adjacent MIME encoded-words)'
   },
+  { source: ['Subject: =?UTF-8?Q?=E0=B9=84=E0=B8=97=E0=B8=A2_=E0=B9=84?=', CRLF,
+             '   ', CRLF,
+             ' =?UTF-8?Q?=E0=B8=97=E0=B8=A2_=E0=B9=84=E0=B8=97?=  =?UTF-8?Q?=E0=B8=A2?=', CRLF],
+    expected: { subject: [ 'ไทย ไทย ไทย' ] },
+    what: 'Folded header value (adjacent MIME encoded-words seperated by linear whitespace)'
+  },
   // header with body
   { source: ['Subject: test subject', CRLF,
              'X-Another-Header: test', CRLF,
