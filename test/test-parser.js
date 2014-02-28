@@ -185,8 +185,11 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
   { source: ['* OK [UNSEEN 17]', CRLF],
     expected: [ { type: 'ok',
                   num: undefined,
-                  textCode: undefined,
-                  text: '[UNSEEN 17]'
+                  textCode: {
+                    key: 'UNSEEN',
+                    val: 17
+                  },
+                  text: undefined
                 }
               ],
     what: 'Untagged OK (no text code, with text) (RFC violation)'
