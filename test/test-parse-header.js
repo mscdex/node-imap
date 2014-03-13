@@ -52,6 +52,11 @@ var CRLF = '\r\n';
     expected: { subject: [ 'ไทย ไทย ไทย' ] },
     what: 'Folded header value (adjacent MIME encoded-words seperated by linear whitespace)'
   },
+  { source: ['Subject: =?utf-8?Q?abcdefghij_=E0=B9=83=E0=B8=99_klmnopqr_=E0=B9=84=E0=B8=A1=E0=B9?=', CRLF,
+             ' =?utf-8?Q?=88=E0=B8=82=E0=B8=B6=E0=B9=89=E0=B8=99?=', CRLF],
+    expected: { subject: [ 'abcdefghij ใน klmnopqr ไม่ขึ้น' ] },
+    what: 'Folded header value (incomplete multi-byte character split)'
+  },
   // header with body
   { source: ['Subject: test subject', CRLF,
              'X-Another-Header: test', CRLF,
