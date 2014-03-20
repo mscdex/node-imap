@@ -38,8 +38,7 @@ var imap = new Imap({
   password: 'mygmailpassword',
   host: 'imap.gmail.com',
   port: 993,
-  tls: true,
-  tlsOptions: { rejectUnauthorized: false }
+  tls: true
 });
 
 function openInbox(cb) {
