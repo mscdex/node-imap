@@ -57,6 +57,13 @@ var CRLF = '\r\n';
     expected: { subject: [ 'abcdefghij ใน klmnopqr ไม่ขึ้น' ] },
     what: 'Folded header value (incomplete multi-byte character split)'
   },
+  { source: ['Subject: =?utf-8?B?Rlc6IOC4quC4tOC5iOC4h+C4oeC4tQ==?=', CRLF,
+             ' =?utf-8?B?4LiK4Li14Lin4Li04LiV4Lir4LiZ4LmJ4Liy4LiV?=', CRLF,
+             ' =?utf-8?B?4Liy4LmB4Lib4Lil4LiBIOC5hiDguKPguK3=?=', CRLF,
+             ' =?utf-8?Q?=E0=B8=9A=E0=B9=82=E0=B8=A5=E0=B8=81?=', CRLF],
+    expected: { subject: [ 'FW: สิ่งมีชีวิตหน้าตาแปลก ๆ รอบโลก' ] },
+    what: 'Folded header value (consecutive base64-encoded words)'
+  },
   // header with body
   { source: ['Subject: test subject', CRLF,
              'X-Another-Header: test', CRLF,
