@@ -62,7 +62,13 @@ var CRLF = '\r\n';
              ' =?utf-8?B?4Liy4LmB4Lib4Lil4LiBIOC5hiDguKPguK3=?=', CRLF,
              ' =?utf-8?Q?=E0=B8=9A=E0=B9=82=E0=B8=A5=E0=B8=81?=', CRLF],
     expected: { subject: [ 'FW: สิ่งมีชีวิตหน้าตาแปลก ๆ รอบโลก' ] },
-    what: 'Folded header value (consecutive base64-encoded words)'
+    what: 'Folded header value (consecutive complete base64-encoded words)'
+  },
+  { source: ['Subject: =?utf-8?B?4Lij4Li54Lib4Lig4Liy4Lie4LiX4Li14LmIIGVtYmVkIOC5g+C4meC5gOC4?=', CRLF,
+             ' =?utf-8?B?meC4t+C5ieC4reC5gOC4oeC4peC4peC5jOC5hOC4oeC5iOC5geC4quC4lOC4?=', CRLF,
+             ' =?utf-8?B?hw==?=', CRLF],
+    expected: { subject: [ 'รูปภาพที่ embed ในเนื้อเมลล์ไม่แสดง' ] },
+    what: 'Folded header value (consecutive partial base64-encoded words)'
   },
   // header with body
   { source: ['Subject: test subject', CRLF,
