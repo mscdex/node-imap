@@ -48,6 +48,25 @@ var assert = require('assert'),
     expected: ['Who does not think \\"IMAP" is terrible\\bad?'],
     what: 'Quoted string with escaped chars #4'
   },
+  { source: 'ENVELOPE ("Wed, 30 Mar 2014 02:38:23 +0100" "=?ISO-8859-1?Q?##ALLCAPS##123456## - ?= =?ISO-8859-1?Q?[ALERT][P3][ONE.TWO.FR] ?= =?ISO-8859-1?Q?Some Subject Line \\"D:\\\\\\"?=" (("Test Account (Rltvty L)" NIL "account" "test.com")) (("Test Account (Rltvty L)" NIL "account" "test.com")) ((NIL NIL "account" "test.com")) ((NIL NIL "one.two" "test.fr") (NIL NIL "two.three" "test.fr")) NIL NIL NIL "<message@test.eu>")',
+    expected: [
+      'ENVELOPE',
+      [ 'Wed, 30 Mar 2014 02:38:23 +0100',
+        '=?ISO-8859-1?Q?##ALLCAPS##123456## - ?= =?ISO-8859-1?Q?[ALERT][P3][ONE.TWO.FR] ?= =?ISO-8859-1?Q?Some Subject Line "D:\\"?=',
+        [ [ 'Test Account (Rltvty L)', null, 'account', 'test.com' ] ],
+        [ [ 'Test Account (Rltvty L)', null, 'account', 'test.com' ] ],
+        [ [ null, null, 'account', 'test.com' ] ],
+        [ [ null, null, 'one.two', 'test.fr' ],
+          [ null, null, 'two.three', 'test.fr' ]
+        ],
+        null,
+        null,
+        null,
+        '<message@test.eu>'
+      ]
+    ],
+    what: 'Triple backslash in quoted string (GH Issue #345)'
+  },
 ].forEach(function(v) {
   var result;
 
