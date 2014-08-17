@@ -21,6 +21,14 @@ var assert = require('assert'),
               ],
     what: 'RFC3501 example #2'
   },
+  { source: '("=?utf-8?Q?=C2=A9=C2=AEAZ=C2=A5?=" NIL "crazy" "example.org")',
+    expected: [ { name: '©®AZ¥',
+                  mailbox: 'crazy',
+                  host: 'example.org'
+                }
+              ],
+    what: 'Name with encoded word(s)'
+  },
   { source: '(NIL NIL "imap" NIL)'
             + '(NIL NIL NIL NIL)',
     expected: [ { group: 'imap',
