@@ -394,7 +394,10 @@ Connection Instance Methods
     * **autotls** - _string_ - Set to 'always' to always attempt connection upgrades via STARTTLS, 'required' only if upgrading is required, or 'never' to never attempt upgrading. **Default:** 'never'
     * **connTimeout** - _integer_ - Number of milliseconds to wait for a connection to be established. **Default:** 10000
     * **authTimeout** - _integer_ - Number of milliseconds to wait to be authenticated after a connection has been established. **Default:** 5000
-    * **keepalive** - _boolean_ - Enable the keepalive mechanism. **Default:** true
+    * **keepalive** - _mixed_ - Configures the keepalive mechanism. Set to `true` to enable keepalive with defaults or set to object to enable and configure keepalive behavior: **Default:** true
+        * **interval** - _integer_ - This is the interval (in milliseconds) at which NOOPs are sent and the interval at which `idleInterval` is checked. **Default:** 10000
+        * **idleInterval** - _integer_ - This is the interval (in milliseconds) at which an IDLE command (for servers that support IDLE) is re-sent. **Default:** 300000 (5 mins)
+        * **forceNoop** - _boolean_ - Set to `true` to force use of NOOP keepalive on servers also support IDLE. **Default:** false
     * **debug** - _function_ - If set, the function will be called with one argument, a string containing some debug info **Default:** (no debug output)
 
 * **connect**() - _(void)_ - Attempts to connect and authenticate with the IMAP server.
