@@ -70,6 +70,11 @@ var CRLF = '\r\n';
     expected: { subject: [ 'รูปภาพที่ embed ในเนื้อเมลล์ไม่แสดง' ] },
     what: 'Folded header value (consecutive partial base64-encoded words)'
   },
+  { source: ['               ', CRLF,
+             'To: Foo', CRLF],
+    expected: { to: [ 'Foo' ] },
+    what: 'Invalid first line'
+  },
   // header with body
   { source: ['Subject: test subject', CRLF,
              'X-Another-Header: test', CRLF,
