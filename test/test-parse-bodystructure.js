@@ -35,6 +35,17 @@ var assert = require('assert'),
               ],
     what: 'RFC3501 example #1'
   },
+  { source: 'NIL NIL ("CHARSET" "GB2312") NIL NIL NIL 176 NIL NIL NIL',
+    expected: [ { type: null,
+                  params: null,
+                  disposition: null,
+                  language: [ 'CHARSET', 'GB2312' ],
+                  location: null,
+                  extensions: null
+                }
+              ],
+    what: 'Issue 477'
+  },
   { source: '"TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 3028 92',
     expected: [ { partID: '1',
                   type: 'text',
