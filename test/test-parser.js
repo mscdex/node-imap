@@ -253,6 +253,29 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
     bodySHA1s: ['1f96faf50f6410f99237791f9e3b89454bf93fa7'],
     what: 'Untagged FETCH (body)'
   },
+  { source: ['* 12 FETCH (BODY[HEADER]'+CRLF+' {344}', CRLF,
+             'Date: Wed, 17 Jul 1996 02:23:25 -0700 (PDT)', CRLF,
+             'From: Terry Gray <gray@cac.washington.edu>', CRLF,
+             'Subject: IMAP4rev1 WG mtg summary and minutes', CRLF,
+             'To: imap@cac.washington.edu', CRLF,
+             'cc: minutes@CNRI.Reston.VA.US, John Klensin <KLENSIN@MIT.EDU>', CRLF,
+             'Message-Id: <B27397-0100000@cac.washington.edu>', CRLF,
+             'MIME-Version: 1.0', CRLF,
+             'Content-Type: TEXT/PLAIN; CHARSET=US-ASCII', CRLF, CRLF,
+             ')', CRLF],
+    expected: [ { seqno: 12,
+                  which: 'HEADER',
+                  size: 344
+                },
+                { type: 'fetch',
+                  num: 12,
+                  textCode: undefined,
+                  text: {}
+                }
+              ],
+    bodySHA1s: ['1f96faf50f6410f99237791f9e3b89454bf93fa7'],
+    what: 'Untagged FETCH (body) with broken first line'
+  },
   { source: ['* 12 FETCH (BODY[TEXT] "IMAP is terrible")', CRLF],
     expected: [ { seqno: 12,
                   which: 'TEXT',
