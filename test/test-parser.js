@@ -488,7 +488,8 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
                      )
                     );
       });
-    }
+    } else
+      stream.resume();
   });
 
   try {
@@ -499,14 +500,16 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
     console.log(makeMsg(v.what, 'JS Exception: ' + e.stack));
     return;
   }
-  assert.deepEqual(result,
-                   v.expected,
-                   makeMsg(v.what,
-                           'Result mismatch:'
-                           + '\nParsed: ' + inspect(result, false, 10)
-                           + '\nExpected: ' + inspect(v.expected, false, 10)
-                   )
-                  );
+  setImmediate(function() {
+    assert.deepEqual(result,
+                     v.expected,
+                     makeMsg(v.what,
+                             'Result mismatch:'
+                             + '\nParsed: ' + inspect(result, false, 10)
+                             + '\nExpected: ' + inspect(v.expected, false, 10)
+                     )
+                    );
+  });
 });
 
 function makeMsg(what, msg) {
