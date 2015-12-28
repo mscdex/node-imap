@@ -452,6 +452,31 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'QuotaRoot'
   },
+  { source: ['* 456 FETCH (UID 2013 FLAGS (\\Seen) INTERNALDATE "16-Dec-2015 23:19:35 +0800" ENVELOPE ("Wed, 16 Dec 2015 16:19:25 +0100 (CET)" "Subject Line" ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) NIL NIL NIL "<message@id.with" <quote.angleBracket@and.space>"))', CRLF],
+    expected: [ { type: 'fetch',
+                  num: 456,
+                  textCode: undefined,
+                  text:
+                  { uid: 2013,
+                    flags: [ '\\Seen' ],
+                    internaldate: new Date('Wed Dec 16 2015 09:19:35 GMT-0600 (CST)'),
+                    envelope:
+                    { date: new Date('Wed Dec 16 2015 09:19:25 GMT-0600 (CST)'),
+                      subject: 'Subject Line',
+                      from: [],
+                      sender: [],
+                      replyTo: [],
+                      to: [],
+                      cc: null,
+                      bcc: null,
+                      inReplyTo: null,
+                      messageId: '<message@id.with" <quote.angleBracket@and.space>'
+                    }
+                  }
+                }
+              ],
+    what: 'envelope with bad messageId'
+  },
 ].forEach(function(v) {
   var ss = new require('stream').Readable(), p, result = [];
   ss._read = function(){};

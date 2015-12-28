@@ -48,16 +48,17 @@ var assert = require('assert'),
     expected: ['Who does not think \\"IMAP" is terrible\\bad?'],
     what: 'Quoted string with escaped chars #4'
   },
-  { source: 'ENVELOPE ("Wed, 30 Mar 2014 02:38:23 +0100" "=?ISO-8859-1?Q?##ALLCAPS##123456## - ?= =?ISO-8859-1?Q?[ALERT][P3][ONE.TWO.FR] ?= =?ISO-8859-1?Q?Some Subject Line \\"D:\\\\\\"?=" (("Test Account (Rltvty L)" NIL "account" "test.com")) (("Test Account (Rltvty L)" NIL "account" "test.com")) ((NIL NIL "account" "test.com")) ((NIL NIL "one.two" "test.fr") (NIL NIL "two.three" "test.fr")) NIL NIL NIL "<message@test.eu>")',
+  {
+    source: 'ENVELOPE ("Wed, 30 Mar 2014 02:38:23 +0100" "=?ISO-8859-1?Q?##ALLCAPS##123456## - ?= =?ISO-8859-1?Q?[ALERT][P3][ONE.TWO.FR] ?= =?ISO-8859-1?Q?Some Subject Line \\"D:\\\\\\"?=" (("Test Account (Rltvty L)" NIL "account" "test.com")) (("Test Account (Rltvty L)" NIL "account" "test.com")) ((NIL NIL "account" "test.com")) ((NIL NIL "one.two" "test.fr") (NIL NIL "two.three" "test.fr")) NIL NIL NIL "<message@test.eu>")',
     expected: [
       'ENVELOPE',
-      [ 'Wed, 30 Mar 2014 02:38:23 +0100',
+      ['Wed, 30 Mar 2014 02:38:23 +0100',
         '=?ISO-8859-1?Q?##ALLCAPS##123456## - ?= =?ISO-8859-1?Q?[ALERT][P3][ONE.TWO.FR] ?= =?ISO-8859-1?Q?Some Subject Line "D:\\"?=',
-        [ [ 'Test Account (Rltvty L)', null, 'account', 'test.com' ] ],
-        [ [ 'Test Account (Rltvty L)', null, 'account', 'test.com' ] ],
-        [ [ null, null, 'account', 'test.com' ] ],
-        [ [ null, null, 'one.two', 'test.fr' ],
-          [ null, null, 'two.three', 'test.fr' ]
+        [['Test Account (Rltvty L)', null, 'account', 'test.com']],
+        [['Test Account (Rltvty L)', null, 'account', 'test.com']],
+        [[null, null, 'account', 'test.com']],
+        [[null, null, 'one.two', 'test.fr'],
+          [null, null, 'two.three', 'test.fr']
         ],
         null,
         null,
@@ -66,6 +67,23 @@ var assert = require('assert'),
       ]
     ],
     what: 'Triple backslash in quoted string (GH Issue #345)'
+  },
+  { source: 'ENVELOPE ("Wed, 16 Dec 2015 16:19:25 +0100 (CET)" "Subject Line" ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) NIL NIL NIL "<message@id.with" <quote.angleBracket@and.space>"))',
+    expected: [
+      'ENVELOPE',
+      ['Wed, 16 Dec 2015 16:19:25 +0100 (CET)', //date
+        'Subject Line', //subject
+        [[null, null, null, null]], //from
+        [[null, null, null, null]], //sender
+        [[null, null, null, null]], //replyto
+        [[null, null, null, null]], //to
+        null, //cc
+        null, //bcc
+        null, //in-reply-to
+        '<message@id.with" <quote.angleBracket@and.space>', // messageId
+      ]
+    ],
+    what: 'envelope with bad messageId'
   },
 ].forEach(function(v) {
   var result;
