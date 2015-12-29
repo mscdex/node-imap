@@ -477,6 +477,31 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'envelope with bad messageId'
   },
+  { source: ['* 159 FETCH (UID 5287 FLAGS () INTERNALDATE "18-Dec-2015 00:11:41 +0800" ENVELOPE ("Thu, 17 Dec 2015 16:08:55 +0800 (CST)" "Subject Line" ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) NIL NIL NIL "<message.id.with@[brackets]>"))', CRLF],
+    expected: [ { type: 'fetch',
+      num: 159,
+      textCode: undefined,
+      text:
+      { uid: 5287,
+        flags: [],
+        internaldate: new Date('Thu Dec 17 2015 10:11:41 GMT-0600 (CST)'),
+        envelope:
+        { date: new Date('Thu Dec 17 2015 02:08:55 GMT-0600 (CST)'),
+          subject: 'Subject Line',
+          from: [],
+          sender: [],
+          replyTo: [],
+          to: [],
+          cc: null,
+          bcc: null,
+          inReplyTo: null,
+          messageId: '<message.id.with@[brackets]>'
+        }
+      }
+    }
+    ],
+    what: 'envelope with another bad messageId'
+  }
 ].forEach(function(v) {
   var ss = new require('stream').Readable(), p, result = [];
   ss._read = function(){};

@@ -68,8 +68,19 @@ var assert = require('assert'),
     ],
     what: 'Triple backslash in quoted string (GH Issue #345)'
   },
-  { source: 'ENVELOPE ("Wed, 16 Dec 2015 16:19:25 +0100 (CET)" "Subject Line" ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) NIL NIL NIL "<message@id.with" <quote.angleBracket@and.space>"))',
+  { source: 'FLAGS (\\Seen)'
+        + ' ENVELOPE ("Wed, 16 Dec 2015 16:19:25 +0100 (CET)"'
+        + ' "Subject Line" ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL))'
+        + ' NIL NIL NIL "<message@id.with" <quote.angleBracket@and.space>")'
+        + ' INTERNALDATE "17-Jul-1996 02:44:25 -0700"'
+        + ' BODYSTRUCTURE (("TEXT" "PLAIN" ("CHARSET" "US-ASCII") NIL NIL "7BIT" 1152 23)'
+        + ' ("TEXT" "PLAIN" ("CHARSET" "US-ASCII" "NAME" "cc.diff")'
+        + ' "<960723163407.20117h@cac.washington.edu>" "Compiler diff"'
+        + ' "BASE64" 4554 73)'
+        + ' "MIXED")',
     expected: [
+      'FLAGS',
+      [ '\\Seen' ],
       'ENVELOPE',
       ['Wed, 16 Dec 2015 16:19:25 +0100 (CET)', //date
         'Subject Line', //subject
@@ -80,11 +91,50 @@ var assert = require('assert'),
         null, //cc
         null, //bcc
         null, //in-reply-to
-        '<message@id.with" <quote.angleBracket@and.space>', // messageId
-      ]
+        '<message@id.with" <quote.angleBracket@and.space>' // messageId
+      ],
+      'INTERNALDATE',
+      '17-Jul-1996 02:44:25 -0700',
+      'BODYSTRUCTURE',
+      [ [ 'TEXT',
+        'PLAIN',
+        [ 'CHARSET', 'US-ASCII' ],
+        null,
+        null,
+        '7BIT',
+        1152,
+        23 ],
+        [ 'TEXT',
+          'PLAIN',
+          [ 'CHARSET', 'US-ASCII', 'NAME', 'cc.diff' ],
+          '<960723163407.20117h@cac.washington.edu>',
+          'Compiler diff',
+          'BASE64',
+          4554,
+          73 ],
+        'MIXED' ]
     ],
     what: 'envelope with bad messageId'
   },
+  { source: 'ENVELOPE ("Thu, 17 Dec 2015 16:08:55 +0800 (CST)" "Subject Line"'
+       + ' ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL)) ((NIL NIL NIL NIL))'
+       + ' NIL NIL NIL "<message.id.with@[brackets]>")',
+    expected: [
+      'ENVELOPE',
+      ['Thu, 17 Dec 2015 16:08:55 +0800 (CST)', //date
+        'Subject Line', //subject
+        [[null, null, null, null]], //from
+        [[null, null, null, null]], //sender
+        [[null, null, null, null]], //replyto
+        [[null, null, null, null]], //to
+        null, //cc
+        null, //bcc
+        null, //in-reply-to
+        '<message.id.with@[brackets]>' // messageId
+      ]
+    ],
+    what: 'envelope with another bad messageId'
+  }
 ].forEach(function(v) {
   var result;
 
