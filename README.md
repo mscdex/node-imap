@@ -576,6 +576,7 @@ Connection Instance Methods
       * **envelope** - _boolean_ - Fetch the message envelope. **Default:** false
       * **size** - _boolean_ - Fetch the RFC822 size. **Default:** false
       * **modifiers** - _object_ - Fetch modifiers defined by IMAP extensions. **Default:** (none)
+      * **extensions** - _array_ - Fetch custom fields defined by IMAP extensions, e.g. ['X-MAILBOX', 'X-REAL-UID']. **Default:** (none)
       * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
 
           * 'HEADER' - The message header
