@@ -743,7 +743,27 @@ Extensions Supported
 
           * **thread**(< _string_ >algorithm, < _array_ >searchCriteria, < _function_ >callback) - _(void)_ - Performs a regular search with `searchCriteria` and groups the resulting search results using the given `algorithm` (e.g. 'references', 'orderedsubject'). `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs. `UIDs` is a nested array.
 
+* **RFC4314**
 
+    * Server capability: ACL
+
+        * Access Control List (ACL) Extension
+
+        * Connection instance methods:
+
+            * **setAcl**(< _string_ >box, < _string_ >identifier, < _string_ >rights, < _function_ >callback) - _(void)_ - Set acl on `box` for `identifier` with given `rights` (e.g. 'lrswipkxtea', '+lrswipkxtea', '-lrswipkxtea'). `callback` has 1 parameter: < _Error_ >err.
+
+            * **getAcl**(< _string_ >box, < _function_ >callback) - _(void)_ - Get rights for given `box`. `callback` has 2 parameters: < _Error_ >err, < _object_ >acl. `acl` example:
+
+                ```javascript
+                {
+                  box: 'INBOX',
+                  rights: [
+                    { name: 'john', perms: 'lrswi' },
+                    { name: 'george', perms: 'lrw' }
+                  ]
+                }
+                ```
 
 TODO
 ----
