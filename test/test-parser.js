@@ -465,6 +465,15 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'QuotaRoot'
   },
+  { source: ['A1 OK', CRLF], // some servers like ppops.net sends such response
+    expected: [ { type: 'ok',
+                  tagnum: 1,
+                  textCode: undefined,
+                  text: ''
+                }
+              ],
+    what: 'Tagged OK (no text code, no text)'
+  },
 ].forEach(function(v) {
   var ss = new require('stream').Readable(), p, result = [];
   ss._read = function(){};
