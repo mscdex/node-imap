@@ -133,6 +133,19 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
               ],
     what: 'Search'
   },
+  { source: ['* XLIST (\\Noselect) "/" ~/Mail/foo', CRLF],
+    expected: [ { type: 'xlist',
+                  num: undefined,
+                  textCode: undefined,
+                  text: {
+                    flags: [ '\\Noselect' ],
+                    delimiter: '/',
+                    name: '~/Mail/foo'
+                  }
+                }
+              ],
+    what: 'XList'
+  },
   { source: ['* LIST (\\Noselect) "/" ~/Mail/foo', CRLF],
     expected: [ { type: 'list',
                   num: undefined,
