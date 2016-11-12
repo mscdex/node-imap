@@ -20,6 +20,10 @@ var CR = '\r', LF = '\n', CRLF = CR + LF;
     expected: [ 'IDLE OK IDLE terminated' ],
     what: 'Unknown line'
   },
+  { source: ['IDLE OK Idle completed (0.002 + 1.783 + 1.783 secs).', CRLF],
+    expected: [ 'IDLE OK Idle completed (0.002 + 1.783 + 1.783 secs).' ],
+    what: 'Unknown line with + char'
+  },
   { source: ['+ idling', CRLF],
     expected: [ { textCode: undefined,
                   text: 'idling'
