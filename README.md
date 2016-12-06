@@ -571,6 +571,10 @@ Connection Instance Methods
 
     Valid `options` properties are:
 
+      * **uid** - _boolean_ - Fetch the message uid. **Default:** true
+      * **flags** - _boolean_ - Fetch the message flags. **Default:** true
+      * **modseq** - _boolean_ - Fetch the message modseq. **Default:** true if server supports `CONDSTORE`
+      * **internalDate** - _boolean_ - Fetch the internal date. **Default:** true
       * **markSeen** - _boolean_ - Mark message(s) as read when fetched. **Default:** false
       * **struct** - _boolean_ - Fetch the message structure. **Default:** false
       * **envelope** - _boolean_ - Fetch the message envelope. **Default:** false
