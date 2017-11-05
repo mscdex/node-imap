@@ -502,8 +502,9 @@ Connection Instance Methods
     * **flags** - _mixed_ - A single flag (e.g. 'Seen') or an _array_ of flags (e.g. `['Seen', 'Flagged']`) to append to the message. **Default:** (no flags)
     * **date** - _Date_ - What to use for message arrival date/time. **Default:** (current date/time)
 
-  `callback` has 1 parameter: < _Error_ >err.
-
+  `callback` has 2 parameters: < _Error_ >err., < _array_ >UIDs.
+   (Note: If the server supports the UIDPLUS capability, then the UID validity and message UID will be passed as an array as the second argument to your callback.)
+   
 **All functions below have sequence number-based counterparts that can be accessed by using the 'seq' namespace of the imap connection's instance (e.g. conn.seq.search() returns sequence number(s) instead of UIDs, conn.seq.fetch() fetches by sequence number(s) instead of UIDs, etc):**
 
 * **search**(< _array_ >criteria, < _function_ >callback) - _(void)_ - Searches the currently open mailbox for messages using given criteria. `criteria` is a list describing what you want to find. For criteria types that require arguments, use an _array_ instead of just the string criteria type name (e.g. ['FROM', 'foo@bar.com']). Prefix criteria types with an "!" to negate.
