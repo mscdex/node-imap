@@ -1,4 +1,4 @@
-Description
+Description for node-imap
 ===========
 
 node-imap is an IMAP client module for [node.js](http://nodejs.org/).
