@@ -572,23 +572,23 @@ Connection Instance Methods
 
     Valid `options` properties are:
 
-      * **markSeen** - _boolean_ - Mark message(s) as read when fetched. **Default:** false
-      * **struct** - _boolean_ - Fetch the message structure. **Default:** false
-      * **envelope** - _boolean_ - Fetch the message envelope. **Default:** false
-      * **size** - _boolean_ - Fetch the RFC822 size. **Default:** false
-      * **modifiers** - _object_ - Fetch modifiers defined by IMAP extensions. **Default:** (none)
-      * **extensions** - _array_ - Fetch custom fields defined by IMAP extensions, e.g. ['X-MAILBOX', 'X-REAL-UID']. **Default:** (none)
-      * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
+    * **markSeen** - _boolean_ - Mark message(s) as read when fetched. **Default:** false
+    * **struct** - _boolean_ - Fetch the message structure. **Default:** false
+    * **envelope** - _boolean_ - Fetch the message envelope. **Default:** false
+    * **size** - _boolean_ - Fetch the RFC822 size. **Default:** false
+    * **modifiers** - _object_ - Fetch modifiers defined by IMAP extensions. **Default:** (none)
+    * **extensions** - _array_ - Fetch custom fields defined by IMAP extensions, e.g. ['X-MAILBOX', 'X-REAL-UID']. **Default:** (none)
+    * **bodies** - _mixed_ - A string or Array of strings containing the body part section to fetch. **Default:** (none) Example sections:
 
-          * 'HEADER' - The message header
-          * 'HEADER.FIELDS (TO FROM SUBJECT)' - Specific header fields only
-          * 'HEADER.FIELDS.NOT (TO FROM SUBJECT)' - Header fields only that do not match the fields given
-          * 'TEXT' - The message body
-          * '' - The entire message (header + body)
-          * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
+        * 'HEADER' - The message header
+        * 'HEADER.FIELDS (TO FROM SUBJECT)' - Specific header fields only
+        * 'HEADER.FIELDS.NOT (TO FROM SUBJECT)' - Header fields only that do not match the fields given
+        * 'TEXT' - The message body
+        * '' - The entire message (header + body)
+        * 'MIME' - MIME-related header fields only (e.g. 'Content-Type')
 
-          **Note:** You can also prefix `bodies` strings (i.e. 'TEXT', 'HEADER', 'HEADER.FIELDS', and 'HEADER.FIELDS.NOT' for `message/rfc822` messages and 'MIME' for any kind of message) with part ids. For example: '1.TEXT', '1.2.HEADER', '2.MIME', etc.
-          **Note 2:** 'HEADER*' sections are only valid for parts whose content type is `message/rfc822`, including the root part (no part id).
+        **Note:** You can also prefix `bodies` strings (i.e. 'TEXT', 'HEADER', 'HEADER.FIELDS', and 'HEADER.FIELDS.NOT' for `message/rfc822` messages and 'MIME' for any kind of message) with part ids. For example: '1.TEXT', '1.2.HEADER', '2.MIME', etc.
+        **Note 2:** 'HEADER*' sections are only valid for parts whose content type is `message/rfc822`, including the root part (no part id).
 
 * **copy**(< _MessageSource_ >source, < _string_ >mailboxName, < _function_ >callback) - _(void)_ - Copies message(s) in the currently open mailbox to another mailbox. `callback` has 1 parameter: < _Error_ >err.
 
