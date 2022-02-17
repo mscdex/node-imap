@@ -11,10 +11,7 @@ An upgrade guide from node-imap v0.7.x to v0.8.x can be found [here](https://git
 Requirements
 ============
 
-* [node.js](http://nodejs.org/) -- v0.8.0 or newer
-
-  * NOTE: node v0.8.x users are supported via the readable-stream module which
-          may not be up-to-date (compared to node v0.10 streams2 implementation)
+* [node.js](http://nodejs.org/) -- v10.0.0 or newer
 
 * An IMAP server to connect to -- tested with gmail
 

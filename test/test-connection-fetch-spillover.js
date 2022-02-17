@@ -102,7 +102,7 @@ srv.listen(0, '127.0.0.1', function() {
             // first allow body.push() to return false in parser.js
             setTimeout(function() {
               stream.on('data', function(chunk) {
-                body[nbody] += chunk.toString('binary');
+                body[nbody] += chunk.toString('latin1');
               });
               setTimeout(function() {
                 var oldRead = stream._read,
@@ -137,7 +137,7 @@ srv.listen(0, '127.0.0.1', function() {
             }, 100);
           } else {
             stream.on('data', function(chunk) {
-              body[nbody] += chunk.toString('binary');
+              body[nbody] += chunk.toString('latin1');
             });
           }
         });
