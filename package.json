@@ -1,5 +1,5 @@
-{ "name": "imap",
-  "version": "0.8.19",
+{ "name": "@integromat/imap",
+  "version": "0.8.21",
   "author": "Brian White <mscdex@mscdex.net>",
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
   "main": "./lib/Connection",
@@ -12,5 +12,5 @@
   "engines": { "node": ">=10.0.0" },
   "keywords": [ "imap", "mail", "email", "reader", "client" ],
   "licenses": [ { "type": "MIT", "url": "http://github.com/mscdex/node-imap/raw/master/LICENSE" } ],
-  "repository": { "type": "git", "url": "http://github.com/mscdex/node-imap.git" }
+  "repository": { "type": "git", "url": "https://github.com/integromat/node-imap.git" }
 }
