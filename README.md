@@ -562,6 +562,8 @@ Connection Instance Methods
     * Messages that are EITHER unread OR are dated April 20, 2010 or later, you could use: [ ['OR', 'UNSEEN', ['SINCE', 'April 20, 2010'] ] ]
     * All messages that have 'node-imap' in the subject header: [ ['HEADER', 'SUBJECT', 'node-imap'] ]
     * All messages that _do not_ have 'node-imap' in the subject header: [ ['!HEADER', 'SUBJECT', 'node-imap'] ]
+    * All UNSEEN messages smaller than 5,000 bytes from one of four senders: Paul Smith, david@example.com, mary@example.com, and Ted Johnson:
+    ['UNSEEN', ['SMALLER','5000'], 'OR', ['OR', ['FROM','Paul Smith'],['FROM','david@example.com']],['OR', ['FROM','mary@example.com'],['FROM','Ted Johnson']]]
 
   `callback` has 2 parameters: < _Error_ >err, < _array_ >UIDs.
 
