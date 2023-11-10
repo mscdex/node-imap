@@ -4,7 +4,7 @@
   "description": "An IMAP module for node.js that makes communicating with IMAP servers easy",
   "main": "./lib/Connection",
   "dependencies": {
-    "safe-utf7": ">=1.0.4"
+    "safe-utf7": ">=1.0.6"
   },
   "scripts": {
     "test": "node test/test.js"
